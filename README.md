@@ -15,6 +15,7 @@
   <a href="https://github.com/sagar2395/snowopslabs/actions/workflows/ci.yaml"><img alt="CI" src="https://github.com/sagar2395/snowopslabs/actions/workflows/ci.yaml/badge.svg"></a>
   <a href="https://github.com/sagar2395/snowopslabs/releases"><img alt="Release" src="https://img.shields.io/github/v/release/sagar2395/snowopslabs?color=818cf8&sort=semver"></a>
   <img alt="Platforms: macOS, Linux, WSL2" src="https://img.shields.io/badge/platforms-macOS%20·%20Linux%20·%20WSL2-64748b">
+  <a href="https://www.youtube.com/watch?v=XtItNiMiQy8"><img alt="Watch the setup video on YouTube" src="https://img.shields.io/badge/Watch-setup_video-ff0000?logo=youtube&logoColor=white"></a>
   <a href="CONTRIBUTING.md"><img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-4ade80.svg"></a>
 </p>
 
@@ -35,6 +36,23 @@ opinion.
 > how it works.
 >
 > Runs on **macOS (Apple Silicon and Intel), Linux, and Windows via WSL2**.
+
+## Watch: SnowOps Labs in one video
+
+New here? This walkthrough explains what SnowOps Labs is and how to set it up
+on your own machine. Click to watch on YouTube:
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=XtItNiMiQy8" title="Watch the SnowOps Labs walkthrough and local setup on YouTube">
+    <img src="https://img.youtube.com/vi/XtItNiMiQy8/maxresdefault.jpg" width="820"
+         alt="SnowOps Labs on YouTube: what it is and how to set it up locally — click to play.">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=XtItNiMiQy8"><b>▶ Watch on YouTube</b></a> ·
+  then follow along with <a href="#install">Install</a> and <a href="#your-first-lab">Your first lab</a> below.
+</p>
 
 <p align="center">
   <img src="docs/assets/demo-cli.gif" width="820"
@@ -124,6 +142,9 @@ Your OS in detail: [macOS](docs/getting-started/macos.md) ·
 [Windows (WSL2)](docs/getting-started/wsl.md).
 
 ## Install
+
+> **Prefer to watch first?** The [setup video](https://www.youtube.com/watch?v=XtItNiMiQy8)
+> walks through setting up the lab locally; the steps below are the same.
 
 Your lab is a clone of this repository: every manifest, Helm values file,
 scenario and incident is a file you can open, read and change. Clone the latest
@@ -289,6 +310,7 @@ be bound to scenarios with `--app <name>`
 | | |
 |---|---|
 | [Getting started: macOS](docs/getting-started/macos.md) · [Linux](docs/getting-started/linux.md) · [WSL2](docs/getting-started/wsl.md) | Installing and running on your OS |
+| [Setup video](https://www.youtube.com/watch?v=XtItNiMiQy8) | What SnowOps Labs is and how to set it up locally, on YouTube |
 | [Resources](docs/resources.md) | How much CPU and memory each scenario needs |
 | [Troubleshooting](docs/troubleshooting.md) | Fixes by symptom |
 | [Scenario catalog](docs/scenarios.md) | What ships, and what each scenario teaches |
