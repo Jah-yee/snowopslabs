@@ -39,8 +39,8 @@ opinion.
 
 ## Watch: SnowOps Labs in one video
 
-New here? This walkthrough explains what SnowOps Labs is and sets it up locally,
-from clone to a running lab. Click to watch on YouTube:
+New here? This walkthrough explains what SnowOps Labs is and how to set it up
+on your own machine. Click to watch on YouTube:
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=XtItNiMiQy8" title="Watch the SnowOps Labs walkthrough and local setup on YouTube">
@@ -143,8 +143,8 @@ Your OS in detail: [macOS](docs/getting-started/macos.md) ·
 
 ## Install
 
-> **Prefer to watch first?** The [setup video](https://www.youtube.com/watch?v=XtItNiMiQy8) walks through every step
-> below on a real machine.
+> **Prefer to watch first?** The [setup video](https://www.youtube.com/watch?v=XtItNiMiQy8)
+> walks through setting up the lab locally; the steps below are the same.
 
 Your lab is a clone of this repository: every manifest, Helm values file,
 scenario and incident is a file you can open, read and change. Clone the latest
