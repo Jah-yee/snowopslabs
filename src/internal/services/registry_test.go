@@ -3,9 +3,14 @@
 package services
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/sagar2395/snowopslabs/internal/executor"
+	"github.com/sagar2395/snowopslabs/internal/labtest"
 )
 
 func createTestService(t *testing.T, root, name string) {
@@ -119,5 +124,67 @@ func TestNewRegistry_SkipsNonService(t *testing.T) {
 	svcs := reg.List()
 	if len(svcs) != 1 {
 		t.Errorf("expected 1 service, got %d", len(svcs))
+	}
+}
+
+// fixtureRegistry is a Registry over the fixture lab, with the executor that
+// runs its scripts and the buffer their output goes to.
+func fixtureRegistry(t *testing.T) (*Registry, *executor.Executor, *labtest.Lab, *bytes.Buffer) {
+	t.Helper()
+	l := labtest.New(t)
+	ex := executor.New(l.Root)
+	var out bytes.Buffer
+	ex.Stdout, ex.Stderr = &out, &out
+	return NewRegistry(l.Root), ex, l, &out
+}
+
+func TestInstallUninstallStatus(t *testing.T) {
+	steps := []struct {
+		name   string
+		script string
+		run    func(r *Registry, ex *executor.Executor, service string) error
+		want   string
+	}{
+		{"Install", "install.sh", func(r *Registry, ex *executor.Executor, s string) error { return r.Install(s, ex) }, "installing pager"},
+		{"Uninstall", "uninstall.sh", func(r *Registry, ex *executor.Executor, s string) error { return r.Uninstall(s, ex) }, "removing pager"},
+		{"Status", "status.sh", func(r *Registry, ex *executor.Executor, s string) error { return r.Status(s, ex) }, "running"},
+	}
+	for _, step := range steps {
+		t.Run(step.name+" runs the service's script", func(t *testing.T) {
+			r, ex, _, out := fixtureRegistry(t)
+			if err := step.run(r, ex, labtest.Service); err != nil {
+				t.Fatalf("%s() error = %v", step.name, err)
+			}
+			if !strings.Contains(out.String(), step.want) {
+				t.Errorf("%s() output = %q, want it to contain %q", step.name, out.String(), step.want)
+			}
+		})
+		t.Run(step.name+" refuses a service that does not exist", func(t *testing.T) {
+			r, ex, _, out := fixtureRegistry(t)
+			err := step.run(r, ex, "ghost")
+			if err == nil || !strings.Contains(err.Error(), `service "ghost" not found`) {
+				t.Errorf("%s(ghost) error = %v", step.name, err)
+			}
+			if out.Len() != 0 {
+				t.Errorf("%s(ghost) ran a script: %q", step.name, out.String())
+			}
+		})
+		t.Run(step.name+" names a script the service lacks", func(t *testing.T) {
+			r, ex, l, _ := fixtureRegistry(t)
+			if err := os.Remove(filepath.Join(l.Root, "src", "services", labtest.Service, step.script)); err != nil {
+				t.Fatal(err)
+			}
+			err := step.run(r, ex, labtest.Service)
+			if err == nil || !strings.Contains(err.Error(), step.script+` not found for service "pager"`) {
+				t.Errorf("%s() error = %v, want it to name the missing %s", step.name, err, step.script)
+			}
+		})
+		t.Run(step.name+" reports a script that fails", func(t *testing.T) {
+			r, ex, l, _ := fixtureRegistry(t)
+			l.Write(t, "src/services/"+labtest.Service+"/"+step.script, "#!/usr/bin/env bash\nexit 4\n")
+			if err := step.run(r, ex, labtest.Service); err == nil {
+				t.Errorf("%s() returned no error for a script that exited 4", step.name)
+			}
+		})
 	}
 }

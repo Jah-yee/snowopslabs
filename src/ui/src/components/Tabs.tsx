@@ -68,7 +68,7 @@ export function Tabs({ tabs, label }: TabsProps) {
   return (
     <>
       <div className="tablist-wrap">
-        <div className="tablist" role="tablist" aria-label={label} onKeyDown={onKeyDown}>
+        <div className="tablist" role="tablist" aria-label={label} tabIndex={-1} onKeyDown={onKeyDown}>
           {tabs.map((t, i) => (
             <button
               key={t.id}

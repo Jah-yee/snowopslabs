@@ -67,6 +67,46 @@ func TestPathValidate(t *testing.T) {
 			wantErr: "action.type is required",
 		},
 		{
+			name: "a check type the path runner cannot grade",
+			path: &Path{
+				Name: "x", DisplayName: "X",
+				Modules: []Module{{Name: "m", Action: Action{Type: "command", Ref: "x"}, Check: Check{Name: "c", Type: "kubectl"}}},
+			},
+			wantErr: `check.type "kubectl" is not supported in a learning path`,
+		},
+		{
+			name: "no check type",
+			path: &Path{
+				Name: "x", DisplayName: "X",
+				Modules: []Module{{Name: "m", Action: Action{Type: "command", Ref: "x"}, Check: Check{Name: "c"}}},
+			},
+			wantErr: "check.type is required",
+		},
+		{
+			name: "an http check with no url",
+			path: &Path{
+				Name: "x", DisplayName: "X",
+				Modules: []Module{{Name: "m", Action: Action{Type: "command", Ref: "x"}, Check: Check{Name: "c", Type: "http"}}},
+			},
+			wantErr: "an http check needs a url",
+		},
+		{
+			name: "a script check with no script",
+			path: &Path{
+				Name: "x", DisplayName: "X",
+				Modules: []Module{{Name: "m", Action: Action{Type: "command", Ref: "x"}, Check: Check{Name: "c", Type: "script"}}},
+			},
+			wantErr: "a script check needs a script",
+		},
+		{
+			name: "a promql check with no threshold",
+			path: &Path{
+				Name: "x", DisplayName: "X",
+				Modules: []Module{{Name: "m", Action: Action{Type: "command", Ref: "x"}, Check: Check{Name: "c", Type: "promql", Query: "up"}}},
+			},
+			wantErr: "a promql check needs query, operator and value",
+		},
+		{
 			name: "unsafe intro path with dotdot",
 			path: &Path{
 				Name: "x", DisplayName: "X",
@@ -180,5 +220,21 @@ func TestEngineLoadPath_Valid(t *testing.T) {
 	}
 	if len(p.Modules) != 1 {
 		t.Errorf("expected 1 module, got %d", len(p.Modules))
+	}
+}
+
+// A check of each supported type, with the fields that type needs, validates.
+func TestPathValidate_AcceptsEachSupportedCheckType(t *testing.T) {
+	for _, c := range []Check{
+		{Name: "c", Type: "http", URL: "http://x.test/health", ExpectStatus: 200},
+		{Name: "c", Type: "script", Script: "checks/c.sh"},
+		{Name: "c", Type: "promql", Query: "up", Operator: ">=", Value: "1"},
+	} {
+		t.Run(c.Type, func(t *testing.T) {
+			p := &Path{Name: "x", DisplayName: "X", Modules: []Module{{Name: "m", Action: Action{Type: "command", Ref: "x"}, Check: c}}}
+			if errs := p.Validate(); len(errs) != 0 {
+				t.Errorf("Validate() = %v, want no errors", errs)
+			}
+		})
 	}
 }

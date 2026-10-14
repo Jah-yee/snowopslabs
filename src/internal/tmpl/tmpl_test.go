@@ -99,6 +99,13 @@ func TestValidate(t *testing.T) {
 		{name: "typo in a workload var", input: "{{.WorkloadNam}}", wantErr: "WorkloadNam"},
 		{name: "unknown var lists the known ones", input: "{{.Nope}}", wantErr: "DomainSuffix"},
 		{name: "typo among valid vars is still caught", input: "{{.WorkloadName}} in {{.Wrongo}}", wantErr: "Wrongo"},
+
+		// Only the inner placeholder of a nested pair is filled, which leaves
+		// a raw one in what is applied to the cluster.
+		{name: "a placeholder inside another", input: "{{.Workload{{.ProjectRoot}}Name}}", wantErr: "opened inside another"},
+		{name: "a placeholder wrapped in braces", input: "{{ {{.WorkloadName}} }}", wantErr: "opened inside another"},
+		{name: "two placeholders side by side", input: "{{.WorkloadName}}{{.WorkloadNamespace}}"},
+		{name: "a JSON object next to a placeholder", input: `{"app": "{{.WorkloadName}}"}`},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -184,6 +191,27 @@ func TestExpand(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := Expand(tc.input, testContext(), tc.extra); got != tc.want {
 				t.Errorf("Expand(%q) = %q, want %q", tc.input, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestExpandVars(t *testing.T) {
+	vars := map[string]string{"WorkloadName": "zz-app", "SinceActivation": "37m", "MaxReplicas": "6"}
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "empty input", input: "", want: ""},
+		{name: "no braces", input: "plain", want: "plain"},
+		{name: "every name comes from the map", input: "{{.WorkloadName}}[{{.SinceActivation}}] max={{.MaxReplicas}}", want: "zz-app[37m] max=6"},
+		{name: "a name the map lacks is left for the next tool", input: "{{.DomainSuffix}} {{ $value }}", want: "{{.DomainSuffix}} {{ $value }}"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := ExpandVars(tc.input, vars); got != tc.want {
+				t.Errorf("ExpandVars(%q) = %q, want %q", tc.input, got, tc.want)
 			}
 		})
 	}

@@ -99,8 +99,12 @@ else
     echo "ERROR: apps/${APP_NAME} has its own chart, so app.env must define HELM_VALUES" >&2
     exit 1
   fi
+  # The lab's host and ingress class override the chart's defaults, which name
+  # the default lab's domain and traefik.
   VALUES_ARGS=(-f "${HELM_CHART_PATH}/${HELM_VALUES}" --set namespace.create=false
-    --set "image.id=${IMAGE_ID}")
+    --set "image.id=${IMAGE_ID}"
+    --set "ingress.className=${INGRESS_CLASS:-traefik}"
+    --set "ingress.host=${APP_NAME}.${DOMAIN_SUFFIX:-${CLUSTER_NAME:-snowops}.localhost}")
 fi
 
 case "${COMMAND}" in

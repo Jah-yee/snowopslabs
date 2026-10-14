@@ -133,3 +133,72 @@ func TestVersionSkew(t *testing.T) {
 		})
 	}
 }
+
+// A mistake in how a command was typed shows that command's usage; a command
+// that was typed correctly and then failed does not bury its error under it.
+func TestRoot_UsageIsShownOnlyForUsageMistakes(t *testing.T) {
+	tests := []struct {
+		name      string
+		args      []string
+		wantUsage string // "" means no usage text at all
+		wantErr   string
+	}{
+		{"a missing argument", []string{"scenario", "verify"}, "labctl scenario verify [scenario-name]", "accepts 1 arg(s), received 0"},
+		{"too many arguments", []string{"incident", "inject", "a", "b"}, "labctl incident inject [fault-name]", "accepts at most 1 arg(s), received 2"},
+		{"an unknown flag", []string{"scenario", "up", "demo-scenario", "--bogus"}, "labctl scenario up [scenario-name]", "unknown flag: --bogus"},
+		{"an unknown subcommand argument", []string{"challenge", "info"}, "labctl challenge info <name>", "accepts 1 arg(s), received 0"},
+		{"a correct command that fails", []string{"scenario", "up", "ghost"}, "", `scenario "ghost" not found`},
+		{"a correct command that fails before its engines load", []string{"runs", "logs", "ghost"}, "", "ghost"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := newTerminal(t).run(tt.args...)
+			if r.exitCode() != 1 {
+				t.Fatalf("exit code = %d, want 1\nstdout:\n%s", r.exitCode(), r.stdout)
+			}
+			if !strings.Contains(r.stderr, tt.wantErr) {
+				t.Errorf("stderr = %q, want it to say %q", r.stderr, tt.wantErr)
+			}
+			shown := strings.Contains(r.stderr, "Usage:")
+			if tt.wantUsage == "" {
+				if shown {
+					t.Errorf("a runtime failure printed the usage text:\n%s", r.stderr)
+				}
+				return
+			}
+			if !shown || !strings.Contains(r.stderr, tt.wantUsage) {
+				t.Errorf("stderr does not show the usage %q:\n%s", tt.wantUsage, r.stderr)
+			}
+		})
+	}
+}
+
+// Every golden transcript belongs to a test. One left behind by a renamed or
+// deleted test would be reviewed and updated for nothing.
+func TestGoldenTranscripts_EachBelongsToATest(t *testing.T) {
+	sources, err := filepath.Glob("*_test.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var code strings.Builder
+	for _, src := range sources {
+		data, err := os.ReadFile(src)
+		if err != nil {
+			t.Fatal(err)
+		}
+		code.Write(data)
+	}
+	goldens, err := filepath.Glob(filepath.Join("testdata", "golden", "*.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(goldens) == 0 {
+		t.Fatal("no golden transcripts found under testdata/golden")
+	}
+	for _, g := range goldens {
+		name := strings.TrimSuffix(filepath.Base(g), ".txt")
+		if !strings.Contains(code.String(), `"`+name+`"`) {
+			t.Errorf("%s is not written by any test: delete it, or restore the test that owns it", g)
+		}
+	}
+}

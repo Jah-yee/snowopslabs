@@ -9,6 +9,7 @@ import (
 
 	"github.com/sagar2395/snowopslabs/internal/config"
 	"github.com/sagar2395/snowopslabs/internal/k8s"
+	"github.com/sagar2395/snowopslabs/internal/labtest"
 )
 
 func TestPlatformState(t *testing.T) {
@@ -65,6 +66,39 @@ func TestPrintUnreachable(t *testing.T) {
 			if strings.Contains(out.String(), "not installed") {
 				t.Errorf("an unreachable cluster must not report components as not installed:\n%s", out.String())
 			}
+		})
+	}
+}
+
+func TestStatus(t *testing.T) {
+	tests := []struct {
+		name    string
+		prepare func(l *terminal)
+		golden  string
+		want    []string
+	}{
+		{"a healthy lab", nil, "status_healthy",
+			[]string{"Context:  k3d-contract", "Nodes:    2", "demo-app             replicas=2 ready=2"}},
+		{"an app that is not deployed", func(l *terminal) { l.undeploy(labtest.App) }, "status_app_not_deployed",
+			[]string{"demo-app             [not deployed]", "go-api               replicas=2 ready=2"}},
+		{"no cluster was ever created", func(l *terminal) {
+			l.Stub(l.t, "kubectl", "#!/bin/sh\necho 'error: current-context is not set' >&2\nexit 1\n")
+		},
+			"status_no_cluster", []string{"NO CLUSTER (no kubectl context is set)", "Create the lab with: labctl init"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := newTerminal(t)
+			if tt.prepare != nil {
+				tt.prepare(l)
+			}
+			r := l.mustRun("status")
+			for _, want := range tt.want {
+				if !strings.Contains(r.stdout, want) {
+					t.Errorf("status does not print %q:\n%s", want, r.stdout)
+				}
+			}
+			l.golden(tt.golden, r)
 		})
 	}
 }

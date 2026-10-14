@@ -1,0 +1,4 @@
+#!/bin/sh
+# A stand-in for k3d that accepts every call.
+[ -n "${STUB_LOG:-}" ] && printf '%s\t%s\n' k3d "$*" >>"$STUB_LOG"
+exit 0

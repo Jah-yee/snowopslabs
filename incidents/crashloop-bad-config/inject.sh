@@ -3,7 +3,8 @@ set -euo pipefail
 
 NS="${TARGET_NAMESPACE:-go-api}"
 DEPLOY="${TARGET_WORKLOAD:-go-api}"
-MARK="labfault-crashloop-bad-config"
+FAULT="crashloop-bad-config"
+LIB="$(cd "$(dirname "$0")/../_lib" && pwd)"
 # A fat-fingered port: one zero too many. Every demo app reads PORT at startup
 # and exits with an error naming it, so the crash leaves evidence in the logs.
 BAD_PORT="80800"
@@ -13,8 +14,8 @@ port_now() {
     -o 'jsonpath={.spec.template.spec.containers[0].env[?(@.name=="PORT")].value}' 2>/dev/null || true
 }
 
-# Guard on the fault itself, not on its bookkeeping annotation: `kubectl
-# rollout undo` can restore a stale mark onto a Deployment the fault is not in.
+# Guard on the fault itself, not on its record: a record can outlive a hand
+# fix, and a guard on it then refuses to inject on a healthy Deployment.
 if [ "$(port_now)" = "$BAD_PORT" ]; then
   echo "Fault already injected — nothing to do."
   exit 0
@@ -24,16 +25,17 @@ fi
 # Tolerate a missing prometheus operator — the fault still works unpaged.
 MON_NS="${MONITORING_NAMESPACE:-monitoring}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-# shellcheck source=/dev/null
-. "$(cd "$(dirname "$0")/../_lib" && pwd)/render.sh"
+# shellcheck source=incidents/_lib/render.sh
+. "$LIB/render.sh"
+# shellcheck source=incidents/_lib/state.sh
+. "$LIB/state.sh"
 render_targeted "$SCRIPT_DIR/alerts/rule.yaml" | kubectl apply -n "$MON_NS" -f - 2>/dev/null ||
   echo "Note: alert rule not installed (monitoring stack missing?) — continuing without paging."
 
 # Record the PORT the workload shipped so resolve puts back exactly that; "none"
 # means the app set no PORT of its own and resolve removes the variable again.
 ORIG_PORT="$(port_now)"
-kubectl -n "$NS" annotate deploy "$DEPLOY" \
-  "$MARK-original-port=${ORIG_PORT:-none}" "$MARK=injected" --overwrite >/dev/null
+fault_state_save "$FAULT" "original-port=${ORIG_PORT:-none}"
 
 # Nothing printed here names the fault: a progress line saying which setting
 # changed hands over the answer before the drill starts.

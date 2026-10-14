@@ -54,9 +54,13 @@ teaches learners to distrust the grader.
 
 1. **Target only the demo apps** (`go-api`, `echo-server`) or a dedicated fault
    namespace. Never platform components, never `kube-system`.
-2. **Record what you change.** Annotate the touched resource with
-   `labfault-<name>=...` and stash originals in `labfault-<name>-original-*`, so
-   `resolve.sh` can undo it without guessing.
+2. **Record what you change, away from what you break.** Save originals with
+   `fault_state_save` from `incidents/_lib/state.sh` (a ConfigMap
+   `labfault-<name>` in `kube-system`); `resolve.sh` reads them with
+   `fault_state_get` and ends with `fault_state_clear`. Never annotate or label
+   the object the fault breaks — the answer would be in the learner's first
+   `kubectl describe`. An object the fault adds to the workload's namespace gets
+   a real-world name and no `labfault` label, and its name goes in the record.
 3. **`resolve.sh` must never fail the user.** It runs after any amount of manual
    fixing, and `incident status` runs it again after a hand fix passes, to
    tidy up. Every step tolerates "already fixed" — `--ignore-not-found`, guards,
@@ -86,7 +90,13 @@ querying `ALERTMANAGER_URL`.
 
 ## Verify your work
 
+Write the hermetic tests first
+([Testing a fault](../../../incidents/README.md#testing-a-fault)): the check
+against a solved lab, the injected lab and each wrong fix; inject and resolve
+against a scripted `kubectl`.
+
 ```bash
+bats src/test/shell/incident_checks.bats src/test/shell/incident_faults.bats
 labctl validate
 labctl incident inject my-fault
 labctl incident status              # must FAIL while the fault is live
@@ -129,6 +139,10 @@ longer be scored honestly.
 - [ ] The symptom is findable through the lab's observability, without reading
       `inject.sh`.
 - [ ] `resolve` works from all four states, leaving no `labfault-*` residue.
+- [ ] The check has a test for solved, injected and each wrong fix; inject and
+      resolve are in `incident_faults.bats`, including the answer-leak tests.
+- [ ] `test/solve.sh` applies the hand fix from `solution.md`, and
+      `make test-cluster ITEM=incident/<name>` passes on a lab.
 - [ ] Scripts are POSIX and pass `make lint-shell`.
 - [ ] `alerts/rule.yaml` present if `expectAlert` is set.
 - [ ] Listed in the fault table in [incidents/README.md](../../../incidents/README.md).

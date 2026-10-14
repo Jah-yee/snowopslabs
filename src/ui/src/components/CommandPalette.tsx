@@ -84,7 +84,7 @@ export function CommandPalette({ open, onClose, commands }: CommandPaletteProps)
   }
 
   return (
-    <div className="cmdk-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}>
+    <div className="cmdk-overlay" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="cmdk-panel" role="dialog" aria-modal="true" aria-label="Command palette">
         <div className="cmdk-input-wrap">
           <Icon name="search" size={16} className="cmdk-search-icon" />

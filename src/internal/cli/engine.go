@@ -102,7 +102,7 @@ func streamSubmittedRun(ctx context.Context, out io.Writer, st *store.Store, ver
 	if err != nil {
 		return err // includes the actionable *run.LockConflictError message
 	}
-	fmt.Fprintf(out, "%s started (run %s). Following output — Ctrl-C detaches; the run keeps going.\n\n", verb, id)
+	fmt.Fprintf(out, "%s started (run %s). Following output — Ctrl-C stops it.\n\n", verb, id)
 
 	if err := streamRunLogs(ctx, out, st, id, true); err != nil {
 		return err

@@ -1,0 +1,23 @@
+$ labctl teardown
+=== Deactivating scenarios and incidents ===
+Deactivated scenarios: demo-scenario
+Deactivated incident: demo-fault
+
+=== Destroying all apps ===
+Destroying demo-app...
+deploy destroy demo-app
+Destroying go-api...
+deploy destroy go-api
+
+=== Removing platform ===
+Uninstalling grafana...
+removing grafana
+Uninstalling metrics (prometheus)...
+removing prometheus
+Uninstalling ingress (traefik)...
+removing traefik
+
+Platform uninstalled.
+
+=== Destroying runtime ===
+cluster down

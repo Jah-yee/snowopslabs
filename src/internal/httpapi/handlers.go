@@ -42,6 +42,47 @@ func pathName(w http.ResponseWriter, r *http.Request, kind string) (string, bool
 	return name, true
 }
 
+// The known* helpers answer 404 before a route accepts work on something that
+// does not exist. Without them the route answers 202 and the failure only
+// shows up later, in a job the caller may never read.
+
+// knownApp reads the app name from the path and checks apps/ has it.
+func (s *Server) knownApp(w http.ResponseWriter, r *http.Request) (string, bool) {
+	name, ok := pathName(w, r, "app")
+	if !ok {
+		return "", false
+	}
+	if appCfg, err := config.LoadAppConfig(s.cfg.ProjectRoot, name); err != nil || appCfg == nil {
+		respondError(w, r, http.StatusNotFound, "not_found", fmt.Sprintf("app %q not found", name))
+		return "", false
+	}
+	return name, true
+}
+
+func (s *Server) knownScenario(w http.ResponseWriter, r *http.Request, name string) bool {
+	if _, err := s.scenes.Get(name); err != nil {
+		respondError(w, r, http.StatusNotFound, "not_found", fmt.Sprintf("scenario %q not found", name))
+		return false
+	}
+	return true
+}
+
+func (s *Server) knownService(w http.ResponseWriter, r *http.Request, name string) bool {
+	if _, err := s.svcs.Get(name); err != nil {
+		respondError(w, r, http.StatusNotFound, "not_found", fmt.Sprintf("service %q not found", name))
+		return false
+	}
+	return true
+}
+
+func (s *Server) knownRuntime(w http.ResponseWriter, r *http.Request, name string) bool {
+	if !slices.Contains(s.runtimes.Names(), name) {
+		respondError(w, r, http.StatusNotFound, "not_found", fmt.Sprintf("runtime %q not found", name))
+		return false
+	}
+	return true
+}
+
 // StatusResponse represents the overall lab status.
 type StatusResponse struct {
 	DomainSuffix string `json:"domainSuffix"`
@@ -200,7 +241,7 @@ func (s *Server) handleListApps(w http.ResponseWriter, r *http.Request) {
 
 	apps, err := config.ListApps(s.cfg.ProjectRoot)
 	if err != nil {
-		respondError(w, r, http.StatusInternalServerError, "internal_error", err.Error())
+		respondInternal(w, r, err)
 		return
 	}
 
@@ -234,7 +275,7 @@ func (s *Server) handleAppDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleAppDeploy(w http.ResponseWriter, r *http.Request) {
-	name, ok := pathName(w, r, "app")
+	name, ok := s.knownApp(w, r)
 	if !ok {
 		return
 	}
@@ -246,7 +287,7 @@ func (s *Server) handleAppDeploy(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleAppDestroy(w http.ResponseWriter, r *http.Request) {
-	name, ok := pathName(w, r, "app")
+	name, ok := s.knownApp(w, r)
 	if !ok {
 		return
 	}
@@ -258,7 +299,7 @@ func (s *Server) handleAppDestroy(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleAppBuild(w http.ResponseWriter, r *http.Request) {
-	name, ok := pathName(w, r, "app")
+	name, ok := s.knownApp(w, r)
 	if !ok {
 		return
 	}
@@ -655,11 +696,15 @@ func (s *Server) handleScenarioUp(w http.ResponseWriter, r *http.Request) {
 		Params map[string]string `json:"params"`
 		App    string            `json:"app"`
 	}
-	if r.Body != nil {
-		_ = json.NewDecoder(r.Body).Decode(&body) // tolerate an empty body
+	if !decodeBody(w, r, &body, true) {
+		return
 	}
 	if body.App != "" && !isValidName(body.App) {
 		respondError(w, r, http.StatusBadRequest, "invalid_input", fmt.Sprintf("invalid app name %q", body.App))
+		return
+	}
+
+	if !s.knownScenario(w, r, name) {
 		return
 	}
 
@@ -684,6 +729,9 @@ func (s *Server) handleScenarioUp(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleScenarioDown(w http.ResponseWriter, r *http.Request) {
 	name, ok := pathName(w, r, "scenario")
 	if !ok {
+		return
+	}
+	if !s.knownScenario(w, r, name) {
 		return
 	}
 	jobID := s.exec.NextActionID()
@@ -769,6 +817,9 @@ func (s *Server) handleServiceUp(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if !s.knownService(w, r, name) {
+		return
+	}
 	jobID := s.exec.NextActionID()
 	label := fmt.Sprintf("service-up: %s", name)
 	s.exec.BroadcastStart(jobID, label)
@@ -781,6 +832,9 @@ func (s *Server) handleServiceUp(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleServiceDown(w http.ResponseWriter, r *http.Request) {
 	name, ok := pathName(w, r, "service")
 	if !ok {
+		return
+	}
+	if !s.knownService(w, r, name) {
 		return
 	}
 	jobID := s.exec.NextActionID()
@@ -1012,6 +1066,9 @@ func (s *Server) handleRuntimeActivate(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if !s.knownRuntime(w, r, name) {
+		return
+	}
 	jobID := s.exec.NextActionID()
 	go func() {
 		_ = s.runtimes.ActivateWith(jobID, name, s.exec)
@@ -1022,6 +1079,9 @@ func (s *Server) handleRuntimeActivate(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleRuntimeDeactivate(w http.ResponseWriter, r *http.Request) {
 	name, ok := pathName(w, r, "runtime")
 	if !ok {
+		return
+	}
+	if !s.knownRuntime(w, r, name) {
 		return
 	}
 	jobID := s.exec.NextActionID()

@@ -243,8 +243,12 @@ var teardownCmd = &cobra.Command{
 			_ = scriptExec.RunScript("src/engine/deploy.sh", "destroy", app)
 		}
 
+		// A failed uninstall does not stop the teardown: destroying the
+		// cluster next removes whatever is left.
 		fmt.Println("\n=== Removing platform ===")
-		_ = platformDownRun(cmd, args)
+		if err := platformDownRun(cmd, args); err != nil {
+			fmt.Printf("Warning: %v\n", err)
+		}
 
 		fmt.Println("\n=== Destroying runtime ===")
 		return scriptExec.RunScript(fmt.Sprintf("runtimes/%s/down.sh", cfg.Profile))

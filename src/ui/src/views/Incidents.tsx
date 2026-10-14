@@ -376,7 +376,7 @@ export function Incidents({ notify, requestConfirm }: IncidentsProps) {
 
       {/* Detail modal */}
       {detail && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setDetail(null) }}>
+        <div className="modal-overlay" role="presentation" onClick={e => { if (e.target === e.currentTarget) setDetail(null) }}>
           <div className="modal-card" role="dialog" aria-modal="true" aria-label={`${detail.displayName || detail.name} details`}>
             <button ref={modalCloseRef} className="modal-close" aria-label="Close details" onClick={() => setDetail(null)}><Icon name="x" size={18} /></button>
             <div className="modal-header">

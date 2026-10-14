@@ -1,0 +1,187 @@
+$ labctl scenario list
+NAME            DISPLAY NAME    CATEGORY      SOURCE   STATUS
+demo-scenario   Demo scenario   reliability   repo     inactive
+drill           Drill           reliability   repo     inactive
+
+See what a scenario installs, its objectives and checks:
+  labctl scenario info <name>
+
+$ labctl scenario info drill
+Name:        drill
+Display:     Drill
+Category:    reliability
+Description: Practise on demo-app
+Status:      inactive
+
+Prerequisites (apps):
+  - demo-app
+
+Parameters (override with --set Name=value):
+  Level                  Difficulty (default: 1)
+                           How hard the drill is
+
+Objectives:
+  - Bring demo-app back
+
+Components (1):
+  - setup [script]
+
+Checks (1) — run 'labctl scenario verify drill':
+  - fixed [script]
+
+$ labctl scenario status
+No scenarios are currently active.
+Use 'labctl scenario list' to see available scenarios.
+
+$ labctl scenario up drill
+activate drill started (run <run>). Following output — Ctrl-C stops it.
+
+Run <run> — scenario.activate drill (<state>)
+
+Activating scenario: Drill
+  Practise on demo-app
+
+Objectives:
+  - Bring demo-app back
+
+Parameters:
+  - Level = 1
+
+[1/1] Installing setup (script)...
+› scenarios/drill/setup.sh
+drill set up for demo-app
+
+This scenario has 1 verifiable checks. Run: labctl scenario verify drill
+Pods may still be starting — add --watch to wait for them:
+  labctl scenario verify drill --watch
+
+recorded 1 component(s) in the inventory
+
+Succeeded in <dur>.
+
+$ labctl scenario list
+NAME            DISPLAY NAME    CATEGORY      SOURCE   STATUS
+demo-scenario   Demo scenario   reliability   repo     inactive
+drill           Drill           reliability   repo     active
+
+See what a scenario installs, its objectives and checks:
+  labctl scenario info <name>
+
+$ labctl scenario status
+NAME    CATEGORY      STATUS
+drill   reliability   active
+
+Inspect a scenario: labctl scenario info <name>
+
+$ labctl scenario status drill
+drill (reliability): active
+
+$ labctl scenario verify drill
+FAIL  fixed  (script)  error: bash: exit status 1: the drill is not solved yet  <dur>
+[stderr]
+
+Next step(s):
+  → fixed: remove the BROKEN marker
+Error: 1 of 1 checks failed
+[exit 1]
+
+$ labctl scenario verify drill
+PASS  fixed  (script)  got: exit 0, want: exit 0  <dur>
+All 1 checks passed.
+
+$ labctl scenario up drill
+[stderr]
+Scenario drill is already active. Re-run with --force to reinstall.
+
+$ labctl scenario up drill --force
+activate drill started (run <run>). Following output — Ctrl-C stops it.
+
+Run <run> — scenario.activate drill (<state>)
+
+Activating scenario: Drill
+  Practise on demo-app
+
+Objectives:
+  - Bring demo-app back
+
+Parameters:
+  - Level = 1
+
+[1/1] Installing setup (script)...
+› scenarios/drill/setup.sh
+drill set up for demo-app
+
+This scenario has 1 verifiable checks. Run: labctl scenario verify drill
+Pods may still be starting — add --watch to wait for them:
+  labctl scenario verify drill --watch
+
+recorded 1 component(s) in the inventory
+
+Succeeded in <dur>.
+
+$ labctl scenario reset drill
+Resetting drill — tearing down first…
+
+deactivate drill started (run <run>). Following output — Ctrl-C stops it.
+
+Run <run> — scenario.deactivate drill (<state>)
+
+Deactivating scenario: Drill
+
+[1/1] Uninstalling setup...
+› scenarios/drill/teardown.sh
+drill torn down for demo-app
+
+Scenario deactivated.
+
+Succeeded in <dur>.
+
+Re-activating drill…
+
+activate drill started (run <run>). Following output — Ctrl-C stops it.
+
+Run <run> — scenario.activate drill (<state>)
+
+Activating scenario: Drill
+  Practise on demo-app
+
+Objectives:
+  - Bring demo-app back
+
+Parameters:
+  - Level = 1
+
+[1/1] Installing setup (script)...
+› scenarios/drill/setup.sh
+drill set up for demo-app
+
+This scenario has 1 verifiable checks. Run: labctl scenario verify drill
+Pods may still be starting — add --watch to wait for them:
+  labctl scenario verify drill --watch
+
+recorded 1 component(s) in the inventory
+
+Succeeded in <dur>.
+
+$ labctl scenario down drill
+deactivate drill started (run <run>). Following output — Ctrl-C stops it.
+
+Run <run> — scenario.deactivate drill (<state>)
+
+Deactivating scenario: Drill
+
+[1/1] Uninstalling setup...
+› scenarios/drill/teardown.sh
+drill torn down for demo-app
+
+Scenario deactivated.
+
+Succeeded in <dur>.
+
+$ labctl scenario down drill
+[stderr]
+Scenario drill is not active.
+
+$ labctl scenario status
+No scenarios are currently active.
+Use 'labctl scenario list' to see available scenarios.

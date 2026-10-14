@@ -1,0 +1,15 @@
+apiVersion: scenario.snowops.net/v2
+name: demo-scenario
+displayName: Demo scenario
+description: A scenario for {{.WorkloadName}}
+category: reliability
+components:
+  - name: setup
+    type: script
+    script: setup.sh
+    uninstallScript: teardown.sh
+checks:
+  - name: marker-present
+    type: script
+    script: checks/marker.sh
+    remediation: run the setup again

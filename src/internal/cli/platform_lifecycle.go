@@ -25,7 +25,6 @@ var platformTeardownCmd = &cobra.Command{
 and reports anything it could not remove — instead of exiting 0 and hoping. Each
 uninstall is a recorded, cancellable run. Components installed outside labctl are
 not in the inventory and are left untouched.`,
-	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		return platformTeardown(cmd)
 	},

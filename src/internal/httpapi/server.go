@@ -8,6 +8,7 @@ package httpapi
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -157,6 +158,41 @@ func (s *Server) Start(addr string) error {
 	return s.httpServer(addr).ListenAndServe()
 }
 
+// shutdownGrace is how long a stopping server waits for requests in flight.
+const shutdownGrace = 10 * time.Second
+
+// Serve is Start until ctx is cancelled, then shuts the server down: it stops
+// accepting connections and waits up to shutdownGrace for requests in flight.
+// It returns nil after a clean shutdown.
+func (s *Server) Serve(ctx context.Context, addr string) error {
+	return s.serveUntil(ctx, s.httpServer(addr), func(h *http.Server) error { return h.ListenAndServe() })
+}
+
+// ServeTLS is Serve over HTTPS.
+func (s *Server) ServeTLS(ctx context.Context, addr, certFile, keyFile string) error {
+	return s.serveUntil(ctx, s.httpServer(addr), func(h *http.Server) error { return h.ListenAndServeTLS(certFile, keyFile) })
+}
+
+func (s *Server) serveUntil(ctx context.Context, h *http.Server, listen func(*http.Server) error) error {
+	errc := make(chan error, 1)
+	go func() { errc <- listen(h) }()
+	select {
+	case err := <-errc:
+		return err
+	case <-ctx.Done():
+	}
+	// The command's context is already done; the grace period needs its own.
+	sctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), shutdownGrace)
+	defer cancel()
+	if err := h.Shutdown(sctx); err != nil {
+		return fmt.Errorf("stopping the web UI: %w", err)
+	}
+	if err := <-errc; err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	return nil
+}
+
 // StartTLS starts the server over HTTPS using the given certificate and key.
 func (s *Server) StartTLS(addr, certFile, keyFile string) error {
 	return s.httpServer(addr).ListenAndServeTLS(certFile, keyFile)
@@ -303,6 +339,7 @@ func (s *Server) registerAPI(api *mux.Router) {
 	api.Use(s.accessLogMiddleware)
 	api.Use(corsMiddleware)
 	api.Use(jsonMiddleware)
+	api.Use(limitBodyMiddleware)
 	// With LABCTL_AUTH on, every route except the auth endpoints needs a
 	// session, and operator-only changes need the operator role.
 	api.Use(s.authMiddleware)
@@ -358,14 +395,14 @@ func (s *Server) registerAPI(api *mux.Router) {
 	api.HandleFunc("/challenges", s.handleListChallenges).Methods("GET", "OPTIONS")
 	api.HandleFunc("/challenges/status", s.handleChallengeStatus).Methods("GET", "OPTIONS")
 	api.HandleFunc("/challenges/history", s.handleChallengeHistory).Methods("GET", "OPTIONS")
-	api.HandleFunc("/challenges/complete", s.handleChallengeMarkComplete).Methods("POST", "OPTIONS")
+	api.HandleFunc("/challenges/complete", s.handleChallengeComplete).Methods("POST", "OPTIONS")
 	api.HandleFunc("/challenges/{name}", s.handleChallengeInfo).Methods("GET", "OPTIONS")
 	api.HandleFunc("/learn/paths", s.handleLearnPaths).Methods("GET", "OPTIONS")
 	api.HandleFunc("/learn/paths/{name}", s.handleLearnPath).Methods("GET", "OPTIONS")
 	api.HandleFunc("/learn/paths/{name}/start", s.handleLearnStart).Methods("POST", "OPTIONS")
 	api.HandleFunc("/learn/paths/{name}/reset", s.handleLearnReset).Methods("POST", "OPTIONS")
 	api.HandleFunc("/learn/paths/{name}/progress", s.handleLearnProgress).Methods("GET", "OPTIONS")
-	api.HandleFunc("/learn/paths/{name}/complete", s.handleLearnMarkComplete).Methods("POST", "OPTIONS")
+	api.HandleFunc("/learn/paths/{name}/complete", s.handleLearnComplete).Methods("POST", "OPTIONS")
 	api.HandleFunc("/services", s.handleListServices).Methods("GET", "OPTIONS")
 	api.HandleFunc("/services/{name}/up", s.handleServiceUp).Methods("POST", "OPTIONS")
 	api.HandleFunc("/services/{name}/down", s.handleServiceDown).Methods("POST", "OPTIONS")

@@ -101,7 +101,7 @@ func (s *Server) handleRunsList(w http.ResponseWriter, r *http.Request) {
 	}
 	runs, err := s.runStore.ListRuns(r.Context(), filter)
 	if err != nil {
-		respondError(w, r, http.StatusInternalServerError, "internal_error", err.Error())
+		respondInternal(w, r, err)
 		return
 	}
 	views := make([]runView, 0, len(runs))
@@ -123,10 +123,14 @@ func (s *Server) handleRunGet(w http.ResponseWriter, r *http.Request) {
 		respondRunLookupError(w, r, err)
 		return
 	}
-	steps, err := s.runStore.ListSteps(r.Context(), id)
-	if err != nil {
-		respondError(w, r, http.StatusInternalServerError, "internal_error", err.Error())
-		return
+	// A hidden run's steps are named by its script, so they are withheld too.
+	var steps []store.Step
+	if !rec.Hidden() {
+		steps, err = s.runStore.ListSteps(r.Context(), id)
+		if err != nil {
+			respondInternal(w, r, err)
+			return
+		}
 	}
 	detail := runDetailView{runView: toRunView(rec), Steps: make([]stepView, 0, len(steps))}
 	for _, st := range steps {
@@ -157,9 +161,14 @@ func (s *Server) handleRunLogs(w http.ResponseWriter, r *http.Request) {
 		respondRunLookupError(w, r, err)
 		return
 	}
+	if rec.Hidden() {
+		respondError(w, r, http.StatusForbidden, "hidden_run",
+			"this run injected a silent incident: its output is withheld so it cannot name the fault")
+		return
+	}
 	lines, err := s.runStore.ReadLogs(r.Context(), id, after, 1000)
 	if err != nil {
-		respondError(w, r, http.StatusInternalServerError, "internal_error", err.Error())
+		respondInternal(w, r, err)
 		return
 	}
 	out := runLogsView{RunID: id, Status: string(rec.Status), NextAfter: after, Lines: make([]logLineView, 0, len(lines))}
@@ -193,12 +202,12 @@ func (s *Server) handleRunCancel(w http.ResponseWriter, r *http.Request) {
 	if _, err := s.runStore.AppendLogs(r.Context(), id, []store.LogLine{{
 		Stream: store.StreamSystem, Text: "cancellation requested via the web UI",
 	}}); err != nil {
-		respondError(w, r, http.StatusInternalServerError, "internal_error", err.Error())
+		respondInternal(w, r, err)
 		return
 	}
 	if err := s.runStore.FinishRun(r.Context(), id, store.StatusCancelled, nil,
 		"cancelled by user", time.Now(), rec.Duration); err != nil {
-		respondError(w, r, http.StatusInternalServerError, "internal_error", err.Error())
+		respondInternal(w, r, err)
 		return
 	}
 	respondJSON(w, http.StatusOK, map[string]string{"status": "cancelled", "runId": id})
@@ -209,7 +218,7 @@ func respondRunLookupError(w http.ResponseWriter, r *http.Request, err error) {
 		respondError(w, r, http.StatusNotFound, "not_found", err.Error())
 		return
 	}
-	respondError(w, r, http.StatusInternalServerError, "internal_error", err.Error())
+	respondInternal(w, r, err)
 }
 
 // parseAfter reads the ?after log cursor: empty means "from the start" (0).

@@ -4,16 +4,19 @@ package httpapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/sagar2395/snowopslabs/internal/config"
 	"github.com/sagar2395/snowopslabs/internal/executor"
 	"github.com/sagar2395/snowopslabs/internal/incident"
+	"github.com/sagar2395/snowopslabs/internal/store"
 )
 
 const apiTestFaultYAML = `name: api-fault
@@ -282,4 +285,86 @@ func TestHandleListIncidents(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil || len(resp.Faults) != 1 {
 		t.Fatalf("list response: %v %s", err, w.Body.String())
 	}
+}
+
+// In silent mode the list never says which fault is active: the name stays on
+// the server until the detection check passes.
+func TestListIncidents_SilentModeHidesTheActiveFault(t *testing.T) {
+	s := newContractLab(t)
+	w := do(s, http.MethodPost, "/incidents/"+labFault+"/inject?app="+labApp+"&silent=true", "", nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("silent inject = %d: %s", w.Code, w.Body)
+	}
+
+	var list struct {
+		Active struct {
+			Fault  string `json:"fault"`
+			Silent bool   `json:"silent"`
+		} `json:"active"`
+	}
+	body := do(s, http.MethodGet, "/incidents", "", nil).Body.Bytes()
+	if err := json.Unmarshal(body, &list); err != nil {
+		t.Fatalf("decoding %s: %v", body, err)
+	}
+	if list.Active.Fault == labFault || !list.Active.Silent {
+		t.Errorf("active = %+v, want the fault's name hidden and silent=true", list.Active)
+	}
+
+	// Once it is not silent, the list names it again.
+	if w := do(s, http.MethodPost, "/incidents/"+labFault+"/inject?app="+labApp+"&force=true", "", nil); w.Code != http.StatusOK {
+		t.Fatalf("inject = %d: %s", w.Code, w.Body)
+	}
+	body = do(s, http.MethodGet, "/incidents", "", nil).Body.Bytes()
+	if err := json.Unmarshal(body, &list); err != nil {
+		t.Fatal(err)
+	}
+	if list.Active.Fault != labFault {
+		t.Errorf("active fault = %q for an incident that is not silent, want %q", list.Active.Fault, labFault)
+	}
+}
+
+// A silent inject from the web UI broadcasts nothing that names the fault: no
+// job label and no script output.
+func TestInject_SilentBroadcastsNothing(t *testing.T) {
+	s := newContractLab(t)
+	writeLabFile(t, filepath.Join(s.cfg.ProjectRoot, "incidents", labFault, "inject.sh"),
+		script+"echo 'breaking the demo-fault selector'\n")
+	events := s.exec.Broadcast.Subscribe()
+	defer s.exec.Broadcast.Unsubscribe(events)
+
+	w := do(s, http.MethodPost, "/incidents/"+labFault+"/inject?app="+labApp+"&silent=true", "", nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("silent inject = %d: %s", w.Code, w.Body)
+	}
+	for {
+		select {
+		case ev := <-events:
+			if strings.Contains(fmt.Sprintf("%+v", ev), labFault) {
+				t.Fatalf("a broadcast names the silent fault: %+v", ev)
+			}
+		default:
+			return
+		}
+	}
+}
+
+// The history of a silent inject withholds its steps and output.
+func TestRuns_HiddenRunWithholdsItsOutput(t *testing.T) {
+	s := newContractLab(t)
+	now := time.Now()
+	if err := s.runStore.CreateRun(t.Context(), store.Run{ID: "run-9", Kind: "incident.inject", Target: store.HiddenTarget, Status: store.StatusQueued, QueuedAt: now}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.runStore.AppendLogs(t.Context(), "run-9", []store.LogLine{{At: now, Stream: store.StreamStdout, Text: "breaking demo-fault"}}); err != nil {
+		t.Fatal(err)
+	}
+
+	if body := do(s, http.MethodGet, "/runs", "", nil).Body.String(); !strings.Contains(body, `"target":"(hidden)"`) {
+		t.Errorf("the run list does not show the hidden target: %s", body)
+	}
+	detail := do(s, http.MethodGet, "/runs/run-9", "", nil)
+	if !strings.Contains(detail.Body.String(), `"steps":[]`) {
+		t.Errorf("the hidden run's steps were sent: %s", detail.Body)
+	}
+	assertProblem(t, do(s, http.MethodGet, "/runs/run-9/logs", "", nil), http.StatusForbidden, "hidden_run", apiPrefix+"/runs/run-9/logs")
 }

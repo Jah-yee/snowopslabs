@@ -109,8 +109,19 @@ func (s *Service) ActivateWithParams(ctx context.Context, name string, force boo
 	})
 }
 
-// Deactivate submits a scenario teardown as one recorded run.
+// Deactivate submits a scenario teardown as one recorded run. A component that
+// will not uninstall fails the run and leaves the scenario active.
 func (s *Service) Deactivate(ctx context.Context, name string) (string, error) {
+	return s.deactivate(ctx, name, false)
+}
+
+// ForceDeactivate is Deactivate that marks the scenario inactive even when a
+// component will not uninstall.
+func (s *Service) ForceDeactivate(ctx context.Context, name string) (string, error) {
+	return s.deactivate(ctx, name, true)
+}
+
+func (s *Service) deactivate(ctx context.Context, name string, force bool) (string, error) {
 	sc, err := s.lookup(name)
 	if err != nil {
 		return "", err
@@ -121,7 +132,11 @@ func (s *Service) Deactivate(ctx context.Context, name string) (string, error) {
 			s.scenes.SetOutput(out)
 			defer s.scenes.SetOutput(nil)
 			exec := s.newExec(fctx, out)
-			if err := s.scenes.Down(name, exec); err != nil {
+			down := s.scenes.Down
+			if force {
+				down = s.scenes.ForceDown
+			}
+			if err := down(name, exec); err != nil {
 				return err
 			}
 			s.removeComponents(fctx, sc)

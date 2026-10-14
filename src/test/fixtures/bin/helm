@@ -1,0 +1,4 @@
+#!/bin/sh
+# A stand-in for helm that accepts every call.
+[ -n "${STUB_LOG:-}" ] && printf '%s\t%s\n' helm "$*" >>"$STUB_LOG"
+exit 0

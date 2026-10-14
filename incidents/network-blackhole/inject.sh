@@ -4,9 +4,35 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 NS="${TARGET_NAMESPACE:-go-api}"
 DEPLOY="${TARGET_WORKLOAD:-go-api}"
+FAULT="network-blackhole"
+POLICY="default-deny-ingress"
+LIB="$(cd "$SCRIPT_DIR/../_lib" && pwd)"
 
-# shellcheck source=/dev/null
-. "$(cd "$SCRIPT_DIR/../_lib" && pwd)/render.sh"
+# shellcheck source=incidents/_lib/render.sh
+. "$LIB/render.sh"
+# shellcheck source=incidents/_lib/state.sh
+. "$LIB/state.sh"
+
+# Guard on the fault itself: a policy of this name that admits no ingress is
+# the fault, whoever applied it. One that carries rules is somebody's working
+# policy unless this fault recorded creating it, and is not overwritten.
+EXISTING="$(kubectl -n "$NS" get networkpolicy "$POLICY" \
+  -o 'jsonpath={.spec.policyTypes}{"|"}{.spec.ingress}' 2>/dev/null || true)"
+case "$EXISTING" in
+  "") ;;
+  *Ingress*"|" | *Ingress*"|[]")
+    echo "Fault already injected — nothing to do."
+    exit 0
+    ;;
+  *)
+    if [ -z "$(fault_state_get "$FAULT" policy)" ]; then
+      echo "ERROR: a NetworkPolicy named $POLICY already exists in $NS and would be overwritten." >&2
+      echo "  Inject into another app, or remove that policy first:" >&2
+      echo "    kubectl -n $NS get networkpolicy $POLICY -o yaml" >&2
+      exit 1
+    fi
+    ;;
+esac
 
 # Arm the paging rule first so the on-call drill measures real detection.
 # Tolerate a missing prometheus operator — the fault still works unpaged.
@@ -17,6 +43,7 @@ render_targeted "$SCRIPT_DIR/alerts/rule.yaml" | kubectl apply -n "$MON_NS" -f -
 # Nothing printed here names the fault: the brief is fault.yaml's description
 # and the page this armed.
 echo "Applying a network configuration change in $NS..."
+fault_state_save "$FAULT" "policy=$POLICY"
 render_targeted "$SCRIPT_DIR/manifests/deny-ingress.yaml" | kubectl apply -f - >/dev/null
 
 # A NetworkPolicy only governs NEW connections. The ingress controller keeps a

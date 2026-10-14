@@ -1,0 +1,102 @@
+# Keeping the tests honest (RFC 0001, phase 5).
+#
+# Nightly: the Go tests three times in shuffled order and the browser journeys
+# three times each, so a flaky test shows up here before it blocks a pull
+# request; and the time budget, which fails a test that runs long.
+# Weekly: mutation testing of the core packages, with a floor on the share of
+# mutants the tests kill.
+name: test-health
+
+on:
+  schedule:
+    - cron: '23 2 * * *' # nightly at 02:23 UTC
+    - cron: '7 5 * * 0'  # Sundays at 05:07 UTC: mutation testing
+  workflow_dispatch: {}
+
+env:
+  GO_VERSION: '1.26'
+  NODE_VERSION: '22'
+
+jobs:
+  flake-hunt:
+    name: Go tests x3, shuffled
+    if: github.event.schedule != '7 5 * * 0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          check-latest: true
+          cache: true
+      - run: make flake-hunt
+
+  time-budget:
+    name: Go test time per test
+    if: github.event.schedule != '7 5 * * 0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          check-latest: true
+          cache: true
+      - run: make time-budget
+
+  journeys-x3:
+    name: UI journeys x3
+    if: github.event.schedule != '7 5 * * 0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          check-latest: true
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: src/ui/package-lock.json
+      - run: npm ci
+        working-directory: src/ui
+      - run: npx playwright install --with-deps chromium
+        working-directory: src/ui
+      - run: npx playwright test --repeat-each=3
+        working-directory: src/ui
+
+  mutation:
+    name: mutation testing (${{ matrix.package }})
+    if: github.event.schedule == '7 5 * * 0' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        # The packages that grade a learner or own a run's lifecycle. The floor
+        # is the share of mutants the tests must kill, a few points under what
+        # they kill today; raise it as tests are added, never lower it.
+        include:
+          - { package: pkg/checks, floor: 95 }
+          - { package: internal/tmpl, floor: 95 }
+          - { package: internal/challenge, floor: 90 }
+          - { package: internal/learn, floor: 90 }
+          - { package: internal/store, floor: 90 }
+          - { package: internal/run, floor: 60 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          check-latest: true
+          cache: true
+      - name: Install gremlins
+        run: go install github.com/go-gremlins/gremlins/cmd/gremlins@v0.5.0
+      - name: Mutate ${{ matrix.package }}
+        working-directory: src
+        run: gremlins unleash --workers 2 --timeout-coefficient 3 --threshold-efficacy ${{ matrix.floor }} ./${{ matrix.package }}

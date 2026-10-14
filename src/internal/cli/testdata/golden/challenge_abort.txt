@@ -1,0 +1,10 @@
+$ labctl challenge abort
+Challenge aborted: demo-challenge
+
+$ labctl challenge history
+CHALLENGE                           DATE       ELAPSED  SCORE    HINTS   OUTCOME
+--------------------------------------------------------------------------------
+demo-challenge                      <date> <dur>       0        0       aborted
+
+$ labctl challenge status
+No challenge is currently active.

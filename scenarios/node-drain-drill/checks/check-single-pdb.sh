@@ -21,9 +21,16 @@ MINE="${APP}-drill-pdb"
 # workload's pods carry. Reading matchLabels.app is enough here: every PDB the
 # lab ships selects on it. custom-columns rather than jsonpath: a jsonpath
 # filter expression cannot also emit newlines portably.
-PDBS="$(kubectl -n "$NS" get pdb --no-headers \
+# A failed query is not "no budgets": without the list nothing says how many
+# select the workload.
+if ! ALL="$(kubectl -n "$NS" get pdb --no-headers \
   -o 'custom-columns=NAME:.metadata.name,APP:.spec.selector.matchLabels.app,OWNER:.metadata.labels.app\.kubernetes\.io/part-of' \
-  2>/dev/null | awk -v app="$APP" '$2 == app { print }' || true)"
+  2>/dev/null)"; then
+  echo "FAIL: could not list the PodDisruptionBudgets in ${NS}." >&2
+  echo "  Is the cluster reachable? kubectl -n $NS get pdb" >&2
+  exit 1
+fi
+PDBS="$(printf '%s\n' "$ALL" | awk -v app="$APP" '$2 == app { print }')"
 MATCHING="$(printf '%s' "$PDBS" | grep -c . || true)"
 
 if [ "${MATCHING:-0}" -le 1 ]; then

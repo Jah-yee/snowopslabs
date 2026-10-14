@@ -71,6 +71,12 @@ stages:
   - name: instruments
     description: Install the replicas-vs-RPS dashboard the drill is read from
     components:
+      # The ScaledObject is the learner's to apply; this removes any left from
+      # an earlier run at activation, and the learner's on teardown.
+      - name: no-autoscaler-yet
+        type: script
+        script: scripts/remove-autoscaler.sh
+        uninstallScript: scripts/remove-autoscaler.sh
       - name: autoscaling-dashboard
         type: grafana-dashboard
         path: dashboards/
@@ -126,7 +132,7 @@ checks:
   - name: latency-did-not-degrade
     pending: true
     type: promql
-    query: 'histogram_quantile(0.99, sum(rate({{.WorkloadMetric}}_bucket{app="{{.WorkloadName}}"}[3m])) by (le)) / clamp_min(histogram_quantile(0.50, sum(rate({{.WorkloadMetric}}_bucket{app="{{.WorkloadName}}"}[3m])) by (le)), 0.001)'
+    query: 'histogram_quantile(0.99, sum(rate({{.WorkloadMetric}}_bucket{app="{{.WorkloadName}}"}[{{.SinceActivation}}])) by (le)) / clamp_min(histogram_quantile(0.50, sum(rate({{.WorkloadMetric}}_bucket{app="{{.WorkloadName}}"}[{{.SinceActivation}}])) by (le)), 0.001)'
     operator: "<"
     value: "{{.MaxTailAmplification}}"
     remediation: "The p99 has pulled away from the p50 by more than {{.MaxTailAmplification}}x, which is what a saturated service looks like: requests are queueing behind too few replicas. Check that the autoscaler actually scaled (kubectl -n {{.WorkloadNamespace}} get hpa keda-hpa-{{.WorkloadName}}) and that maxReplicaCount is not capping it."
@@ -136,7 +142,7 @@ checks:
   - name: no-errors-under-load
     pending: true
     type: promql
-    query: '(sum(rate({{.WorkloadMetric}}_count{app="{{.WorkloadName}}",http_response_status_code=~"5.."}[3m])) or vector(0)) / clamp_min(sum(rate({{.WorkloadMetric}}_count{app="{{.WorkloadName}}"}[3m])), 0.001)'
+    query: '(sum(rate({{.WorkloadMetric}}_count{app="{{.WorkloadName}}",http_response_status_code=~"5.."}[{{.SinceActivation}}])) or vector(0)) / clamp_min(sum(rate({{.WorkloadMetric}}_count{app="{{.WorkloadName}}"}[{{.SinceActivation}}])), 0.001)'
     operator: "<"
     value: "0.01"
     remediation: "More than 1% of requests are failing under load. The workload is saturated or unhealthy — check pod restarts and readiness: kubectl -n {{.WorkloadNamespace}} get pods"

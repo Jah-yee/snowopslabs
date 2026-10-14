@@ -43,6 +43,7 @@ helm_upgrade_install loki "$NAMESPACE" grafana-community/loki \
   --version "$LOKI_CHART_VERSION" \
   -f "$SCRIPT_DIR/values.yaml" \
   --set "loki.limits_config.retention_period=${RETENTION_PERIOD}" \
+  --set "singleBinary.persistence.storageClass=${STORAGE_CLASS:-local-path}" \
   --wait --timeout 5m
 
 echo "Waiting for Loki to be ready..."

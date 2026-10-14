@@ -33,10 +33,13 @@ export function LogPanel({ entries, onClear }: LogPanelProps) {
     }
   }, [entries, autoScroll])
 
-  // Auto-open when the first log entry arrives
+  // Auto-open when output starts: the first entry in an empty panel. The effect
+  // does not depend on `open`, so a panel the user closes stays closed.
+  const hadEntries = useRef(false)
   useEffect(() => {
-    if (entries.length > 0 && !open) setOpen(true)
-  }, [entries.length, open])
+    if (entries.length > 0 && !hadEntries.current) setOpen(true)
+    hadEntries.current = entries.length > 0
+  }, [entries.length])
 
   // Resize handle
   function onMouseDown(e: React.MouseEvent) {
@@ -73,7 +76,7 @@ export function LogPanel({ entries, onClear }: LogPanelProps) {
       style={open ? { height: panelHeight } : undefined}
     >
       {open && (
-        <div className="log-resize-handle" onMouseDown={onMouseDown} />
+        <div className="log-resize-handle" role="presentation" aria-hidden="true" onMouseDown={onMouseDown} />
       )}
       {/* The title itself is the toggle button; the controls are siblings, not
           nested inside a button (which would be an a11y nested-interactive
@@ -114,7 +117,9 @@ export function LogPanel({ entries, onClear }: LogPanelProps) {
       </div>
 
       {open && (
-        <div className="log-body" id="log-panel-body" ref={bodyRef}>
+        // Focusable and named, so a keyboard user can reach the output to
+        // scroll it and a screen reader announces new lines.
+        <div className="log-body" id="log-panel-body" ref={bodyRef} role="log" aria-label="Command output" tabIndex={0}>
           {entries.map(e => (
             <div key={e.id} className={`log-line log-${e.level}`}>
               <span className="log-ts">{e.ts}</span>

@@ -200,6 +200,14 @@ checks:
 Each check type accepts only its own fields — an `http` check carrying a `query`
 is rejected, not ignored.
 
+A `kubectl` check whose field is unset, such as `.status.readyReplicas` before
+any replica is ready, observes an empty value. Against a number that counts as
+`0` for every operator, so `>= 1` and `!= 0` both fail on it.
+
+A `promql` check fails when the query has nothing to measure: no samples, or a
+result of `NaN` or `Inf`, which is what a ratio answers when its denominator is
+zero. Neither can satisfy a threshold, whichever operator the check uses.
+
 ### `remediation` and `pending`
 
 These make `verify` teach instead of alarm.
@@ -219,6 +227,48 @@ an empty dashboard fails `verify` instead of quietly confusing a learner — see
 > `.status.containerStatuses[].image`. The latter reports whichever tag the
 > kubelet resolved, so it names `:latest` for a pod that requested `:v1.1.0`
 > when both tags share a digest.
+
+### Testing a check script
+
+A `script` check ships with a behaviour test in `src/test/shell/`, one file per
+scenario (`scenario_<name>_checks.bats`). The test runs the real script against
+a scripted `kubectl` and `curl` (`stub_script` in `helpers/stub.bash`), so it
+needs no cluster. `content_tests_complete.bats` fails for a check script no
+test names.
+
+Cover one lab state per test:
+
+| State | The check must |
+|---|---|
+| The lab as activation leaves it | fail (PENDING) if it grades learner work; pass if it grades lab health |
+| Solved | pass |
+| Each shortcut that produces the result without the work: the change made with `kubectl` instead of Git, the pod redeployed, the workload scaled to zero, the file created empty | fail, saying why |
+| The cluster or a tool cannot answer | fail with a reason, never pass |
+| Its activation checkpoint is missing | fail with the command that re-creates it |
+
+Two rules these tests enforce, because both have shipped as bugs:
+
+- **An empty answer is not a good answer.** `kubectl ... || true` followed by
+  "nothing found, so OK" passes on a cluster that is down. Fail when the query
+  itself failed.
+- **A refusal needs something to refuse.** A probe that cannot connect proves
+  enforcement only while the target is running.
+
+Declared `kubectl`, `promql` and `http` checks are graded against recorded
+lab states instead: `test/fixtures/untouched.json` and `solved.json`, written
+by the cluster suite's record mode and replayed by `go test`. A `pending`
+check that passes in the untouched state, or any check that fails in the
+solved one, fails the build. Change a check's query, jsonpath or URL and the
+replay asks for a re-record.
+
+**`test/solve.sh`** does the scenario's work the way its review guide does, so
+the nightly cluster suite can run `up`, a failing `verify`, the solve script, a
+passing `verify --watch` and `down` on a real cluster
+([TESTING](../TESTING.md#real-cluster)). Write it with the helpers in
+`src/test/cluster/solve-lib.sh`, give it a test in
+`src/test/shell/cluster_solves.bats`, and try it on your own lab with
+`make test-cluster ITEM=scenario/<name>`; with `RECORD=1` the same run writes
+the fixtures.
 
 ## Parameters
 

@@ -1,40 +1,40 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // Incidents view behaviour: browse the library, inject/resolve, and reveal hints
-// progressively — plus an axe pass (W6-T10). The api boundary is mocked (see
-// Traffic.test.tsx for why the client isn't exercised over MSW here).
+// progressively — plus an axe pass. Requests go through the real client to the
+// contract server (test/contract.ts).
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { axe, toHaveNoViolations } from 'jest-axe'
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
+import { afterEach, describe, it, expect, vi } from 'vitest'
+import { serveContract, type ContractServer } from '../test/contract'
 import { Incidents } from './Incidents'
 import type { Fault, IncidentList } from '../types'
 import type { ConfirmRequest } from '../components/ConfirmDialog'
 
 expect.extend(toHaveNoViolations)
 
-vi.mock('../api/client', () => ({
-  api: {
-    listIncidents: vi.fn(),
-    getIncidentStatus: vi.fn(),
-    getIncidentHistory: vi.fn(),
-    injectIncident: vi.fn(),
-    injectRandomIncident: vi.fn(),
-    resolveIncident: vi.fn(),
-    nextIncidentHint: vi.fn(),
-    listApps: vi.fn(),
-  },
-}))
-import { api } from '../api/client'
-const mockApi = api as unknown as {
-  listIncidents: Mock
-  getIncidentStatus: Mock
-  injectIncident: Mock
-  injectRandomIncident: Mock
-  resolveIncident: Mock
-  nextIncidentHint: Mock
-  listApps: Mock
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+const APPS = [
+  { name: 'go-api', buildStrategy: 'docker', deployStrategy: 'helm', deployed: true },
+  { name: 'java-api', buildStrategy: 'docker', deployStrategy: 'helm', deployed: true },
+]
+
+/** A contract server answering GET /incidents with list and GET /apps with two apps. */
+function serveIncidents(list: IncidentList): ContractServer {
+  const server = serveContract()
+  server.override('GET', '/incidents', 200, list)
+  server.override('GET', '/apps', 200, APPS)
+  return server
+}
+
+/** The query of the one inject request the view sent for fault. */
+function injectQuery(server: ContractServer, fault: string) {
+  return server.calls.find(c => c.method === 'POST' && c.path === `/incidents/${fault}/inject`)?.query
 }
 
 const fault = (name: string, over: Partial<Fault> = {}): Fault => ({
@@ -64,18 +64,17 @@ const twoFaults: IncidentList = {
 }
 
 describe('Incidents view', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    mockApi.listApps.mockResolvedValue([
-      { name: 'go-api', buildStrategy: 'docker', deployStrategy: 'helm', deployed: true },
-      { name: 'java-api', buildStrategy: 'docker', deployStrategy: 'helm', deployed: true },
-    ])
+  it('lists the faults the server reports', async () => {
+    const server = serveContract()
+    renderIncidents()
+    expect(await screen.findByText('Demo fault')).toBeInTheDocument()
+    expect(screen.getByText(/No active incident/)).toBeInTheDocument()
+    expect(server.unanswered).toEqual([])
   })
 
   it('lists the fault library and injects a fault', async () => {
     const user = userEvent.setup()
-    mockApi.listIncidents.mockResolvedValue(twoFaults)
-    mockApi.injectIncident.mockResolvedValue({ status: 'injected', silent: false })
+    const server = serveIncidents(twoFaults)
     let captured: ConfirmRequest | null = null
 
     renderIncidents(r => { captured = r })
@@ -86,17 +85,16 @@ describe('Incidents view', () => {
     const row = screen.getByText('oom-kill').closest('.scenario-row') as HTMLElement
     await user.click(within(row).getByRole('button', { name: /^inject$/i }))
     await waitFor(() => expect(captured).not.toBeNull())
-    expect(mockApi.injectIncident).not.toHaveBeenCalled()
+    expect(injectQuery(server, 'oom-kill')).toBeUndefined()
     captured!.onConfirm()
-    await waitFor(() => expect(mockApi.injectIncident).toHaveBeenCalledWith('oom-kill', 'go-api'))
+    await waitFor(() => expect(injectQuery(server, 'oom-kill')?.get('app')).toBe('go-api'))
   })
 
   // A fault names its workload rather than an app (ADR-0014). Choosing which app
   // to break was reachable only from the CLI's --app flag.
   it('lets the user choose which application to break', async () => {
     const user = userEvent.setup()
-    mockApi.listIncidents.mockResolvedValue(twoFaults)
-    mockApi.injectIncident.mockResolvedValue({ status: 'injected', silent: false })
+    const server = serveIncidents(twoFaults)
     let captured: ConfirmRequest | null = null
 
     renderIncidents(r => { captured = r })
@@ -107,18 +105,19 @@ describe('Incidents view', () => {
 
     await user.selectOptions(await screen.findByLabelText(/application to break/i), 'java-api')
     captured!.onConfirm()
-    await waitFor(() => expect(mockApi.injectIncident).toHaveBeenCalledWith('oom-kill', 'java-api'))
+    await waitFor(() => expect(injectQuery(server, 'oom-kill')?.get('app')).toBe('java-api'))
   })
 
   it('shows the active console, reveals hints progressively, and disables further injects', async () => {
     const user = userEvent.setup()
-    mockApi.listIncidents.mockResolvedValue({
+    const server = serveIncidents({
       ...twoFaults,
       active: { fault: 'oom-kill', injectedAt: new Date().toISOString(), silent: false, hintsRevealed: 0 },
     })
-    mockApi.nextIncidentHint
-      .mockResolvedValueOnce({ index: 1, total: 2, text: 'Check the memory limits' })
-      .mockResolvedValueOnce({ index: 2, total: 2, text: 'Raise the deployment resources' })
+    server.overrideEach('POST', '/incidents/hint', 200, [
+      { index: 1, total: 2, text: 'Check the memory limits' },
+      { index: 2, total: 2, text: 'Raise the deployment resources' },
+    ])
 
     renderIncidents()
     expect(await screen.findByText(/Active: oom-kill/)).toBeInTheDocument()
@@ -136,22 +135,22 @@ describe('Incidents view', () => {
 
   it('resolves the active incident after confirmation', async () => {
     const user = userEvent.setup()
-    mockApi.listIncidents.mockResolvedValue({
+    const server = serveIncidents({
       ...twoFaults,
       active: { fault: 'oom-kill', injectedAt: new Date().toISOString(), silent: false, hintsRevealed: 0 },
     })
-    mockApi.resolveIncident.mockResolvedValue({ status: 'resolved', fault: 'oom-kill' })
 
     renderIncidents(autoConfirm)
     await screen.findByText(/Active: oom-kill/)
     await user.click(screen.getByRole('button', { name: /^resolve$/i }))
-    await waitFor(() => expect(mockApi.resolveIncident).toHaveBeenCalled())
+    await waitFor(() => expect(server.requests).toContain('POST /incidents/resolve'))
   })
 
   it('hides the fault identity in silent mode until resolved', async () => {
-    mockApi.listIncidents.mockResolvedValue({
+    // The server sends "(hidden)" in place of a silent incident's name.
+    serveIncidents({
       ...twoFaults,
-      active: { fault: 'oom-kill', injectedAt: new Date().toISOString(), silent: true, hintsRevealed: 0 },
+      active: { fault: '(hidden)', injectedAt: new Date().toISOString(), silent: true, hintsRevealed: 0 },
     })
     renderIncidents()
     expect(await screen.findByText(/hidden \(silent mode\)/i)).toBeInTheDocument()
@@ -163,7 +162,7 @@ describe('Incidents view', () => {
   // is what gets broken, not a prerequisite — listing it said content that runs
   // against any conforming app ran against one.
   it('surfaces a fault\'s prerequisites so required tools are visible before injecting', async () => {
-    mockApi.listIncidents.mockResolvedValue({
+    serveIncidents({
       faults: [fault('network-blackhole', {
         category: 'network',
         prerequisites: { platform: ['ingress'], apps: ['go-api'] },
@@ -176,8 +175,18 @@ describe('Incidents view', () => {
     expect(within(row).getByText(/Requires:\s*ingress$/)).toBeInTheDocument()
   })
 
+  it('opens a fault’s details and closes them on a click outside', async () => {
+    serveContract()
+    renderIncidents()
+    const user = userEvent.setup()
+    await user.click(await screen.findByRole('button', { name: 'Details' }))
+    expect(await screen.findByRole('dialog', { name: 'Demo fault details' })).toBeInTheDocument()
+    await user.click(screen.getByRole('presentation'))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  })
+
   it('has no accessibility violations', async () => {
-    mockApi.listIncidents.mockResolvedValue(twoFaults)
+    serveIncidents(twoFaults)
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const { container } = render(
       <QueryClientProvider client={client}>

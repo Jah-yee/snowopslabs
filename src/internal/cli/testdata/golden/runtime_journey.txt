@@ -1,0 +1,10 @@
+$ labctl runtime up
+Creating k3d cluster 'clitest'...
+creating cluster clitest with 2 CPUs and 4G
+
+$ labctl runtime status
+Kubernetes control plane is running at https://127.0.0.1:<port>
+
+$ labctl runtime down
+Destroying k3d cluster...
+cluster down

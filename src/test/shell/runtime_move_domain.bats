@@ -76,7 +76,7 @@ teardown() {
   [ "$status" -eq 0 ]
   grep -q "host: grafana.k3d.localdomain" "$STATE/replaced"
   ! grep -q "go-api" "$STATE/replaced"
-  [[ "$output" != *"apps/go-api"* ]]
+  [[ "$output" != *"apps/go-api"* ]] || false
 }
 
 @test "move-domain sends no server-set metadata, so a later kubectl apply still works" {

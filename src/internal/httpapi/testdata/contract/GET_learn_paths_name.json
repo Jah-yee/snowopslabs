@@ -1,0 +1,18 @@
+{
+  "description": "A path with one module",
+  "displayName": "Demo path",
+  "modules": [
+    {
+      "action": {
+        "ref": "labctl runtime up",
+        "type": "command"
+      },
+      "completed": false,
+      "displayName": "Step one",
+      "hasIntro": false,
+      "name": "step-one"
+    }
+  ],
+  "name": "demo-path",
+  "tags": null
+}

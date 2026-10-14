@@ -18,6 +18,14 @@ labctl scenario status                      # which scenarios are active
 `scenario info` on an active scenario describes it for the app it was activated
 with, so its manifests, snippets and commands name that app, not the default.
 
+`scenario down` tries every component's uninstall, even after one fails. If
+any fails, the scenario stays active, the command exits non-zero and names
+what is left; every uninstall is safe to repeat, so run it again once the
+cluster answers. For a component that can never be removed again, such as one
+whose CRD is already gone, `labctl scenario down <name> --force` marks the
+scenario inactive anyway and lists what to remove by hand. A component's
+`uninstallScript` must exit non-zero when it leaves something behind.
+
 ### `labctl scenario render`
 
 Prints a file from a scenario's directory with its template variables filled in,
@@ -120,6 +128,7 @@ labctl scenario verify observability-sre --watch --interval 10s --timeout 5m
 | `--interval` | `10s` | delay between re-runs in watch mode |
 | `--timeout` | `5m` | overall watch deadline |
 | `--check-timeout` | `30s` | per-check timeout |
+| `--record` | — | write what the lab answered the declared checks, the variables they were rendered with and each result, to this file (the last attempt under `--watch`); the scenario's replay tests read it ([TESTING](../../TESTING.md#real-cluster)) |
 
 `promql` checks query Prometheus at `http://prometheus.<DOMAIN_SUFFIX>`;
 override with `PROMETHEUS_URL`.

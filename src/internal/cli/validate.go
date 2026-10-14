@@ -32,7 +32,6 @@ variable is an error). Reports the file, line and reference of each problem and
 exits non-zero if any are found.
 
 Extra content roots named in SNOWOPS_CONTENT_PATH are validated too.`,
-		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg, err := config.Load(projectDir)

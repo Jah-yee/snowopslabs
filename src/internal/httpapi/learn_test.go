@@ -41,6 +41,12 @@ func newLearnServer(t *testing.T) *Server {
 	if err := os.WriteFile(filepath.Join(pathDir, "path.yaml"), []byte(learnTestPathYAML), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.MkdirAll(filepath.Join(pathDir, "checks"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(pathDir, "checks", "cluster-up.sh"), []byte("#!/usr/bin/env bash\nexit 0\n"), 0o755); err != nil { //nolint:gosec // a test script must be executable
+		t.Fatal(err)
+	}
 	return &Server{
 		cfg: &config.Config{ProjectRoot: root, StateDir: filepath.Join(root, ".labctl"), DomainSuffix: "k3d.local"},
 	}
@@ -134,7 +140,7 @@ func TestHandleLearn_ProgressShapeConsistent(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/api/learn/paths/test-path/complete", body)
 	req = setVars(req, map[string]string{"name": "test-path"})
 	w := httptest.NewRecorder()
-	s.handleLearnMarkComplete(w, req)
+	s.handleLearnComplete(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("complete: status %d, body: %s", w.Code, w.Body)
 	}
@@ -181,5 +187,68 @@ func TestHandleLearnProgress_AfterStart(t *testing.T) {
 	s.handleLearnProgress(w, req2)
 	if w.Code != http.StatusOK {
 		t.Fatalf("progress: status %d, body: %s", w.Code, w.Body)
+	}
+}
+
+// The module is recorded only when its check passes in the lab, whatever the
+// client sends.
+func TestLearnComplete_GradesOnTheServer(t *testing.T) {
+	const course = `name: course
+displayName: Course
+modules:
+  - name: first
+    action: {type: command, ref: "touch DONE"}
+    check: {name: done, type: script, script: checks/done.sh, timeoutSeconds: 5}
+`
+	tests := []struct {
+		name     string
+		done     bool
+		wantPass bool
+	}{
+		{"the task is not done: nothing is recorded", false, false},
+		{"the task is done: the module is recorded", true, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("USER", "learner")
+			s := newContractLab(t)
+			root := s.cfg.ProjectRoot
+			writeLabFile(t, filepath.Join(root, "learn", "course", "path.yaml"), course)
+			writeLabFile(t, filepath.Join(root, "learn", "course", "checks", "done.sh"),
+				script+"[ -f \"$(dirname \"$0\")/../DONE\" ] || { echo 'the marker is not there' >&2; exit 1; }\n")
+			if tt.done {
+				writeLabFile(t, filepath.Join(root, "learn", "course", "DONE"), "")
+			}
+			if w := do(s, post, "/learn/paths/course/start", "", nil); w.Code != http.StatusOK {
+				t.Fatalf("start = %d: %s", w.Code, w.Body)
+			}
+
+			w := do(s, post, "/learn/paths/course/complete", `{"moduleIdx":0}`, nil)
+			if w.Code != http.StatusOK {
+				t.Fatalf("complete = %d: %s", w.Code, w.Body)
+			}
+			var got struct {
+				Completed []int `json:"completed"`
+				NextIdx   int   `json:"nextIdx"`
+				Check     struct {
+					Name  string `json:"name"`
+					Pass  bool   `json:"pass"`
+					Error string `json:"error"`
+				} `json:"check"`
+			}
+			if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
+				t.Fatal(err)
+			}
+			if got.Check.Name != "done" || got.Check.Pass != tt.wantPass {
+				t.Errorf("check = %+v, want the module's check with pass=%v", got.Check, tt.wantPass)
+			}
+			if recorded := len(got.Completed) == 1; recorded != tt.wantPass {
+				t.Errorf("completed = %v, want recorded=%v", got.Completed, tt.wantPass)
+			}
+			results := do(s, get, "/results/module", "", nil).Body.String()
+			if onRecord := strings.Contains(results, "course/first"); onRecord != tt.wantPass {
+				t.Errorf("in the module results = %v, want %v: %s", onRecord, tt.wantPass, results)
+			}
+		})
 	}
 }

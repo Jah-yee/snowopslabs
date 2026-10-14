@@ -30,8 +30,9 @@ kubectl -n {{.WorkloadNamespace}} set resources deploy/{{.WorkloadName}} \
 kubectl -n {{.WorkloadNamespace}} rollout status deploy/{{.WorkloadName}}
 ```
 
-(The pre-fault values are recorded in the `labfault-oom-kill-original-*`
-annotations on the deployment.)
+(`kubectl -n {{.WorkloadNamespace}} rollout history deploy/{{.WorkloadName}} --revision=<n>`
+prints a revision's pod template; the revision before the change shows the
+pre-fault values.)
 
 The fault runs the k6 generator to create the load that makes the limit bite.
 Fixing the limit closes the incident without running `resolve.sh`, so stop the

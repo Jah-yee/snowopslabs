@@ -39,10 +39,11 @@ func labDeps(continueOnError bool) lab.Deps {
 	}
 }
 
-func collectCurrent(name string) (*lab.Snapshot, []string) {
+func collectCurrent(name string) (*lab.Snapshot, []string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	return lab.Collect(ctx, name, cfg.Profile, cfg.DomainSuffix, cfg.ProjectRoot, reg, scenes)
+	snap, warnings, err := lab.Collect(ctx, name, cfg.Profile, cfg.DomainSuffix, cfg.ProjectRoot, reg, scenes)
+	return snap, warnings, withClusterAdvice(err)
 }
 
 func printSnapshot(s *lab.Snapshot) {
@@ -65,7 +66,10 @@ var labSnapshotCmd = &cobra.Command{
 	Short: "Record the lab's current state as a named snapshot",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		snap, warnings := collectCurrent(args[0])
+		snap, warnings, err := collectCurrent(args[0])
+		if err != nil {
+			return err
+		}
 		for _, w := range warnings {
 			fmt.Fprintf(os.Stderr, "Warning: %s\n", w)
 		}
@@ -134,7 +138,11 @@ var labDeleteCmd = &cobra.Command{
 	Short: "Delete a saved snapshot",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return lab.NewStore(cfg.StateDir).Delete(args[0])
+		if err := lab.NewStore(cfg.StateDir).Delete(args[0]); err != nil {
+			return err
+		}
+		fmt.Fprintf(cmd.OutOrStdout(), "Deleted snapshot %s.\n", args[0])
+		return nil
 	},
 }
 
@@ -145,7 +153,10 @@ var labResetCmd = &cobra.Command{
 and uninstalls platform components (keeping ingress). The cluster itself
 stays up. Tip: take a snapshot first — labctl lab snapshot before-reset.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		current, warnings := collectCurrent("current")
+		current, warnings, err := collectCurrent("current")
+		if err != nil {
+			return err
+		}
 		for _, w := range warnings {
 			fmt.Fprintf(os.Stderr, "Warning: %s\n", w)
 		}

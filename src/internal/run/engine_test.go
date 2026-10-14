@@ -935,3 +935,32 @@ func TestSubscribe(t *testing.T) {
 		}
 	})
 }
+
+// A run a worker picks up at the instant Shutdown begins is stopped with the
+// rest. Left running, its script would outlive labctl with no parent.
+func TestShutdown_StopsARunPickedUpWhileShuttingDown(t *testing.T) {
+	ctx := context.Background()
+	// The window is a few instructions wide, so try enough times to land in it.
+	for i := range 60 {
+		h := newHarness(t, WithWorkers(1))
+		h.fake.WhenArgsContainBlock("slow.sh", 30*time.Second)
+		id, err := h.engine.Submit(ctx, Spec{Kind: "test", Script: h.script("slow.sh")})
+		if err != nil {
+			t.Fatalf("Submit: %v", err)
+		}
+
+		shutdownCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+		err = h.engine.Shutdown(shutdownCtx)
+		cancel()
+		if err != nil {
+			t.Fatalf("attempt %d: Shutdown left run %s going: %v", i, id, err)
+		}
+		rec, err := h.store.GetRun(ctx, id)
+		if err != nil {
+			t.Fatalf("GetRun: %v", err)
+		}
+		if rec.Status == store.StatusRunning {
+			t.Fatalf("attempt %d: run %s is still %q after Shutdown returned", i, id, rec.Status)
+		}
+	}
+}

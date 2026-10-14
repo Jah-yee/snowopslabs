@@ -320,7 +320,7 @@ function AppDetailModal({ detail, loading, onClose, onCopy }: {
   }
 
   return (
-    <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+    <div className="modal-overlay" role="presentation" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="modal-card modal-tabbed" role="dialog" aria-modal="true" aria-label={`${detail.name} details`}>
         <button className="modal-close" aria-label="Close details" onClick={onClose}><Icon name="x" size={18} /></button>
 

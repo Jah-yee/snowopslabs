@@ -187,3 +187,31 @@ func TestGate_Release(t *testing.T) {
 		})
 	}
 }
+
+// A cancelled admission is refused, not waved through as "could not check":
+// the caller stopped, so nothing must be installed on its behalf.
+func TestGate_Admit_CancelledContext(t *testing.T) {
+	added := false
+	g := &Gate{
+		Runner:       docker4GB("2100"),
+		CanAddAgents: true,
+		Active:       func(string) []capacity.Demand { return nil },
+		Running:      func(context.Context, capacity.Item) bool { return false },
+		Installed:    func(context.Context) []capacity.Item { return nil },
+		Agents:       func(context.Context) (int, error) { return 1, nil },
+		AddAgents:    func(context.Context, int) error { added = true; return nil },
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	var out bytes.Buffer
+	err := g.Admit(ctx, &out, capacity.Demand{Name: "node-drain-drill", Agents: 3})
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("Admit(cancelled) = %v, want context.Canceled", err)
+	}
+	if added {
+		t.Error("a cancelled admission added agent nodes")
+	}
+	if strings.Contains(out.String(), "skipping the capacity check") {
+		t.Errorf("a cancelled admission was treated as an unreachable Docker:\n%s", out.String())
+	}
+}

@@ -2,10 +2,13 @@
 
 ## What happened
 
-A NetworkPolicy named `labfault-network-blackhole` was applied to the
-`{{.WorkloadName}}` namespace with an empty `podSelector` (matches all pods),
+A NetworkPolicy named `default-deny-ingress` was applied to the
+`{{.WorkloadNamespace}}` namespace with an empty `podSelector` (matches all pods),
 `policyTypes: [Ingress]`, and no ingress rules — the canonical
-deny-all-ingress policy. k3s enforces NetworkPolicies out of the box (via
+deny-all-ingress policy, under the name the Kubernetes documentation gives it.
+Nothing about the name looks out of place, which is how it reads in a real
+cluster: a hardening change that arrived without the allow rules that go with
+it. k3s enforces NetworkPolicies out of the box (via
 kube-router), so all traffic *to* the pods is dropped, including from the
 ingress controller. The pods themselves never notice: nothing arrives, so
 there is nothing to log.
@@ -18,15 +21,19 @@ kubectl get pods -n {{.WorkloadNamespace}}                        # all Running,
 kubectl get endpoints {{.WorkloadName}} -n {{.WorkloadNamespace}}            # endpoints populated — Service is fine
 kubectl port-forward -n {{.WorkloadNamespace}} deploy/{{.WorkloadName}} 8080:8080 &
 curl localhost:8080/health                        # works! pod is healthy
-kubectl get networkpolicy -n {{.WorkloadNamespace}}               # ← there it is
-kubectl describe networkpolicy labfault-network-blackhole -n {{.WorkloadNamespace}}
+kubectl get networkpolicy -n {{.WorkloadNamespace}}               # ← one is minutes old
+kubectl describe networkpolicy default-deny-ingress -n {{.WorkloadNamespace}}   # selects every pod, allows nobody
 ```
 
 ## Fix
 
 ```bash
-kubectl delete networkpolicy labfault-network-blackhole -n {{.WorkloadNamespace}}
+kubectl delete networkpolicy default-deny-ingress -n {{.WorkloadNamespace}}
 ```
+
+Giving the policy an ingress rule that admits the ingress controller is also a
+fix. Adding a second, permissive policy beside it is not: the traffic returns,
+but the deny-all stays behind for whoever removes that second policy next.
 
 Recovery is immediate — no restart needed, because the policy only ever
 governed new connections and new connections are now allowed.

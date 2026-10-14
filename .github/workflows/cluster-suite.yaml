@@ -1,0 +1,146 @@
+# The cluster suite (docs/TESTING.md, "Real cluster"): every item that has a
+# test/solve.sh runs end to end through src/test/cluster/run.sh, on kind unless
+# the scenario supports only k3d, with the workers it requires. A
+# scenario must fail verify untouched, pass once solved and leave nothing
+# behind; a fault must fail its check, be restored by resolve, and pass after
+# its hand fix.
+#
+# Nightly and manual only: each item builds a cluster and takes minutes, and
+# a flake should not block merges. The publish job turns the run into a pull
+# request: each item's verified flag follows its result, and each passing
+# scenario's recorded check fixtures replace its old ones.
+name: cluster-suite
+
+on:
+  schedule:
+    - cron: '41 3 * * *' # nightly at 03:41 UTC
+  workflow_dispatch: {}
+
+env:
+  GO_VERSION: '1.26'
+  CLUSTER_NAME: snowops
+
+jobs:
+  items:
+    name: list items with a solve script
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.list.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: list
+        run: |
+          items=$(sh src/test/cluster/items.sh | paste -sd, -)
+          echo "matrix={\"include\":[${items}]}" >>"$GITHUB_OUTPUT"
+
+  run:
+    name: ${{ matrix.kind }} ${{ matrix.name }}
+    needs: items
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      PROFILE: ${{ matrix.profile }}
+      AGENTS: ${{ matrix.agents }}
+      RECORD: 1
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.items.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          check-latest: true
+
+      - name: Install kind
+        if: matrix.profile == 'kind'
+        uses: helm/kind-action@v1
+        with:
+          install_only: true
+
+      - name: Install k3d
+        if: matrix.profile == 'k3d'
+        run: |
+          . config/versions.env
+          curl -fsSL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG="v${K3D_VERSION}" bash
+
+      - name: Build labctl
+        working-directory: src
+        run: go build -o "$GITHUB_WORKSPACE/bin/labctl" ./cmd/labctl
+
+      - name: Add bin to PATH
+        run: echo "$GITHUB_WORKSPACE/bin" >> "$GITHUB_PATH"
+
+      - name: Create the cluster
+        run: labctl runtime up
+
+      - name: Build and load the go-api image
+        run: |
+          docker build -t go-api:latest apps/go-api
+          if [ "$PROFILE" = k3d ]; then
+            k3d image import go-api:latest --cluster "$CLUSTER_NAME"
+          else
+            kind load docker-image go-api:latest --name "$CLUSTER_NAME"
+          fi
+
+      - name: Run the item end to end
+        id: item
+        run: sh src/test/cluster/run.sh "${{ matrix.kind }}" "${{ matrix.name }}"
+
+      - name: Keep the result and the recorded fixtures
+        if: always()
+        run: |
+          out="results/${{ matrix.kind }}-${{ matrix.name }}"
+          mkdir -p "$out"
+          if [ "${{ steps.item.outcome }}" = success ]; then echo pass; else echo fail; fi >"$out/result"
+          if [ -d "scenarios/${{ matrix.name }}/test/fixtures" ] && [ "${{ matrix.kind }}" = scenario ]; then
+            cp -R "scenarios/${{ matrix.name }}/test/fixtures" "$out/"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: result-${{ matrix.kind }}-${{ matrix.name }}
+          path: results/
+
+      - name: Lab state on failure
+        if: failure()
+        run: |
+          kubectl get pods -A || true
+          labctl runs list --limit 10 || true
+
+  publish:
+    name: verified flags and check fixtures
+    needs: run
+    if: always() && needs.run.result != 'skipped'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: result-*
+          path: results
+          merge-multiple: true
+
+      - name: Apply the results
+        run: sh src/test/cluster/apply-results.sh results
+
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          branch: cluster-suite/nightly
+          commit-message: |
+            test(cluster): nightly verified flags and check fixtures
+
+            Tests-Not-Needed: generated from the nightly cluster-suite run
+          title: "Nightly cluster suite: verified flags and check fixtures"
+          body: |
+            The nightly cluster suite ran every item with a `test/solve.sh`.
+            Each item's `verified` flag now follows its result, and each
+            passing scenario's recorded check fixtures replace its old ones
+            (docs/TESTING.md, "Real cluster").
+          signoff: true

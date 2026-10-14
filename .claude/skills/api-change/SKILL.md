@@ -37,9 +37,12 @@ unmeasured. A new route is measured because it is a route, not because someone
 remembered.
 
 Middleware order, outermost first: request ID → API version → access log →
-CORS → JSON → auth → metrics. Request ID and version are set before anything can
-reject the request, so even a CORS or auth failure gets a correlation ID and the
-right error envelope. Metrics sit innermost so they time the handler itself.
+CORS → JSON → body limit → auth → metrics. Request ID and version are set before
+anything can reject the request, so even a CORS or auth failure gets a
+correlation ID and the right error envelope. The body limit sits before auth so
+the open auth endpoints are bounded too; a handler reads its body through
+`decodeBody`, which answers `413` or `400` itself. Metrics sit innermost so they
+time the handler itself.
 
 ## Adding a route
 
@@ -51,8 +54,18 @@ right error envelope. Metrics sit innermost so they time the handler itself.
    automatic. Return errors through `respondError` so the problem shape is.
 4. Long-running work goes through `internal/run`, and the route returns the run
    ID. Never block a request on a shell-out.
-5. Update the React client in `src/ui/src/api/client.ts` and its MSW handlers in
-   `src/ui/src/test/server.ts`.
+5. Add its row to the contract table in
+   `src/internal/httpapi/server_contract_rows_test.go` — the correct request,
+   one wrong request with its problem `type`, and `operatorOnly` — then run
+   `make golden-update` and review the new golden file. A route without a row
+   fails `TestContract_EveryRouteHasARow`.
+6. Check a name in the path with `pathName`, and that it exists, before
+   accepting work: a route that answers `202` for something that is not there
+   reports success for nothing.
+7. Update the React client in `src/ui/src/api/client.ts`. The UI reads the
+   golden file you just reviewed: `src/ui/src/contract.test.tsx` renders every
+   view against the contract goldens, so run `make test-ui` and, for a new
+   view, add its row there.
 
 ## Auth
 
@@ -64,14 +77,16 @@ operator-only unless there is a stated reason it is not — say so in the PR.
 ## Verify your work
 
 ```bash
-make test-go                  # unit + contract tests, >=80% per package
+make test-go                  # unit + contract tests, >=80% per package, changed lines >=85%
 make test-ui                  # vitest, including the API client
+make test-check               # the change brought tests with it
 make lint
 ```
 
-Tests are hermetic: `t.TempDir()`, `toolchain.Fake`, temp SQLite. Cover the
-happy path and at least two error cases, and for any `context.Context` argument
-add cancellation and deadline-exceeded tests.
+A route ships with its contract row in the same change: the success answer as
+a golden file, one `problem+json` error with its `type`, and who may call it. Tests are hermetic: `t.TempDir()`, `toolchain.Fake`, temp SQLite.
+For any `context.Context` argument add cancellation and deadline-exceeded
+tests. A bug fix starts with a test that fails because of the bug.
 
 ## Before you finish
 
@@ -79,7 +94,9 @@ add cancellation and deadline-exceeded tests.
 - [ ] Errors are problem+json; collections paginate and carry an ETag.
 - [ ] No per-handler metrics or logging.
 - [ ] Mutations return a run ID rather than blocking.
-- [ ] React client and MSW handlers updated.
+- [ ] Contract row added; `make golden-update` run and the golden diff reviewed.
+- [ ] Every error goes through `respondError` with a slug from `knownProblemSlugs`; none uses `http.Error`.
+- [ ] React client updated, `make test-ui` passes against the new golden, and the view that reads it has a row in `contract.test.tsx`.
 - [ ] Endpoint documented in the relevant
       [CLI reference](../../../docs/reference/cli/index.md) page — every command
       page lists its REST equivalents.

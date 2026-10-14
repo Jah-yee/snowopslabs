@@ -7,7 +7,9 @@ category: networking
 prerequisites:
   platform:
     - ingress
-    - mesh
+    # Istio, by name: the checks read Istio's telemetry, and the mesh category
+    # has another provider.
+    - mesh/istio
     - monitoring/metrics
   apps:
     - "{{.WorkloadName}}"
@@ -153,4 +155,4 @@ explore:
     - "The fault delays only requests carrying 'x-canary: always'. The staged client sends one in twenty, which is what makes the v2 p99 climb while the median stays fast."
     - "STRICT mTLS refuses clients that have no sidecar. The meshed load client keeps working; the check's probe pod, which opts out of injection, does not."
     - "If nothing routes and no mesh metrics appear, check the namespace is enrolled: kubectl get ns {{.WorkloadNamespace}} --show-labels"
-    - "This scenario targets Istio (the default mesh provider); Linkerd uses different CRDs."
+    - "This scenario runs on Istio, which it installs as a prerequisite; Linkerd uses different CRDs and telemetry."

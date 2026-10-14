@@ -3,14 +3,19 @@
 package k8s
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 // parseVersionJSON exercises the same JSON unmarshaling logic as GetClusterInfo.
@@ -473,4 +478,314 @@ func TestAgentCount(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRequireReachable(t *testing.T) {
+	tests := []struct {
+		name       string
+		kubectl    string
+		wantReason string // "" means reachable
+	}{
+		{"the API server answers", "echo ok\n", ""},
+		{"the API server refuses the connection",
+			"echo 'The connection to the server 127.0.0.1:6443 was refused - did you specify the right host or port?' >&2\nexit 1\n",
+			"The connection to the server 127.0.0.1:6443 was refused"},
+		{"kubectl fails without saying why", "exit 1\n", "exit status 1"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stubKubectl(t, tt.kubectl)
+			err := RequireReachable(t.Context())
+			if tt.wantReason == "" {
+				if err != nil {
+					t.Fatalf("RequireReachable() = %v, want nil", err)
+				}
+				return
+			}
+			if !errors.Is(err, ErrUnreachable) {
+				t.Fatalf("RequireReachable() = %v, want an error matching ErrUnreachable", err)
+			}
+			if !strings.Contains(err.Error(), tt.wantReason) {
+				t.Errorf("RequireReachable() = %q, want it to carry kubectl's reason %q", err, tt.wantReason)
+			}
+		})
+	}
+}
+
+// A request that is already cancelled is not reported as a healthy cluster.
+func TestRequireReachable_CancelledContext(t *testing.T) {
+	stubKubectl(t, "echo ok\n")
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	if err := RequireReachable(ctx); !errors.Is(err, ErrUnreachable) {
+		t.Errorf("RequireReachable(cancelled) = %v, want an error matching ErrUnreachable", err)
+	}
+}
+
+const twoPods = `{"items":[
+ {"metadata":{"name":"api-1"},"status":{"phase":"Running","containerStatuses":[{"ready":true,"restartCount":0},{"ready":true,"restartCount":2}]}},
+ {"metadata":{"name":"api-2"},"status":{"phase":"Running","containerStatuses":[{"ready":false,"restartCount":5}]}},
+ {"metadata":{"name":"job-1"},"status":{"phase":"Succeeded"}},
+ {"metadata":{"name":"old-1"},"status":{"phase":"Failed"}}
+]}`
+
+func TestGetNamespacePods(t *testing.T) {
+	tests := []struct {
+		name    string
+		kubectl string
+		want    []PodInfo
+		wantErr string
+	}{
+		{"pods are summarised by readiness and restarts", "cat <<'JSON'\n" + twoPods + "\nJSON\n", []PodInfo{
+			{Name: "api-1", Namespace: "shop", Status: "Running", Ready: "2/2", Restarts: "2"},
+			{Name: "api-2", Namespace: "shop", Status: "Running", Ready: "0/1", Restarts: "5"},
+			{Name: "job-1", Namespace: "shop", Status: "Succeeded", Ready: "0/0", Restarts: "0"},
+			{Name: "old-1", Namespace: "shop", Status: "Failed", Ready: "0/0", Restarts: "0"},
+		}, ""},
+		{"an empty namespace has no pods", `echo '{"items":[]}'` + "\n", nil, ""},
+		{"kubectl fails", "echo 'namespaces \"shop\" not found' >&2\nexit 1\n", nil, "not found"},
+		{"kubectl prints something that is not JSON", "echo 'Unable to connect'\n", nil, "parsing pod list JSON"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stubKubectl(t, tt.kubectl)
+			got, err := GetNamespacePods(t.Context(), "shop")
+			if tt.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("GetNamespacePods() error = %v, want one mentioning %q", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("GetNamespacePods() error = %v", err)
+			}
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("GetNamespacePods() = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
+// namespaceStub answers for one namespace, "shop": it exists, has one
+// Deployment, and the pods given.
+func namespaceStub(deployments, pods string) string {
+	return `case "$*" in
+  "get namespace shop --no-headers") echo "shop Active 1h" ;;
+  "get namespace "*) exit 1 ;;
+  "get deployment -n shop"*) printf '%s' "` + deployments + `" ;;
+  "get pods -n shop -o json") cat <<'JSON'
+` + pods + `
+JSON
+  ;;
+  *) exit 1 ;;
+esac
+`
+}
+
+func TestGetAppStatus(t *testing.T) {
+	tests := []struct {
+		name      string
+		kubectl   string
+		namespace string
+		want      AppStatus
+		wantPods  int
+	}{
+		{"a deployed app reports its replicas", namespaceStub("api 3 2 2", twoPods), "shop",
+			AppStatus{Name: "api", Namespace: "shop", Deployed: true, Replicas: "3", Ready: "2", Available: "2"}, 4},
+		{"a Deployment still starting has no ready count", namespaceStub("api 3", `{"items":[]}`), "shop",
+			AppStatus{Name: "api", Namespace: "shop", Deployed: true, Replicas: "3"}, 0},
+		{"a namespace with no Deployment is not deployed", namespaceStub("", `{"items":[]}`), "shop",
+			AppStatus{Name: "api", Namespace: "shop"}, 0},
+		{"a missing namespace is not deployed", namespaceStub("api 3 2 2", twoPods), "ghost",
+			AppStatus{Name: "api", Namespace: "ghost"}, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stubKubectl(t, tt.kubectl)
+			got, err := GetAppStatus(t.Context(), "api", tt.namespace)
+			if err != nil {
+				t.Fatalf("GetAppStatus() error = %v", err)
+			}
+			if len(got.Pods) != tt.wantPods {
+				t.Errorf("pods = %d, want %d", len(got.Pods), tt.wantPods)
+			}
+			got.Pods = nil
+			if !reflect.DeepEqual(*got, tt.want) {
+				t.Errorf("GetAppStatus() = %+v, want %+v", *got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNamespaceHealth(t *testing.T) {
+	tests := []struct {
+		name       string
+		kubectl    string
+		namespace  string
+		wantReady  int
+		wantTotal  int
+		wantExists bool
+	}{
+		{"failed pods are left out and a finished job counts as ready", namespaceStub("", twoPods), "shop", 2, 3, true},
+		{"an installed namespace with no pods", namespaceStub("", `{"items":[]}`), "shop", 0, 0, true},
+		{"a namespace whose pods cannot be listed still exists", namespaceStub("", "not json"), "shop", 0, 0, true},
+		{"a namespace that is not there", namespaceStub("", twoPods), "ghost", 0, 0, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stubKubectl(t, tt.kubectl)
+			ready, total, exists := NamespaceHealth(t.Context(), tt.namespace)
+			if ready != tt.wantReady || total != tt.wantTotal || exists != tt.wantExists {
+				t.Errorf("NamespaceHealth() = %d ready of %d, exists %v; want %d of %d, exists %v",
+					ready, total, exists, tt.wantReady, tt.wantTotal, tt.wantExists)
+			}
+		})
+	}
+}
+
+// Each existence probe is true only when kubectl finds the object, and false
+// for a missing object, an unreachable cluster and an empty name alike.
+func TestExistenceProbes(t *testing.T) {
+	found := `case "$*" in
+  "get namespace shop --no-headers") echo "shop Active" ;;
+  "get service api -n shop --no-headers") echo "api ClusterIP" ;;
+  "get secret -n shop -l owner=helm,name=api --no-headers") echo "sh.helm.release.v1.api.v1" ;;
+  "get secret -n shop -l owner=helm,name=api,status=deployed --no-headers") echo "sh.helm.release.v1.api.v1" ;;
+  "get secret -n shop -l owner=helm,name=half"*) ;;
+  *) exit 1 ;;
+esac
+`
+	probes := map[string]func(ns, name string) bool{
+		"NamespaceExists":     func(ns, _ string) bool { return NamespaceExists(t.Context(), ns) },
+		"ServiceExists":       func(ns, name string) bool { return ServiceExists(t.Context(), ns, name) },
+		"HelmReleaseExists":   func(ns, name string) bool { return HelmReleaseExists(t.Context(), ns, name) },
+		"HelmReleaseDeployed": func(ns, name string) bool { return HelmReleaseDeployed(t.Context(), ns, name) },
+	}
+	tests := []struct {
+		name     string
+		ns, obj  string
+		want     bool
+		onlyHelm bool
+	}{
+		{"the object is there", "shop", "api", true, false},
+		{"another namespace", "ghost", "api", false, false},
+		{"a release with no secrets listed", "shop", "half", false, true},
+		{"an empty release name", "shop", "", false, true},
+		{"an empty namespace", "", "api", false, true},
+	}
+	for probe, call := range probes {
+		for _, tt := range tests {
+			if tt.onlyHelm && !strings.HasPrefix(probe, "Helm") {
+				continue
+			}
+			t.Run(probe+"/"+tt.name, func(t *testing.T) {
+				stubKubectl(t, found)
+				if got := call(tt.ns, tt.obj); got != tt.want {
+					t.Errorf("%s(%q, %q) = %v, want %v", probe, tt.ns, tt.obj, got, tt.want)
+				}
+			})
+		}
+		t.Run(probe+"/the cluster does not answer", func(t *testing.T) {
+			stubKubectl(t, "echo 'connection refused' >&2\nexit 1\n")
+			if call("shop", "api") {
+				t.Errorf("%s reported the object present on a cluster that did not answer", probe)
+			}
+		})
+	}
+}
+
+func TestGetHPAStatus_NoHPAIsNotAnError(t *testing.T) {
+	tests := []struct {
+		name    string
+		kubectl string
+	}{
+		{"kubectl fails", "exit 1\n"},
+		{"the namespace has no HPA", `echo '{"items":[]}'` + "\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stubKubectl(t, tt.kubectl)
+			got, err := GetHPAStatus(t.Context(), "shop", "api")
+			if err != nil || got == nil || got.Present {
+				t.Errorf("GetHPAStatus() = %+v, %v; want Present=false and no error", got, err)
+			}
+		})
+	}
+}
+
+func TestIngressHosts(t *testing.T) {
+	tests := []struct {
+		name    string
+		kubectl string
+		want    []string
+		wantErr bool
+	}{
+		{"hosts are listed once, in order, without blanks", "printf 'grafana.lab.test\\n\\napi.lab.test\\ngrafana.lab.test\\n'\n", []string{"grafana.lab.test", "api.lab.test"}, false},
+		{"a cluster with no Ingress", "true\n", []string{}, false},
+		{"the cluster does not answer", "exit 1\n", nil, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stubKubectl(t, tt.kubectl)
+			got, err := IngressHosts(t.Context())
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("IngressHosts() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("IngressHosts() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetCurrentContext(t *testing.T) {
+	stubKubectl(t, "echo k3d-lab\n")
+	if got, err := GetCurrentContext(t.Context()); err != nil || got != "k3d-lab" {
+		t.Errorf("GetCurrentContext() = %q, %v", got, err)
+	}
+}
+
+// A failed kubectl call carries what kubectl printed, and still matches the
+// exit error underneath.
+func TestRunKubectl_Failures(t *testing.T) {
+	t.Run("the error carries kubectl's stderr", func(t *testing.T) {
+		stubKubectl(t, "echo 'error: the server does not have a resource type \"widgets\"' >&2\nexit 1\n")
+		_, err := RunKubectl(t.Context(), "get", "widgets")
+		var exit *exec.ExitError
+		if err == nil || !strings.Contains(err.Error(), `resource type "widgets"`) || !errors.As(err, &exit) {
+			t.Errorf("RunKubectl() error = %v, want kubectl's message wrapping the exit error", err)
+		}
+	})
+	t.Run("a silent failure is the exit status", func(t *testing.T) {
+		stubKubectl(t, "exit 3\n")
+		if _, err := RunKubectl(t.Context(), "get", "pods"); err == nil || !strings.Contains(err.Error(), "exit status 3") {
+			t.Errorf("RunKubectl() error = %v, want exit status 3", err)
+		}
+	})
+	t.Run("kubectl is not installed", func(t *testing.T) {
+		t.Setenv("PATH", t.TempDir())
+		if _, err := RunKubectl(t.Context(), "get", "pods"); err == nil || !strings.Contains(err.Error(), "kubectl not found in PATH") {
+			t.Errorf("RunKubectl() error = %v, want kubectl not found", err)
+		}
+	})
+	t.Run("a cancelled context stops the call", func(t *testing.T) {
+		stubKubectl(t, "sleep 30\n")
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
+		if _, err := RunKubectl(ctx, "get", "pods"); err == nil {
+			t.Error("RunKubectl() on a cancelled context returned no error")
+		}
+	})
+	t.Run("a deadline stops a kubectl that hangs", func(t *testing.T) {
+		stubKubectl(t, "exec sleep 30\n")
+		ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
+		defer cancel()
+		start := time.Now()
+		if _, err := RunKubectl(ctx, "get", "pods"); err == nil {
+			t.Error("RunKubectl() past its deadline returned no error")
+		}
+		if elapsed := time.Since(start); elapsed > 5*time.Second {
+			t.Errorf("RunKubectl() took %s to give up on a 50ms deadline", elapsed)
+		}
+	})
 }

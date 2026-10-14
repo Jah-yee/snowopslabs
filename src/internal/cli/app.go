@@ -16,12 +16,23 @@ var appCmd = &cobra.Command{
 	Short: "Manage applications",
 }
 
+// requireApp fails, naming the apps that exist, when apps/<name>/app.env does
+// not load. The engine scripts would otherwise run for a name that is a typo
+// and fail on its missing build settings.
+func requireApp(name string) error {
+	_, err := config.LoadAppConfig(cfg.ProjectRoot, name)
+	return err
+}
+
 var appBuildCmd = &cobra.Command{
 	Use:   "build [app-name]",
 	Short: "Build an application",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		appName := args[0]
+		if err := requireApp(appName); err != nil {
+			return err
+		}
 		fmt.Printf("Building %s...\n", appName)
 		return scriptExec.RunScript("src/engine/build.sh", appName)
 	},
@@ -33,6 +44,9 @@ var appDeployCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		appName := args[0]
+		if err := requireApp(appName); err != nil {
+			return err
+		}
 		fmt.Printf("Deploying %s...\n", appName)
 		if err := scriptExec.RunScript("src/engine/deploy.sh", "deploy", appName); err != nil {
 			return err
@@ -48,6 +62,9 @@ var appDestroyCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		appName := args[0]
+		if err := requireApp(appName); err != nil {
+			return err
+		}
 		fmt.Printf("Destroying %s...\n", appName)
 		return scriptExec.RunScript("src/engine/deploy.sh", "destroy", appName)
 	},

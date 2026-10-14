@@ -1,0 +1,82 @@
+$ labctl learn list
+PATH                           MODULES   DESCRIPTION
+------------------------------------------------------------------------
+course                         0/2       Course — Two modules
+demo-path                      0/1       Demo path — A path with one module
+
+$ labctl learn progress course
+Course  0/2 modules
+  Not started. Run `labctl learn start course`.
+
+$ labctl learn start course
+Started: Course  (2 modules)
+Run `labctl learn next course` to begin.
+
+$ labctl learn next course --show-only
+# First
+Create the marker file.
+
+────────────────────────────────────────────────────────────
+Module 1/2: Make the marker
+Action (command): touch DONE
+
+
+$ labctl learn next course
+# First
+Create the marker file.
+
+────────────────────────────────────────────────────────────
+Module 1/2: Make the marker
+Action (command): touch DONE
+
+Verifying check "marker-there"...
+✗ Check not passing yet: bash: exit status 1: the marker is not there yet
+Complete the task above, then run `labctl learn next course` again.
+
+$ labctl learn progress course
+Course  0/2 modules
+  [ ] 1. Make the marker
+  [ ] 2. Nothing to do
+
+$ labctl learn next course
+# First
+Create the marker file.
+
+────────────────────────────────────────────────────────────
+Module 1/2: Make the marker
+Action (command): touch DONE
+
+Verifying check "marker-there"...
+✓ Check passed. Module complete!
+Next: module 2 — Nothing to do
+
+$ labctl learn next course
+Module 2/2: Nothing to do
+Action (scenario): demo-scenario
+
+Verifying check "always"...
+✓ Check passed. Module complete!
+All 2 modules complete! Path "course" finished.
+
+$ labctl learn next course
+All 2 modules complete! Path "course" finished.
+
+$ labctl learn progress course
+Course  2/2 modules
+  [✓] 1. Make the marker
+  [✓] 2. Nothing to do
+
+$ labctl learn list
+PATH                           MODULES   DESCRIPTION
+------------------------------------------------------------------------
+course                         2/2       Course — Two modules
+demo-path                      0/1       Demo path — A path with one module
+
+$ labctl learn progress
+Course  2/2 modules
+  [✓] 1. Make the marker
+  [✓] 2. Nothing to do
+
+Demo path  0/1 modules
+  Not started. Run `labctl learn start demo-path`.
+

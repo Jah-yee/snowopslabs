@@ -3,12 +3,15 @@
 package httpapi
 
 import (
-	"encoding/json"
+	"context"
+	"fmt"
 	"net/http"
 	"path/filepath"
+	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/sagar2395/snowopslabs/internal/labcheck"
 	"github.com/sagar2395/snowopslabs/internal/learn"
+	"github.com/sagar2395/snowopslabs/internal/workload"
 )
 
 func learnEngine(s *Server) *learn.Engine {
@@ -23,7 +26,7 @@ func (s *Server) handleLearnPaths(w http.ResponseWriter, r *http.Request) {
 	eng := learnEngine(s)
 	paths, err := eng.Paths()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondInternal(w, r, err)
 		return
 	}
 	type pathSummary struct {
@@ -56,11 +59,14 @@ func (s *Server) handleLearnPaths(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleLearnPath(w http.ResponseWriter, r *http.Request) {
-	name := mux.Vars(r)["name"]
+	name, ok := pathName(w, r, "path")
+	if !ok {
+		return
+	}
 	eng := learnEngine(s)
 	p, err := eng.LoadPath(name)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		respondLoadError(w, r, "learning path", name, err)
 		return
 	}
 	prog, _ := eng.Progress(name)
@@ -112,16 +118,19 @@ func learnProgressPayload(p *learn.Path, prog *learn.Progress) map[string]any {
 }
 
 func (s *Server) handleLearnStart(w http.ResponseWriter, r *http.Request) {
-	name := mux.Vars(r)["name"]
-	eng := learnEngine(s)
-	prog, err := eng.StartPath(name)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	name, ok := pathName(w, r, "path")
+	if !ok {
 		return
 	}
+	eng := learnEngine(s)
 	p, err := eng.LoadPath(name)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondLoadError(w, r, "learning path", name, err)
+		return
+	}
+	prog, err := eng.StartPath(name)
+	if err != nil {
+		respondInternal(w, r, err)
 		return
 	}
 	respondJSON(w, http.StatusOK, learnProgressPayload(p, prog))
@@ -130,60 +139,108 @@ func (s *Server) handleLearnStart(w http.ResponseWriter, r *http.Request) {
 // handleLearnReset discards a path's progress so the learner can start over.
 // It does not touch the cluster.
 func (s *Server) handleLearnReset(w http.ResponseWriter, r *http.Request) {
-	name := mux.Vars(r)["name"]
+	name, ok := pathName(w, r, "path")
+	if !ok {
+		return
+	}
 	eng := learnEngine(s)
+	if _, err := eng.LoadPath(name); err != nil {
+		respondLoadError(w, r, "learning path", name, err)
+		return
+	}
 	if err := eng.ResetProgress(name); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		respondInternal(w, r, err)
 		return
 	}
 	respondJSON(w, http.StatusOK, map[string]any{"path": name, "started": false})
 }
 
 func (s *Server) handleLearnProgress(w http.ResponseWriter, r *http.Request) {
-	name := mux.Vars(r)["name"]
+	name, ok := pathName(w, r, "path")
+	if !ok {
+		return
+	}
 	eng := learnEngine(s)
+	p, err := eng.LoadPath(name)
+	if err != nil {
+		respondLoadError(w, r, "learning path", name, err)
+		return
+	}
 	prog, err := eng.Progress(name)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondInternal(w, r, err)
 		return
 	}
 	if prog == nil {
 		respondJSON(w, http.StatusOK, map[string]any{"path": name, "started": false})
 		return
 	}
-	p, err := eng.LoadPath(name)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	}
 	respondJSON(w, http.StatusOK, learnProgressPayload(p, prog))
 }
 
-func (s *Server) handleLearnMarkComplete(w http.ResponseWriter, r *http.Request) {
-	name := mux.Vars(r)["name"]
+// learnGradeBudget is the time limit for grading one module; its check also
+// has its own timeout.
+const learnGradeBudget = 2 * time.Minute
+
+// handleLearnComplete grades a module by running its check against the lab,
+// as `labctl learn next` does. Only a passing check records the module; the
+// answer carries the check's result either way.
+func (s *Server) handleLearnComplete(w http.ResponseWriter, r *http.Request) {
+	name, ok := pathName(w, r, "path")
+	if !ok {
+		return
+	}
 	eng := learnEngine(s)
 	var req struct {
 		ModuleIdx int `json:"moduleIdx"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
-	prog, err := eng.Progress(name)
-	if err != nil || prog == nil {
-		http.Error(w, "path not started", http.StatusBadRequest)
+	if !decodeBody(w, r, &req, false) {
 		return
 	}
 	// Load the path so the completion is recorded as "<path>/<module>" and
 	// attributed to the authenticated user.
 	p, err := eng.LoadPath(name)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondLoadError(w, r, "learning path", name, err)
 		return
 	}
-	if err := eng.MarkCompleteModule(p, prog, req.ModuleIdx, actingUser(r)); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	prog, err := eng.Progress(name)
+	if err != nil {
+		respondInternal(w, r, err)
 		return
 	}
-	respondJSON(w, http.StatusOK, learnProgressPayload(p, prog))
+	if prog == nil {
+		respondError(w, r, http.StatusConflict, "path_not_started",
+			fmt.Sprintf("learning path %q has not been started: start it first", name))
+		return
+	}
+	if req.ModuleIdx < 0 || req.ModuleIdx >= len(p.Modules) {
+		respondError(w, r, http.StatusBadRequest, "invalid_input",
+			fmt.Sprintf("moduleIdx %d is out of range: learning path %q has %d module(s), numbered from 0", req.ModuleIdx, name, len(p.Modules)))
+		return
+	}
+	// Learning paths are graded against the default app, as in the CLI.
+	bound := s.boundWorkload(workload.DefaultApp)
+	ctx, cancel := context.WithTimeout(r.Context(), learnGradeBudget)
+	defer cancel()
+	res, err := eng.Grade(ctx, p, prog, req.ModuleIdx, labcheck.NewRunner(s.cfg, bound, s.cfg.ProjectRoot), s.learnResolver(bound), actingUser(r))
+	if err != nil {
+		respondInternal(w, r, err)
+		return
+	}
+	payload := learnProgressPayload(p, prog)
+	payload["check"] = res
+	respondJSON(w, http.StatusOK, payload)
+}
+
+// learnResolver fills a learning-path check field for the app it is graded
+// against.
+func (s *Server) learnResolver(bound workload.Workload) func(string) string {
+	var expand func(string) string
+	if s.incidents != nil {
+		incidents := s.incidents.Clone()
+		incidents.Workload = bound
+		expand = incidents.ResolveTemplate
+	}
+	return learn.Resolver(s.cfg.DomainSuffix, expand)
 }

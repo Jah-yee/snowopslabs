@@ -9,11 +9,23 @@ const JOB_TIMEOUT_MS = 15 * 60_000
 
 const tracked = new Map<string, { cb: JobEndCallback; timer: number }>()
 
+/** Jobs that ended before anyone tracked them: a fast job's end event can
+ *  arrive before the POST that started it has returned. Bounded, oldest out. */
+const MAX_EARLY = 100
+const endedEarly = new Map<string, { ok: boolean; error?: string }>()
+
 /** Register interest in a job's completion. The callback fires when the
- *  matching action_end WebSocket event arrives, when reconcileJobs() finds
- *  the job already finished, or after a 15-minute failsafe timeout. */
+ *  matching action_end WebSocket event arrives (or already did), when
+ *  reconcileJobs() finds the job already finished, or after a 15-minute
+ *  failsafe timeout. */
 export function trackJob(jobId: string, cb: JobEndCallback): void {
   if (!jobId) return
+  const early = endedEarly.get(jobId)
+  if (early) {
+    endedEarly.delete(jobId)
+    cb(early.ok, early.error)
+    return
+  }
   const timer = window.setTimeout(() => {
     if (tracked.delete(jobId)) {
       cb(false, 'No completion event received — check the command output panel or refresh')
@@ -26,7 +38,11 @@ export function trackJob(jobId: string, cb: JobEndCallback): void {
 export function completeJob(jobId: string | undefined, ok: boolean, error?: string): void {
   if (!jobId) return
   const t = tracked.get(jobId)
-  if (!t) return
+  if (!t) {
+    endedEarly.set(jobId, { ok, error })
+    if (endedEarly.size > MAX_EARLY) endedEarly.delete(endedEarly.keys().next().value as string)
+    return
+  }
   tracked.delete(jobId)
   clearTimeout(t.timer)
   t.cb(ok, error)

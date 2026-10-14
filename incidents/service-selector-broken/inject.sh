@@ -3,16 +3,16 @@ set -euo pipefail
 
 NS="${TARGET_NAMESPACE:-go-api}"
 SVC="${TARGET_WORKLOAD:-go-api}"
-MARK="labfault-service-selector-broken"
+FAULT="service-selector-broken"
+LIB="$(cd "$(dirname "$0")/../_lib" && pwd)"
 # Record the WHOLE selector map, not one key's value. The workload may select on
 # any label set, and resolve has to put back exactly what was there rather than
 # a key this script assumed.
 ORIGINAL_SELECTOR="$(kubectl -n "$NS" get svc "$SVC" \
   -o 'jsonpath={.spec.selector}' 2>/dev/null || true)"
 
-# Guard on the fault itself, not on its bookkeeping annotation: a mark can
-# outlive a resolve, and an annotation-only guard then refuses to inject on a
-# lab where the Service is perfectly healthy.
+# Guard on the fault itself, not on its record: a record can outlive a hand
+# fix, and a guard on it then refuses to inject on a healthy Service.
 POD_LABEL="$(kubectl -n "$NS" get deploy "$SVC" \
   -o 'jsonpath={.spec.template.metadata.labels.app\.kubernetes\.io/name}' 2>/dev/null || true)"
 SVC_LABEL="$(kubectl -n "$NS" get svc "$SVC" \
@@ -34,13 +34,14 @@ BAD_LABEL="${POD_LABEL:-$SVC}-v2"
 MON_NS="${MONITORING_NAMESPACE:-monitoring}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=incidents/_lib/render.sh
-. "$(cd "$(dirname "$0")/../_lib" && pwd)/render.sh"
+. "$LIB/render.sh"
+# shellcheck source=incidents/_lib/state.sh
+. "$LIB/state.sh"
 render_targeted "$SCRIPT_DIR/alerts/rule.yaml" | kubectl apply -n "$MON_NS" -f - >/dev/null 2>&1 ||
   echo "Note: alert rule not installed (monitoring stack missing?) — continuing without paging."
 
 echo "Applying a configuration change to $NS/$SVC..."
-kubectl -n "$NS" annotate svc "$SVC" \
-  "$MARK=injected" "$MARK-original-selector=${ORIGINAL_SELECTOR:-none}" --overwrite >/dev/null
+fault_state_save "$FAULT" "original-selector=${ORIGINAL_SELECTOR:-none}"
 kubectl -n "$NS" patch svc "$SVC" \
   -p "{\"spec\":{\"selector\":{\"app.kubernetes.io/name\":\"${BAD_LABEL}\"}}}" >/dev/null
 

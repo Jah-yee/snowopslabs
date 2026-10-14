@@ -1,0 +1,26 @@
+{
+  "ingress": [
+    {
+      "category": "ingress",
+      "exclusive": false,
+      "installed": true,
+      "name": "traefik"
+    }
+  ],
+  "monitoring": [
+    {
+      "category": "monitoring",
+      "exclusive": false,
+      "installed": true,
+      "name": "grafana"
+    }
+  ],
+  "monitoring/metrics": [
+    {
+      "category": "monitoring/metrics",
+      "exclusive": false,
+      "installed": true,
+      "name": "prometheus"
+    }
+  ]
+}

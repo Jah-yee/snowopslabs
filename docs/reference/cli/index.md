@@ -34,7 +34,21 @@ make cli-build        # builds bin/labctl with the UI embedded
 |---|---|---|
 | `--project-dir` | auto-detected | The lab (a snowopslabs clone) to use; see [Install](#install) for how it is found otherwise |
 | `-v, --verbose` | `false` | Debug logging: config load, script exec, API calls |
+| `--app` | `APP_NAME` | The application scenarios and faults act on for this command. Challenges and learning paths refuse it: they are graded against the default app |
 | `--version` | — | Print the build version |
+
+## Exit status and errors
+
+A command exits `0` when it did what it was asked and `1` otherwise, so it is
+safe in scripts and CI. A failing check is a failure: `scenario verify` exits
+`1` while any check fails.
+
+- A mistake in how the command was typed (a missing argument, an unknown flag)
+  prints the error and that command's usage.
+- A command that was typed correctly and then failed prints only the error,
+  with what to run next where there is something to run.
+- A name that does not exist is answered with the command that lists the names
+  that do, such as `see 'labctl scenario list'`.
 
 ## Command map
 

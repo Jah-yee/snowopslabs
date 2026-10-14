@@ -1,0 +1,21 @@
+{
+  "check": {
+    "attempts": 1,
+    "durationMs": 0,
+    "explanation": "cluster-up passed: observed exit 0",
+    "got": "exit 0",
+    "name": "cluster-up",
+    "pass": true,
+    "type": "script",
+    "want": "exit 0"
+  },
+  "completed": [
+    0
+  ],
+  "nextIdx": -1,
+  "path": "demo-path",
+  "started": true,
+  "startedAt": "<time>",
+  "total": 1,
+  "updatedAt": "<time>"
+}

@@ -10,6 +10,8 @@
 
 ## Go build output (golden rule 6: never commit build artifacts)
 bin/
+# The stand-in kubectl, helm, docker and k3d the hermetic tests put on PATH.
+!src/test/fixtures/bin/
 dist/
 *.exe
 apps/echo-server/echo-server
@@ -18,6 +20,7 @@ apps/go-api/app
 
 ## Coverage output
 coverage.out
+test-time.log
 coverage.html
 .coverage-func.txt
 

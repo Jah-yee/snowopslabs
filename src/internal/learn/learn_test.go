@@ -3,6 +3,8 @@
 package learn
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -35,8 +37,8 @@ modules:
       ref: "labctl runtime up"
     check:
       name: cluster-up
-      type: kubectl
-      command: "cluster-info"
+      type: script
+      script: checks/cluster-info.sh
       timeoutSeconds: 30
   - name: step-two
     displayName: "Step Two"
@@ -90,11 +92,39 @@ func TestLoadPath_Valid(t *testing.T) {
 	}
 }
 
-func TestLoadPath_MissingFile(t *testing.T) {
-	e, _ := makeEngine(t)
-	_, err := e.LoadPath("nonexistent")
-	if err == nil {
-		t.Fatal("expected error for missing path")
+// What LoadPath says when a path cannot be used tells the user what to run
+// next, and never the directory it looked under.
+func TestLoadPath_Errors(t *testing.T) {
+	tests := []struct {
+		name         string
+		yaml         string // "" writes no file
+		wantText     string
+		wantNotExist bool
+	}{
+		{"no such path", "", `learning path "broken" not found (see 'labctl learn list')`, true},
+		{"YAML that does not parse", "name: [unclosed", "learning path broken is malformed (run 'labctl validate')", false},
+		{"missing required fields", "name: broken\n", "learning path broken is malformed (run 'labctl validate')", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, learnDir := makeEngine(t)
+			if tt.yaml != "" {
+				writePathYAML(t, learnDir, "broken", tt.yaml)
+			}
+			_, err := e.LoadPath("broken")
+			if err == nil {
+				t.Fatal("LoadPath() returned no error")
+			}
+			if !strings.Contains(err.Error(), tt.wantText) {
+				t.Errorf("LoadPath() error = %q, want it to say %q", err, tt.wantText)
+			}
+			if strings.Contains(err.Error(), learnDir) {
+				t.Errorf("LoadPath() error names the directory it read: %q", err)
+			}
+			if got := errors.Is(err, fs.ErrNotExist); got != tt.wantNotExist {
+				t.Errorf("errors.Is(err, fs.ErrNotExist) = %v, want %v", got, tt.wantNotExist)
+			}
+		})
 	}
 }
 

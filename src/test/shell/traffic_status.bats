@@ -25,7 +25,7 @@ teardown() {
 
   run bash "$STATUS"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"not running"* ]]
+  [[ "$output" == *"not running"* ]] || false
 }
 
 @test "a namespace with no job reports not running rather than erroring" {
@@ -34,8 +34,8 @@ teardown() {
 
   run bash "$STATUS"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"not running"* ]]
-  [[ "$output" != *"NotFound"* ]]
+  [[ "$output" == *"not running"* ]] || false
+  [[ "$output" != *"NotFound"* ]] || false
 }
 
 @test "a live job reports running with its profile" {
@@ -44,7 +44,7 @@ teardown() {
 
   run bash "$STATUS"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"running (profile: steady)"* ]]
+  [[ "$output" == *"running (profile: steady)"* ]] || false
 }
 
 @test "a finished job reports completed, not running" {
@@ -53,6 +53,6 @@ teardown() {
 
   run bash "$STATUS"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"completed"* ]]
-  [[ "$output" != *"Traffic generator: running"* ]]
+  [[ "$output" == *"completed"* ]] || false
+  [[ "$output" != *"Traffic generator: running"* ]] || false
 }

@@ -25,11 +25,12 @@ Either roll back:
 kubectl -n {{.WorkloadNamespace}} rollout undo deploy/{{.WorkloadName}}
 ```
 
-or set the image back explicitly (the original is recorded in the
-`labfault-bad-deploy-rollout-original` annotation):
+or set the image back explicitly. The previous ReplicaSet still names the
+image that was running:
 
 ```bash
-kubectl -n {{.WorkloadNamespace}} get deploy {{.WorkloadName}} -o jsonpath='{.metadata.annotations.labfault-bad-deploy-rollout-original}'
+kubectl -n {{.WorkloadNamespace}} rollout history deploy/{{.WorkloadName}}
+kubectl -n {{.WorkloadNamespace}} get rs -o custom-columns=NAME:.metadata.name,IMAGE:.spec.template.spec.containers[0].image
 kubectl -n {{.WorkloadNamespace}} set image deploy/{{.WorkloadName}} {{.WorkloadName}}=<that-image>
 kubectl -n {{.WorkloadNamespace}} rollout status deploy/{{.WorkloadName}}
 ```

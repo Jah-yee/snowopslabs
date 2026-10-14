@@ -46,12 +46,12 @@ setup() {
 @test "no binding at all is a usage error, never a guess" {
   run sh "$SCRIPT" v1.1.0
   [ "$status" -eq 2 ]
-  [[ "$output" == *"needs to know which app"* ]]
-  [[ "$output" != *"app="* ]]
+  [[ "$output" == *"needs to know which app"* ]] || false
+  [[ "$output" != *"app="* ]] || false
 }
 
 @test "a flag without a value is a usage error" {
   run sh "$SCRIPT" --app
   [ "$status" -eq 2 ]
-  [[ "$output" == *"--app needs a value"* ]]
+  [[ "$output" == *"--app needs a value"* ]] || false
 }

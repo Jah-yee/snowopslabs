@@ -4,9 +4,11 @@ package httpapi
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
+	"github.com/sagar2395/snowopslabs/internal/k8s"
 	"github.com/sagar2395/snowopslabs/internal/lab"
 )
 
@@ -27,7 +29,7 @@ func (s *Server) labDeps(continueOnError bool) lab.Deps {
 func (s *Server) handleLabSnapshots(w http.ResponseWriter, r *http.Request) {
 	snaps, err := s.labStore().List()
 	if err != nil {
-		respondError(w, r, http.StatusInternalServerError, "internal_error", err.Error())
+		respondInternal(w, r, err)
 		return
 	}
 	if snaps == nil {
@@ -45,9 +47,13 @@ func (s *Server) handleLabSnapshotTake(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
 
-	snap, warnings := lab.Collect(ctx, name, s.cfg.Profile, s.cfg.DomainSuffix, s.cfg.ProjectRoot, s.registry, s.scenes)
+	snap, warnings, err := lab.Collect(ctx, name, s.cfg.Profile, s.cfg.DomainSuffix, s.cfg.ProjectRoot, s.registry, s.scenes)
+	if err != nil {
+		respondCollectError(w, r, err)
+		return
+	}
 	if err := s.labStore().Save(snap); err != nil {
-		respondError(w, r, http.StatusInternalServerError, "internal_error", err.Error())
+		respondInternal(w, r, err)
 		return
 	}
 	respondJSON(w, http.StatusOK, map[string]any{
@@ -104,7 +110,11 @@ func (s *Server) handleLabReset(w http.ResponseWriter, r *http.Request) {
 
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
-	current, _ := lab.Collect(ctx, "current", s.cfg.Profile, s.cfg.DomainSuffix, s.cfg.ProjectRoot, s.registry, s.scenes)
+	current, _, err := lab.Collect(ctx, "current", s.cfg.Profile, s.cfg.DomainSuffix, s.cfg.ProjectRoot, s.registry, s.scenes)
+	if err != nil {
+		respondCollectError(w, r, err)
+		return
+	}
 	plan := lab.ResetPlan(current.Platform, current.Apps, current.Scenarios)
 
 	jobID := s.exec.NextActionID()
@@ -122,4 +132,14 @@ func (s *Server) handleLabReset(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusAccepted, map[string]any{
 		"jobId": jobID, "status": "accepted", "steps": len(plan),
 	})
+}
+
+// respondCollectError answers a failure to read the lab's current state. An
+// unreachable cluster is a 503 the client can retry; the lab was not changed.
+func respondCollectError(w http.ResponseWriter, r *http.Request, err error) {
+	if errors.Is(err, k8s.ErrUnreachable) {
+		respondError(w, r, http.StatusServiceUnavailable, "unavailable", err.Error()+": nothing was changed")
+		return
+	}
+	respondInternal(w, r, err)
 }

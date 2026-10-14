@@ -45,7 +45,14 @@ Conventions, from [ADR-0006](../../adr/0006-api-conventions.md):
   the message. The human-readable cause is in `detail`. A path under `/api/v2`
   that no route serves answers `404` with `not_found`, and a route called with a
   method it does not accept answers `405` with `method_not_allowed`; neither
-  gets the SPA shell.
+  gets the SPA shell. A route that names an app, scenario, service, runtime,
+  challenge or learning path that does not exist answers `404 not_found`
+  before it accepts any work, and no `detail` repeats a path on the server's
+  disk.
+- **Request bodies are JSON of at most 1 MiB.** A larger one answers
+  `413 request_too_large`, and a body that is not valid JSON answers
+  `400 invalid_request`; neither starts any work. A route whose body is
+  optional, such as `scenarios/{name}/up`, accepts an empty one.
 - **List collections are paginated**: `{items, nextCursor}`, with `?limit` (max
   200) and an opaque `?cursor`. Page until `nextCursor` comes back empty.
 - **Catalog reads carry an `ETag`** and honour `If-None-Match` (→ 304).

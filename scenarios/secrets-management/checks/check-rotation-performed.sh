@@ -7,7 +7,16 @@ set -eu
 # demanded, so the drill is not a guess-the-magic-string exercise.
 
 ROOT_TOKEN="${VAULT_DEV_ROOT_TOKEN:-root}"
-BASELINE="${SECRETS_BASELINE_VALUE:-baseline-v1}"
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=scripts/_consumer.sh
+. "${SCRIPT_DIR}/../scripts/_consumer.sh"
+
+# The baseline is the value this activation seeded, read from its checkpoint: a
+# lab seeded with its own value is not rotated just because it differs from the
+# default.
+BASELINE="$(checkpoint baseline)"
+BASELINE="${BASELINE:-${SECRETS_BASELINE_VALUE:-baseline-v1}}"
 
 CURRENT="$(kubectl exec -n vault vault-0 -- sh -c \
   "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN='${ROOT_TOKEN}' vault kv get -field=api-key secret/${WORKLOAD_NAME}" 2>/dev/null || true)"

@@ -87,7 +87,7 @@ checks:
   # collapses to a couple of millicores and an absurd request clears the floor.
   - name: workload-under-load
     type: promql
-    query: 'sum(rate({{.WorkloadMetric}}_count{app="{{.WorkloadName}}"}[5m])) or vector(0)'
+    query: 'sum(rate({{.WorkloadMetric}}_count{app="{{.WorkloadName}}"}[{{.SinceActivation}}])) or vector(0)'
     operator: ">="
     value: "5"
     pending: true

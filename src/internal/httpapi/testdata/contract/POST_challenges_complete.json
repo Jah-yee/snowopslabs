@@ -1,0 +1,24 @@
+{
+  "challenge": "demo-challenge",
+  "checks": [
+    {
+      "attempts": 1,
+      "durationMs": 0,
+      "explanation": "marker-gone passed: observed exit 0",
+      "got": "exit 0",
+      "name": "marker-gone",
+      "pass": true,
+      "type": "script",
+      "want": "exit 0"
+    }
+  ],
+  "checksPassed": 1,
+  "checksTotal": 1,
+  "elapsedSeconds": 0,
+  "finishedAt": "<time>",
+  "hintsUsed": 0,
+  "outcome": "passed",
+  "passed": true,
+  "score": 100,
+  "startedAt": "<time>"
+}

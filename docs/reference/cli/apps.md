@@ -15,6 +15,9 @@ labctl app capabilities      # the vocabulary a scenario may require
 labctl app verify go-api     # check the app against the contract it declares
 ```
 
+`build`, `deploy` and `destroy` refuse a name with no `apps/<name>/app.env` and
+list the apps that exist.
+
 `app deploy` is also the way back to the chart: on Helm 4, which applies
 server-side, it passes `--force-conflicts`, so fields changed by hand with
 `kubectl set env`, `scale` or `patch` are taken back rather than refused.

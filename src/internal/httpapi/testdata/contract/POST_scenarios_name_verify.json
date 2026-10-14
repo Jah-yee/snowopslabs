@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "results": [
+    {
+      "attempts": 1,
+      "durationMs": 0,
+      "explanation": "marker-present passed: observed exit 0",
+      "got": "exit 0",
+      "name": "marker-present",
+      "pass": true,
+      "remediation": "run the setup again",
+      "type": "script",
+      "want": "exit 0"
+    }
+  ],
+  "scenario": "demo-scenario"
+}

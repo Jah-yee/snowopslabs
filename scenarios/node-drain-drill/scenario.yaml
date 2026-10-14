@@ -84,7 +84,7 @@ checks:
 
   - name: traffic-is-flowing
     type: promql
-    query: 'sum(rate({{.WorkloadMetric}}_count{app="{{.WorkloadName}}"}[10m]))'
+    query: 'sum(rate({{.WorkloadMetric}}_count{app="{{.WorkloadName}}"}[{{.SinceActivation}}]))'
     operator: ">"
     value: "0.5"
     pending: true
@@ -101,7 +101,7 @@ checks:
 
   - name: availability-held-during-drain
     type: promql
-    query: 'sum(rate({{.WorkloadMetric}}_count{app="{{.WorkloadName}}",http_response_status_code!~"5.."}[10m])) / sum(rate({{.WorkloadMetric}}_count{app="{{.WorkloadName}}"}[10m]))'
+    query: 'sum(rate({{.WorkloadMetric}}_count{app="{{.WorkloadName}}",http_response_status_code!~"5.."}[{{.SinceActivation}}])) / sum(rate({{.WorkloadMetric}}_count{app="{{.WorkloadName}}"}[{{.SinceActivation}}]))'
     operator: ">="
     value: "{{.AvailabilitySLO}}"
     pending: true

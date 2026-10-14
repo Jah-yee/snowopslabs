@@ -4,9 +4,10 @@
 # Per-package coverage gate with a ratchet.
 #
 # Every package must reach COVERAGE_MIN (default 80%) — except packages listed
-# in .coverage-exceptions, which must reach at least their recorded value. That
-# makes the exceptions a ratchet: a package scheduled for rewrite in a later
-# wave cannot regress, and the moment it clears the bar its exception is deleted.
+# in .coverage-exceptions, which must reach at least their recorded floor. The
+# floor is a ratchet in both directions: a package below it fails, a package
+# more than COVERAGE_SLACK points above it fails until the floor is raised, and
+# a package that clears the bar fails until its entry is deleted.
 #
 # Coverage is computed exactly from the profile (covered statements / total
 # statements per package), not by averaging per-file percentages.
@@ -18,6 +19,7 @@ set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 profile="${1:-${COVERAGE_PROFILE:-$root/coverage.out}}"
 min="${2:-${COVERAGE_MIN:-80}}"
+slack="${COVERAGE_SLACK:-2}"
 exceptions="${COVERAGE_EXCEPTIONS:-$root/.coverage-exceptions}"
 
 if [ ! -f "$profile" ]; then
@@ -71,6 +73,10 @@ while read -r pkg pct; do
     elif awk "BEGIN { exit !($pct >= $min) }"; then
       printf '  RATCHET %-55s %5s%% now clears %s%% — remove its .coverage-exceptions entry\n' \
         "$pkg" "$pct" "$min" >&2
+      status=1
+    elif awk "BEGIN { exit !($pct >= $floor + $slack) }"; then
+      printf '  RAISE %-57s %5s%% is %s points or more above its floor %s%% — set the floor to %s\n' \
+        "$pkg" "$pct" "$slack" "$floor" "$(awk "BEGIN { printf \"%d.0\", $pct }")" >&2
       status=1
     fi
     continue

@@ -39,15 +39,15 @@ run_gate() {
   write_profile "example.com/m/pkgb" 8 2   # 80% — exactly on the line
   run_gate
   [ "$status" -eq 0 ]
-  [[ "$output" == *"coverage gate passed"* ]]
+  [[ "$output" == *"coverage gate passed"* ]] || false
 }
 
 @test "fails a package below the minimum and names it with its percentage" {
   write_profile "example.com/m/pkga" 5 5   # 50%
   run_gate
   [ "$status" -ne 0 ]
-  [[ "$output" == *"pkga"* ]]
-  [[ "$output" == *"50.0%"* ]]
+  [[ "$output" == *"pkga"* ]] || false
+  [[ "$output" == *"50.0%"* ]] || false
 }
 
 @test "computes package coverage across files, not per-file averages" {
@@ -58,31 +58,54 @@ run_gate() {
   echo "example.com/m/pkga/b.go:1.1,2.1 99 0" >>"$PROFILE"
   run_gate
   [ "$status" -ne 0 ]
-  [[ "$output" == *"1.0%"* ]]
+  [[ "$output" == *"1.0%"* ]] || false
 }
 
 @test "an exception lets a listed package stay below the global minimum" {
   write_profile "example.com/m/legacy" 5 5   # 50%
-  echo "example.com/m/legacy 50 W3 scheduled for rewrite" >"$EXCEPTIONS"
+  echo "example.com/m/legacy 50 P2 pending tests" >"$EXCEPTIONS"
   run_gate
   [ "$status" -eq 0 ]
 }
 
 @test "an exception is a floor: regression below it fails" {
   write_profile "example.com/m/legacy" 4 6   # 40%
-  echo "example.com/m/legacy 50 W3 scheduled for rewrite" >"$EXCEPTIONS"
+  echo "example.com/m/legacy 50 P2 pending tests" >"$EXCEPTIONS"
   run_gate
   [ "$status" -ne 0 ]
-  [[ "$output" == *"exception floor"* ]]
+  [[ "$output" == *"exception floor"* ]] || false
+}
+
+@test "a package well above its floor must have the floor raised" {
+  write_profile "example.com/m/legacy" 6 4   # 60%
+  echo "example.com/m/legacy 50.0 P2 pending rewrite" >"$EXCEPTIONS"
+  run_gate
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"RAISE"* ]] || false
+  [[ "$output" == *"set the floor to 60.0"* ]] || false
+}
+
+@test "a package within the slack of its floor passes" {
+  write_profile "example.com/m/legacy" 51 49   # 51%
+  echo "example.com/m/legacy 50.0 P2 pending rewrite" >"$EXCEPTIONS"
+  run_gate
+  [ "$status" -eq 0 ]
+}
+
+@test "the slack is configurable" {
+  write_profile "example.com/m/legacy" 6 4   # 60%
+  echo "example.com/m/legacy 50.0 P2 pending rewrite" >"$EXCEPTIONS"
+  COVERAGE_SLACK=20 run_gate
+  [ "$status" -eq 0 ]
 }
 
 @test "an exception that is no longer needed must be removed" {
   write_profile "example.com/m/legacy" 9 1   # 90% — clears the global bar
-  echo "example.com/m/legacy 50 W3 scheduled for rewrite" >"$EXCEPTIONS"
+  echo "example.com/m/legacy 50 P2 pending tests" >"$EXCEPTIONS"
   run_gate
   [ "$status" -ne 0 ]
-  [[ "$output" == *"RATCHET"* ]]
-  [[ "$output" == *"remove its .coverage-exceptions entry"* ]]
+  [[ "$output" == *"RATCHET"* ]] || false
+  [[ "$output" == *"remove its .coverage-exceptions entry"* ]] || false
 }
 
 @test "a stale exception for a package with no coverage fails" {
@@ -90,7 +113,7 @@ run_gate() {
   echo "example.com/m/deleted-package 50 W3 gone" >"$EXCEPTIONS"
   run_gate
   [ "$status" -ne 0 ]
-  [[ "$output" == *"STALE"* ]]
+  [[ "$output" == *"STALE"* ]] || false
 }
 
 @test "comments and blank lines in the exceptions file are ignored" {
@@ -111,8 +134,8 @@ run_gate() {
 @test "a missing profile is an actionable error, not a silent pass" {
   COVERAGE_EXCEPTIONS="$EXCEPTIONS" run bash "$GATE" "$WORK/absent.out" 80
   [ "$status" -ne 0 ]
-  [[ "$output" == *"not found"* ]]
-  [[ "$output" == *"make test-go"* ]]
+  [[ "$output" == *"not found"* ]] || false
+  [[ "$output" == *"make test-go"* ]] || false
 }
 
 @test "the minimum is configurable" {
@@ -124,14 +147,14 @@ run_gate() {
 }
 
 @test "the repository's own exceptions file is well-formed" {
-  # Every entry must carry a minimum, a wave and a reason — an exception
-  # without a stated expiry is how a temporary gap becomes permanent.
+  # Every entry carries a floor, the RFC 0001 phase that removes it (or
+  # "permanent") and a reason, so no gap is open-ended by accident.
   run awk '
     /^[[:space:]]*#/ { next }
     NF == 0 { next }
     NF < 4 { print "malformed: " $0; bad = 1 }
     $2 !~ /^[0-9]+(\.[0-9]+)?$/ { print "not a percentage: " $0; bad = 1 }
-    $3 !~ /^W[0-9]+$/ { print "not a wave id: " $0; bad = 1 }
+    $3 !~ /^(P[0-9]+|permanent)$/ { print "not a phase id: " $0; bad = 1 }
     END { exit bad ? 1 : 0 }
   ' "$ROOT/.coverage-exceptions"
   [ "$status" -eq 0 ]

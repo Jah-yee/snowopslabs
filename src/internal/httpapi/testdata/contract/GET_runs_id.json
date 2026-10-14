@@ -1,0 +1,11 @@
+{
+  "durationMs": 0,
+  "endedAt": "<time>",
+  "id": "run-1",
+  "kind": "lab.up",
+  "queuedAt": "<time>",
+  "startedAt": "<time>",
+  "status": "succeeded",
+  "steps": [],
+  "target": "k3d"
+}

@@ -507,6 +507,8 @@ func (e *Engine) targetEnv(f *Fault) map[string]string {
 	}
 }
 
+// runFaultScript runs one of f's scripts. With label empty it runs without
+// broadcasting: nothing a client watches names the fault or shows its output.
 func (e *Engine) runFaultScript(f *Fault, script, label string, exec *executor.Executor) error {
 	for k, v := range e.targetEnv(f) {
 		exec.SetEnv(k, v)
@@ -514,6 +516,9 @@ func (e *Engine) runFaultScript(f *Fault, script, label string, exec *executor.E
 	rel, err := filepath.Rel(e.ProjectRoot, filepath.Join(f.Dir, script))
 	if err != nil {
 		rel = filepath.Join(f.Dir, script)
+	}
+	if label == "" {
+		return exec.RunScript(rel)
 	}
 	_, err = exec.RunScriptStreamed(label, rel)
 	return err
@@ -542,7 +547,11 @@ func (e *Engine) Inject(name string, exec *executor.Executor, force, silent bool
 			return nil, fmt.Errorf("incident %s cannot start: %w", f.Name, err)
 		}
 	}
-	if err := e.runFaultScript(f, "inject.sh", "Inject incident: "+f.Name, exec); err != nil {
+	label := "Inject incident: " + f.Name
+	if silent {
+		label = ""
+	}
+	if err := e.runFaultScript(f, "inject.sh", label, exec); err != nil {
 		return f, fmt.Errorf("injecting %s: %w", f.Name, err)
 	}
 	if err := e.saveActive(&Active{Fault: f.Name, InjectedAt: time.Now().UTC(), Silent: silent, App: e.Workload.Name}); err != nil {

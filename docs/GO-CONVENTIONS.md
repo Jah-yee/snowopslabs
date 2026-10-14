@@ -75,10 +75,9 @@ retire them, and new code should not copy them:
   should be a `run.Spec`.
 - Guard every map that more than one goroutine touches, or use `sync.Map` for
   write-once, read-many data (`run.Engine.specs`).
-- Never mutate a value that a cache hands out. `scenario.(*Engine).Get` writes
-  to a shared `*Scenario`, and the race detector catches it in
-  `service/scenario`: [B13](backlog.md#b13--scenarioengineget-writes-to-a-shared-cached-scenario).
-  Return a copy, or compute the field on read.
+- Never mutate a value that a cache hands out. Return a copy, or compute the
+  field on read: `scenario.(*Engine).Get` and `List` copy the cached
+  `*Scenario` before they fill in `Active`.
 - Prefer `wg.Go(f)` over `wg.Add(1)` followed by `go func() { defer wg.Done() }`,
   and prefer the `atomic.Int64` type over the `atomic.AddInt64` functions.
 - `make test` runs with `-race`. A race report is a bug, never a flaky test.
@@ -135,6 +134,11 @@ gets its own copies.
 - Don't add new package-level `var fooCmd = &cobra.Command{…}` values or flag
   variables. Older commands still use them
   ([B18](backlog.md#b18--internalcli-runs-on-package-level-state)).
+- A command is tested through the CLI harness: a step in its group's journey,
+  so its output is in a golden transcript, and a row in the group's failure
+  table for each way it fails ([TESTING](TESTING.md#go-unit-and-contract-tests)).
+- An error names what to run next. A name that does not exist is answered with
+  the command that lists the ones that do.
 - Every change to the command surface also updates the [CLI reference](reference/cli/index.md).
 
 ## 7. Naming
@@ -191,6 +195,9 @@ A bare `//nolint`, or one without a reason, fails review.
 ## Before you open a PR
 
 - [ ] `make fmt lint test` passes, including `-race`.
+- [ ] Every function you added or changed has a table-driven test for its happy
+      path and each error return, and a bug fix has a test that failed before
+      it ([TESTING](TESTING.md#what-each-change-needs)).
 - [ ] New I/O takes a context, and new errors wrap with `%w`.
 - [ ] No new package-level mutable state and no new `go func()` in a handler.
 - [ ] The docs this change touches are updated in the same PR, and

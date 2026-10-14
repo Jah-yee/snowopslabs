@@ -19,6 +19,16 @@ labctl learn progress kubernetes-foundations
 completion check. Run it again once you have done the task to verify and
 advance. If only one path exists, the path argument can be omitted.
 
+The web UI's **Check** button does the same through
+`POST /api/v2/learn/paths/{name}/complete` with `{"moduleIdx": n}`. The server
+runs the module's check against the lab and records the module only when it
+passes; the answer is the path's progress with the check's result in `check`.
+Like the CLI, it grades against the default app.
+
+REST: `GET /api/v2/learn/paths`, `GET /api/v2/learn/paths/{name}`,
+`GET /api/v2/learn/paths/{name}/progress`, `POST /api/v2/learn/paths/{name}/start`,
+`POST /api/v2/learn/paths/{name}/reset`, `POST /api/v2/learn/paths/{name}/complete`.
+
 ## `labctl challenge` — timed assessments
 
 A challenge injects a real fault (or activates a scenario), races you against a
@@ -57,4 +67,12 @@ so a correct fix scores zero.
 
 REST: `GET /api/v2/challenges`, `GET /api/v2/challenges/{name}`,
 `GET /api/v2/challenges/status`, `GET /api/v2/challenges/history`,
-`POST /api/v2/challenges/complete`.
+`POST /api/v2/challenges/complete`. A run's `elapsedSeconds` is whole seconds.
+
+`complete` is `labctl challenge submit` over HTTP. It takes no body: the server
+runs the challenge's checks against the lab and answers the scored run with
+`passed` and the result of each check in `checks`. A pass is recorded for the
+signed-in user, ends the run and undoes the setup; `cleanupWarning` is set if
+the setup could not be undone. A fail scores the attempt and leaves the run
+going. It answers `409 no_active_challenge` when no challenge is running and
+`409 no_checks` when the challenge's grading resolves to no checks.

@@ -6,12 +6,15 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"slices"
 	"strings"
+	"syscall"
 
 	"github.com/spf13/cobra"
 
@@ -46,12 +49,12 @@ var rootCmd = &cobra.Command{
 	Use:   "labctl",
 	Short: "SnowOps Labs — platform engineering simulator control plane",
 	Long:  `labctl is the CLI, web UI, and API for SnowOps Labs, a Kubernetes platform engineering simulator.`,
-	// A runtime failure (a helm error, a failing check) is not a usage mistake —
-	// don't dump the full command help after it. Inherited by all subcommands, so
-	// only genuine arg/flag errors still print usage. (Individual commands that
-	// already set this are now redundant but harmless.)
-	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Arguments and flags are valid by the time this runs, so an error
+		// from here on is a runtime failure (a helm error, a failing check)
+		// and is printed without the command's usage text.
+		cmd.SilenceUsage = true
+
 		// Some commands, such as doctor, must work even when this setup
 		// would fail.
 		if skipSharedInit(cmd) {
@@ -246,7 +249,13 @@ func Execute(version string) {
 	if err := addUserBinToPath(); err != nil {
 		slog.Warn("could not add ~/.local/bin to PATH; tools installed there may not be found", "err", err)
 	}
-	if err := rootCmd.Execute(); err != nil {
+	// Ctrl-C and SIGTERM cancel the command's context instead of killing the
+	// process, so the run engine stops its scripts' process groups and records
+	// the runs as cancelled.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	err := rootCmd.ExecuteContext(ctx)
+	stop()
+	if err != nil {
 		os.Exit(1)
 	}
 }

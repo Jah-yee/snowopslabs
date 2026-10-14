@@ -24,6 +24,15 @@ fi
 NOW="$(kubectl -n "$NS" get pods -l "app=${APP}" --field-selector=status.phase=Running \
   -o 'jsonpath={range .items[*]}{.spec.nodeName}{"\n"}{end}' 2>/dev/null | sort -u || true)"
 
+# With no pod running, every node "holds none now". That is a workload that is
+# down, not one that was evicted and rescheduled.
+if [ -z "$NOW" ]; then
+  echo "FAIL: no ${APP} pod is running in ${NS}, so nothing shows the evicted pods were rescheduled." >&2
+  echo "  A drain only counts when the workload keeps serving from another node:" >&2
+  echo "    kubectl -n $NS get pods -l app=$APP -o wide" >&2
+  exit 1
+fi
+
 for node in $BEFORE; do
   if ! printf '%s\n' "$NOW" | grep -qx "$node"; then
     echo "OK: ${node} held ${APP} pods before the drain and holds none now — they were evicted and rescheduled."

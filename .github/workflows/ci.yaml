@@ -1,8 +1,8 @@
 # CI — every gate that must hold before a change merges.
 #
-# Nothing here is advisory: each job fails the build. The four test layers are
-# defined in docs/TESTING.md; the quality bar per task is the Definition of Done
-# in docs/ROADMAP.md.
+# Nothing here is advisory: each job fails the build. The test layers and the
+# gates on a change are defined in docs/TESTING.md; the quality bar per task is
+# the Definition of Done in docs/AGENT-CONTEXT.md.
 #
 # Path filters are deliberately absent. In a repo this interconnected (Go reads
 # YAML content, scripts are covered by bats, the SPA is embedded in the binary)
@@ -26,8 +26,22 @@ permissions:
 env:
   GO_VERSION: '1.26'
   NODE_VERSION: '22'
+  # What the changed-lines gates and test-check measure a change against. The
+  # jobs that run them check out full history so this ref exists.
+  BASE_REF: origin/main
 
 jobs:
+  # ── The change itself ──────────────────────────────────────────────────────
+
+  test-check:
+    name: Code changed, test changed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: make test-check
+
   # ── Layer 1: Go ────────────────────────────────────────────────────────────
 
   go-test:
@@ -41,6 +55,8 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
@@ -58,7 +74,8 @@ jobs:
       # The race detector is not optional: the run engine is concurrent by
       # design (ADR-0003, ADR-0004). Run from the repo root; the target
       # delegates into the src/ module (make -C src) and writes src/coverage.out.
-      - name: Test with race detector and coverage gate
+      # It ends with the per-package floor and the changed-lines gate.
+      - name: Test with race detector and coverage gates
         run: make test-go
 
       - name: Upload coverage
@@ -129,8 +146,7 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           check-latest: true
           cache: true
-      # A short run on every PR catches crashers introduced by the change; the
-      # long run happens nightly.
+      # A short run on every PR catches crashers introduced by the change.
       - run: make fuzz FUZZTIME=10s
 
   # ── Layer 2: shell ─────────────────────────────────────────────────────────
@@ -150,6 +166,14 @@ jobs:
 
       - name: Install bats
         run: npm install -g bats
+
+      # The app chart tests render the charts with the Helm the lab pins.
+      - name: Read the pinned Helm version
+        id: pins
+        run: . config/versions.env && echo "helm=v${HELM_VERSION}" >>"$GITHUB_OUTPUT"
+      - uses: azure/setup-helm@v4
+        with:
+          version: ${{ steps.pins.outputs.helm }}
 
       - name: Shell tests
         run: make test-shell
@@ -173,6 +197,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -190,6 +216,9 @@ jobs:
         run: npm run test:coverage
         working-directory: src/ui
 
+      - name: Changed UI lines are tested
+        run: make changed-lines-ui
+
       - name: Build SPA
         run: npm run build
         working-directory: src/ui
@@ -199,6 +228,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # The real-binary journeys build labctl and run it over the fixture lab.
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          check-latest: true
+          cache: true
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}

@@ -3,7 +3,6 @@
 package httpapi
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
@@ -116,8 +115,7 @@ func (s *Server) handleAuthLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req loginRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, r, http.StatusBadRequest, "invalid_request", "invalid JSON body")
+	if !decodeBody(w, r, &req, false) {
 		return
 	}
 	if req.Username == "" || req.Password == "" {

@@ -19,23 +19,22 @@ Effort is in engineering days and is an estimate, not a commitment.
 | [B5](#b5--activating-from-the-ui-does-not-report-missing-hostnames) | Activating from the UI does not report missing hostnames | API, UI | 0.5–1 |
 | [B6](#b6--incident-scripts-still-fall-back-to-go-api) | Incident scripts still fall back to go-api | content | 0.5–1 |
 | [B7](#b7--a-docker-vm-restart-silently-kills-k3d-nodes) | A Docker VM restart silently kills k3d nodes | runtime, CLI | 1 |
-| [B8](#b8--scenario-down-reports-success-when-its-deletes-fail) | `scenario down` reports success when its deletes fail | engine, content | 1–1.5 |
 | [B9](#b9--latency-below-5ms-is-invisible-and-it-hides-tail-amplification) | Latency below 5ms is invisible, and it hides tail amplification | apps, grading | 1–2 |
 | [B10](#b10--chaos-network-faults-never-reach-the-traffic-generator) | Chaos network faults never reach the traffic generator | content, traffic | 1–2 |
 | [B11](#b11--secrets-management-only-works-for-the-app-the-platform-was-installed-for) | secrets-management only works for the app the platform was installed for | platform, content | 1 |
 | [B12](#b12--every-k3d-node-promises-the-whole-machines-memory) | Every k3d node promises the whole machine's memory | runtime | 1 |
-| [B13](#b13--scenarioengineget-writes-to-a-shared-cached-scenario) | `scenario.Engine.Get` writes to a shared, cached scenario | engine | 0.5 |
-| [B14](#b14--ctrl-c-orphans-running-scripts) | Ctrl-C orphans running scripts | CLI, run engine | 1 |
-| [B15](#b15--two-submits-can-take-the-same-lock) | Two submits can take the same lock | run engine, store | 0.5–1 |
-| [B16](#b16--web-ui-actions-bypass-the-run-engine) | Web UI actions bypass the run engine | API | 4–6 |
-| [B17](#b17--api-request-bodies-are-unbounded) | API request bodies are unbounded | API | 0.25 |
+| [B16](#b16--web-ui-actions-bypass-the-run-engine) | Web UI actions bypass the run engine | API, UI | 5–7 |
 | [B18](#b18--internalcli-runs-on-package-level-state) | `internal/cli` runs on package-level state | CLI | 3–4 |
 | [B19](#b19--smaller-go-clean-ups) | Smaller Go clean-ups | Go | 1–2 |
 | [B20](#b20--installsh-leaves-a-fresh-mac-stuck-on-path) | `install.sh` leaves a fresh Mac stuck on `PATH` | install | 0.5 |
 | [B21](#b21--init-floods-the-screen-with-metricsk8sio-discovery-errors) | `init` floods the screen with `metrics.k8s.io` discovery errors | platform | 0.5–1 |
 | [B22](#b22--cost-right-sizing-cannot-activate-on-a-2-cpu-lab) | cost-right-sizing cannot activate on a 2 CPU lab | content | 0.5–1 |
 | [B23](#b23--scenario-explore-links-point-at-dashboards-that-do-not-exist-yet) | Scenario Explore links point at dashboards that do not exist yet | UI, content | 0.5 |
-| [B24](#b24--service-selector-broken-writes-the-answer-on-the-service) | service-selector-broken writes the answer on the Service | content | 0.5 |
+| [B28](#b28--the-pod-memory-panel-cannot-show-one-small-pod) | The pod memory panel cannot show one small pod | dashboards, content | 0.5 |
+| [B29](#b29--oom-kills-output-gives-the-fault-away-and-its-solution-describes-an-older-fault) | oom-kill's output gives the fault away, and its solution describes an older fault | content | 0.5–1 |
+| [B30](#b30--rollout-undo-brings-old-fault-markers-back-onto-the-deployment) | `rollout undo` brings old fault markers back onto the Deployment | content | 0.5 |
+| [B35](#b35--a-hand-fixed-incident-leaves-its-fault-record-and-alert-rule-behind) | A hand-fixed incident leaves its fault record and alert rule behind | engine, content | 0.5–1 |
+| [B36](#b36--platform-status-misses-components-a-scenario-installed) | `platform status` misses components a scenario installed | CLI, engine | 0.5–1 |
 
 ---
 
@@ -91,17 +90,20 @@ not for comparing performance grades.
 
 **Problem.** There is one cluster-wide k6 Job (`traffic-k6`) and its remote-written
 metrics (`k6_http_reqs_total`, `k6_http_req_duration_p95`, …) have no `app`
-label. On Application Request Metrics the "Offered vs served" panel therefore
-compares all k6 traffic with whichever apps the App selector picks, and the k6
-panels cannot be filtered at all (they carry a description saying so). Two
-activations can never both be under load.
+label. Application Request Metrics works around it: the k6 panels match the App
+selector against the `url` label (`url=~"https?://$app\\..*"`) and rebuild
+`app` with `label_replace`. That holds only while the target's hostname starts
+with the app name, and `k6_dropped_iterations_total` has no `url` label, so the
+dropped share of "Offered vs served" belongs to no app. Two activations can
+never both be under load.
 
 **Proposed approach.** Pass the target app into the run (`labctl traffic start
 --app` already resolves it) and tag it: `k6 run --tag app=<app>`, which the
 Prometheus remote-write output turns into a label. Name the Job per app
 (`traffic-k6-<app>`) so runs can coexist, and make `traffic stop`/`status` accept
-`--app`. Then filter the k6 panels by `app=~"$app"` and remove their
-descriptions. Verify the label on a live lab before changing dashboards.
+`--app`. Then select the k6 series by `app=~"$app"` and drop the `url` matching
+and the `label_replace` calls. Verify the label on a live lab before changing
+dashboards.
 
 **Start at.** `src/services/traffic/start.sh`, `src/internal/traffic/traffic.go`,
 `src/internal/cli/traffic.go`,
@@ -216,39 +218,6 @@ whose k3s process is gone while its container is up, with the recovery above.
 
 ---
 
-## B8 — `scenario down` reports success when its deletes fail
-
-**Problem.** `Engine.Down` prints an uninstall error as a warning, carries on,
-removes the `.active` marker and returns success. On a lab whose API server was
-timing out, `scenario down event-driven-arch` and `scenario down gitops-cicd`
-both reported `succeeded` while every `kubectl delete` failed with `TLS
-handshake timeout`. The orders producers and consumers, the `orders` topic, the
-ArgoCD Applications, the `gitops-demo` and `gitops-broken` namespaces, the
-ServiceMonitors and PodMonitors, and the dashboard ConfigMaps were all left
-running. Because the marker was gone, `scenario down` then refused with "not
-active", so the only way out was deleting by hand. `scripts/remove-apps.sh`
-makes it worse by printing `✓ gitops-demo and gitops-broken removed` after its
-own deletes failed (every command ends in `|| true`).
-
-**Proposed approach.**
-
-1. Collect uninstall errors in `Down`. When any component fails, keep the
-   marker, name the failed components, and return an error telling the user to
-   re-run `labctl scenario down <name>`; every uninstall is already idempotent
-   (`--ignore-not-found`, `helm uninstall` of a missing release).
-2. Add `labctl scenario down --force` that clears the marker whatever failed, for
-   a component that can never be deleted again (a CRD already removed makes
-   `kubectl delete -f` fail with "no matches for kind").
-3. Make uninstall scripts report failure: drop `|| true` where a failure means
-   something was left behind, and print the success line only when the deletes
-   succeeded.
-4. Test: an executor fake whose delete fails must leave the scenario active.
-
-**Start at.** `src/internal/scenario/engine.go` (`Down`, `uninstallComponent`),
-`scenarios/gitops-cicd/scripts/remove-apps.sh`.
-
----
-
 ## B9 — Latency below 5ms is invisible, and it hides tail amplification
 
 **Problem.** The request histogram's first bucket ends at 5ms (`le` = 0.005, 0.01,
@@ -349,111 +318,46 @@ scenario so learners know how many they can run at once.
 
 ---
 
-## B13 — `scenario.Engine.Get` writes to a shared, cached scenario
-
-**Problem.** `Get` returns the `*Scenario` held in the engine's cache, but only
-after setting `s.Active` on it. Any two goroutines that call `Get` at the same
-time, or one that calls `Get` while a run reads the scenario, race on that
-field. `go test -race ./internal/service/scenario/` reports it on `main` in
-`TestActivate_ConflictsPerScenario`, which fails most runs. The same race is
-live in `labctl ui`, because its handlers call `Get` concurrently.
-
-**Proposed approach.** Stop writing to the cached value. Either return a
-shallow copy with `Active` filled in, or drop the field and have callers ask
-`IsActive(name)`. Take the copy approach first: it keeps every caller the same.
-
-**Start at.** `src/internal/scenario/engine.go` (`Get`, `isActive`).
-
----
-
-## B14 — Ctrl-C orphans running scripts
-
-**Problem.** `labctl` never installs a signal handler, so `cmd.Context()` is
-`context.Background()` and Ctrl-C kills the process with Go's default action.
-Scripts started through `internal/toolchain` run in their own process group
-(`Setpgid`), so the terminal's SIGINT doesn't reach them. They keep running
-with no parent, and their run stays `running` until the next engine start
-reconciles it. That breaks the promise in
-[ADR-0003](adr/0003-durable-run-engine.md). The same gap has two smaller
-effects:
-
-- `labctl ui` exits without calling `Shutdown` on the HTTP server.
-- `scenario verify --watch` sleeps with `time.Sleep`, which no context can
-  interrupt.
-
-**Proposed approach.** In `cli.Execute`, run the root command under
-`signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)` via
-`rootCmd.ExecuteContext`. Everything already reads `cmd.Context()`, so
-cancellation then flows through to `run.Engine` and each process group gets its
-graceful SIGTERM. Give `labctl ui` an `http.Server.Shutdown` on the same
-context, and replace the sleep with a `select` on `ctx.Done()` and a
-`time.After`.
-
-**Start at.** `src/internal/cli/root.go` (`Execute`), `src/internal/cli/ui.go`,
-`src/internal/cli/scenario.go` (verify `--watch`).
-
----
-
-## B15 — Two submits can take the same lock
-
-**Problem.** `run.(*Engine).Submit` checks `ActiveRunForLock` and then calls
-`CreateRun` as two separate statements. The index on `runs.lock_key` isn't
-unique, so two submits that land between those two calls both succeed. That
-can happen with two UI requests, or with the CLI in one terminal and the UI in
-another. Two runs then hold one lock, which is exactly what
-[ADR-0004](adr/0004-lock-and-reject-concurrency.md) exists to prevent.
-
-**Proposed approach.** Make the check and the insert one atomic statement, so it
-also holds across processes: `INSERT … SELECT … WHERE NOT EXISTS (SELECT 1 FROM
-runs WHERE lock_key = ? AND status IN ('queued','running'))`. Then report zero
-rows affected as the `*LockConflictError`. A partial unique index on
-`lock_key WHERE status IN (…) AND lock_key != ''` is the alternative. It needs
-a migration.
-
-**Start at.** `src/internal/run/engine.go` (`Submit`),
-`src/internal/store/runs.go` (`CreateRun`, `ActiveRunForLock`).
-
----
-
 ## B16 — Web UI actions bypass the run engine
 
 **Problem.** The `/api/v2` handlers for app deploy, destroy and build, platform
-install and uninstall, scenario up and down, services, runtimes, lab restore
-and reset, and traffic start their work in a detached `go func()` through
-`internal/executor`. That executor calls `exec.Command` with no context, takes
-no lock, and keeps its job history in memory. None of that work can be
-cancelled, none of it is refused on a conflict, and none of it survives a
-restart. The CLI's `lab`, `platform` and `incident` commands, meanwhile, go
+install and uninstall, scenario up and down, incident inject, services,
+runtimes, lab restore and reset, and traffic start their work in a detached
+`go func()`, or synchronously, through `internal/executor`. That executor calls
+`exec.Command` with no context, takes no lock, and keeps its job history in
+memory. None of that work can be cancelled, none of it is refused on a
+conflict, none of it survives a restart, and none of it appears in the Runs
+view. The CLI's `lab`, `platform`, `scenario` and `incident` commands go
 through `internal/service` and the run engine. The two interfaces therefore
 behave differently for the same operation, against both the
 [architecture](architecture/ARCHITECTURE.md#1-the-shape-of-the-system) and the
-"everything that shells out goes through `internal/run`" invariant.
+"everything that shells out goes through `internal/run`" invariant. The
+browser journeys for cancelling a run and resuming its log stream have to
+start the run from the CLI (`$E2E_HOLD.labctl`) because no route creates one.
 
-**Proposed approach.** Move one route family at a time onto the service that
-already exists: platform first (its service is complete), then scenario, lab,
-app and traffic. Each handler submits a `run.Spec` and returns `202` with the
-run ID, and the UI streams it from `/api/v2/runs/{id}`. Delete
-`internal/executor` once no handler uses it.
+**What is already in place.** `internal/service/{platform,lab,scenario,incident}`
+submit `run.Spec`s with lock keys. A run cancelled from another process stops
+within a second (the worker watches its record), the Runs view cancels and
+streams any run, and its log stream resumes after a dropped request.
+
+**Proposed approach.** One route family per pull request, each with its
+contract rows (`202` with the run ID, `409 lock_conflict` on a held lock,
+operator-only) and the UI action switched from the job panel to the run:
+
+1. Platform install and uninstall, onto `service/platform` (complete today).
+2. Scenario up and down, onto `service/scenario`.
+3. Incident inject and resolve, onto `service/incident`; the cancel and
+   stream journeys then start their run from the browser.
+4. Lab restore and reset, onto `service/lab`.
+5. App build, deploy and destroy: a new `service/app`.
+6. Traffic start and stop: a new `service/traffic` (GitHub issue #13).
+7. Services and runtimes, then delete `internal/executor`, the in-memory job
+   list and `/api/v2/jobs` with the job WebSocket, and point the UI's output
+   panel at runs.
 
 **Start at.** `src/internal/httpapi/handlers.go` (every `go func()`),
-`src/internal/httpapi/lab.go`, `src/internal/httpapi/traffic.go`,
-`src/internal/service/`.
-
----
-
-## B17 — API request bodies are unbounded
-
-**Problem.** No handler or middleware limits the request body size.
-`json.NewDecoder(r.Body)` reads whatever arrives. With auth on and
-`--bind 0.0.0.0`, an authenticated client can make the server buffer an
-arbitrarily large body.
-
-**Proposed approach.** Add `http.MaxBytesReader` in the middleware chain that
-already wraps every route. 1 MiB is far more than any request body the API
-takes. Return `413` through `respondError`.
-
-**Start at.** `src/internal/httpapi/middleware.go`, `src/internal/httpapi/server.go`.
-
+`src/internal/httpapi/incident.go`, `src/internal/httpapi/lab.go`,
+`src/internal/httpapi/traffic.go`, `src/internal/service/`.
 ---
 
 ## B18 — `internal/cli` runs on package-level state
@@ -468,6 +372,11 @@ bound to more package variables. The newer `learn`, `challenge`, `lab`,
 - Tests share state and can't run in parallel.
 - Command wiring depends on file init order.
 - A reader can't tell from a function's signature what it depends on.
+
+The CLI harness (`internal/cli/root_harness_test.go`) works around this:
+`resetCommands` puts every flag back between runs, and the journey goldens
+pin what each command prints, so a conversion that changes behaviour fails a
+golden.
 
 **Proposed approach.** Introduce an `app` struct holding what
 `PersistentPreRunE` builds, and give each command a constructor that takes it
@@ -504,8 +413,8 @@ Each is small, safe and independent:
   `pkg/checks.NewRunner` builds an `http.Client` with no `Timeout`. Only the
   per-check context bounds a request. Set a client timeout as a second guard.
 - The largest files mix several concerns and are the hardest to review:
-  `internal/scenario/engine.go` (1,450 lines), `internal/httpapi/handlers.go`
-  (1,070), `internal/incident/incident.go` (750). Split them by concern
+  `internal/scenario/engine.go` (1,490 lines), `internal/httpapi/handlers.go`
+  (1,090), `internal/incident/incident.go` (755). Split them by concern
   (install, state, templates; one handler file per resource), moving code
   without changing it.
 
@@ -532,6 +441,8 @@ for the user.
 **Start at.** `install.sh` (the `case ":$PATH:"` block), the README Install
 section, `docs/getting-started/macos.md`, the install tests in `src/test/shell`.
 
+---
+
 ## B21 — `init` floods the screen with `metrics.k8s.io` discovery errors
 
 **Problem.** A clean `labctl init` prints dozens of lines such as
@@ -552,6 +463,8 @@ filter only these known discovery lines from stderr and keep them under
 **Start at.** `platform/ingress/traefik/install.sh`,
 `platform/monitoring/metrics/prometheus/install.sh`, `platform/_lib/helm.sh`,
 [R05](runbooks/R05-platform-components.md).
+
+---
 
 ## B22 — cost-right-sizing cannot activate on a 2 CPU lab
 
@@ -575,6 +488,8 @@ instead of timing out. Re-run the scenario review on a 2 CPU lab.
 **Start at.** `scenarios/cost-right-sizing/scripts/inflate.sh`, the scenario's
 resource figures in [Resources](resources.md).
 
+---
+
 ## B23 — Scenario Explore links point at dashboards that do not exist yet
 
 **Problem.** The Explore tab of an inactive scenario links to its Grafana
@@ -592,23 +507,148 @@ links in each `scenario.yaml`.
 
 ---
 
-## B24 — service-selector-broken writes the answer on the Service
+## B28 — The pod memory panel cannot show one small pod
 
-**Problem.** `inject.sh` annotates the go-api Service with
-`labfault-service-selector-broken: injected` and
-`labfault-service-selector-broken-original-selector: {"app":"go-api",...,"app.kubernetes.io/name":"go-api"}`.
-`kubectl describe svc`, the one command the drill wants the learner to run,
-prints both lines right above the broken `Selector`, so the answer is on screen
-before any comparison. inject.sh already avoids a `labfault-` selector value for
-this reason; the annotation undoes it.
+**Problem.** "Pod memory working set" on the Pod Resources dashboard is
+`sum by (namespace, pod) (container_memory_working_set_bytes{container!=""})`
+with no dashboard variable, so every pod in the cluster shares one linear
+axis. go-api uses 4–8Mi and sits flat on the floor under Prometheus and
+Grafana. `oom-kill` sends the learner there twice: hint 3 ("Grafana's container
+memory panels") and `solution.md` ("the pod memory panel shows usage slamming
+into a flat ceiling right before each restart"). Neither can be seen. The only
+way to read one pod is to click it in the legend, and the panel does not draw
+the container's limit, so there is no ceiling to slam into.
 
-**Found.** Recording VID-13 (Service has no endpoints).
+**Found.** Recording VID-14 (OOMKilled). The take picks the fixed pod in the
+legend to show its memory going level after the fix. During the fault there is
+nothing to show: each restart is a new container with one or two samples.
 
-**Proposed approach.** Keep the original selector out of the learner's object:
-store it in the active incident's state (`.labctl/incidents/`) or in a
-ConfigMap in the monitoring namespace, and have `resolve.sh` read it from
-there. Keep the guard on the fault itself (selector differs from the template).
+**Proposed approach.** Give the dashboard a namespace variable (default: all)
+and draw the memory limit as a dashed series on the panel
+(`kube_pod_container_resource_limits{resource="memory"}`), so a pod near its
+limit is visible as such. Then reword hint 3 and the solution to what the panel
+really shows: a pod killed every twenty seconds leaves dots, not a line, and
+`kubectl describe pod` is where the limit is read.
 
-**Start at.** `incidents/service-selector-broken/inject.sh`, `resolve.sh`;
-how other faults keep their bookkeeping in `incidents/_lib/`.
+**Start at.** `platform/monitoring/grafana/provisioning/dashboards/pod-resources.json`,
+`incidents/oom-kill/hints.md`, `incidents/oom-kill/solution.md`.
 
+---
+
+## B29 — oom-kill's output gives the fault away, and its solution describes an older fault
+
+**Problem.** Two things, both in `incidents/oom-kill`:
+
+1. `inject.sh` says "Nothing printed here names the fault", then prints
+   "Sizing the change from its resting working set of 4Mi.", "Applying a
+   resource change to go-api/go-api..." and, when the first limit does not
+   bite, "Still healthy — tightening to 7Mi." The lab UI shows these lines in
+   its output panel while the learner waits for the fault.
+2. `solution.md` says the limit "was cut to a quarter of its own memory
+   request" and "will read as a quarter of the request below it".
+   [incidents/README.md](../incidents/README.md) says the same. `inject.sh`
+   sizes the limit from the pod's resting working set (three times `kubectl
+   top`), halves it until the first OOMKill, and sets the request to half the
+   limit. A learner comparing the two numbers finds the request below the
+   limit, not above it.
+
+**Found.** Recording VID-14 (OOMKilled). The plan closes the output panel
+before the inject, reads the limit with `kubectl describe pod`, and the script
+follows the take, not the solution.
+
+**Proposed approach.** Print only neutral lines from `inject.sh` ("Applying a
+change…", "Waiting for it to take effect…"), with the sizing detail behind
+`--verbose`, and extend the answer-leak test in
+`src/test/shell/incident_faults.bats` to fail on the words that give it away
+("memory", "limit", "working set"). Rewrite the "What happened" and "Diagnosis
+path" sections of `solution.md`, and the calibration paragraph of the README,
+from what `inject.sh` does today.
+
+**Start at.** `incidents/oom-kill/inject.sh`, `incidents/oom-kill/solution.md`,
+`incidents/README.md`, `src/test/shell/incident_faults.bats`.
+
+---
+
+## B30 — `rollout undo` brings old fault markers back onto the Deployment
+
+**Problem.** Faults keep their bookkeeping in a record of their own
+(`incidents/_lib/state.sh`), so a new drill writes nothing on the workload.
+A lab that ran drills before that still has `labfault-*` annotations on its
+older ReplicaSets, and `kubectl rollout undo` copies the target ReplicaSet's
+annotations back onto the Deployment. After a rollback on such a lab the
+Deployment carried `labfault-oom-kill: injected`,
+`labfault-oom-kill-original-limit: 128Mi` and `-original-request: 32Mi` again,
+with no such fault active. No script reads them any more, but
+`kubectl describe deploy` prints them, and one from an earlier run of the same
+drill is that drill's answer.
+
+**Found.** Recording VID-15 (bad deploy, rollback), in the off-camera run. The
+take reads the image with `kubectl get deploy -o wide` and from the revisions,
+never from the Deployment's YAML.
+
+**Proposed approach.** Have every `resolve.sh` clear all `labfault-*`
+annotations from the Deployment and its ReplicaSets, not only its own:
+`clear_marks` in `incidents/_lib/marks.sh` takes the keys to remove, so give it
+a mode that lists them from the object. Cover it in
+`src/test/shell/incident_faults.bats`.
+
+**Start at.** `incidents/_lib/marks.sh`, the `clear_marks` calls in
+`incidents/*/resolve.sh`.
+
+---
+
+## B35 — A hand-fixed incident leaves its fault record and alert rule behind
+
+**Problem.** When `labctl incident status` sees the detection check pass, it
+closes the incident as solved by hand, but what `inject.sh` added for its own
+bookkeeping stays: the record (`configmap/labfault-<name>` in `kube-system`)
+and, for every fault with `expectAlert`, its alert rule (a `PrometheusRule` in
+the monitoring namespace). Only `resolve.sh` removes them. A later forced
+`labctl incident resolve <name>` then restores the values recorded at inject
+over whatever the learner has done since. Found by the cluster suite on kind;
+its runner runs `resolve` after the hand fix to tidy up, which hides it.
+
+**Proposed approach.** Every `resolve.sh` is already required, and tested in
+`incident_faults.bats`, to leave a hand fix alone, so it is the tidy-up:
+
+1. When `Status` closes an incident as solved by hand, submit the fault's
+   `resolve.sh` through the run engine as a hidden run of its own kind
+   (`incident.tidy`), after the MTTR record is written, so the history still
+   says "manual".
+2. Cover it in `internal/incident` and `internal/service/incident`: a passing
+   status submits the tidy run, a failing one does not, a silent incident's
+   tidy run stays hidden.
+3. Drop the tidy-up `resolve` from `src/test/cluster/run.sh`, so the nightly
+   proves that nothing is left after a hand fix alone.
+
+**Start at.** `src/internal/incident/incident.go` (`Status`, the
+`result.Pass` branch), `src/internal/service/incident/`, `src/test/cluster/run.sh`.
+---
+
+## B36 — `platform status` misses components a scenario installed
+
+**Problem.** `labctl platform status` lists components from the run history,
+which only `labctl platform up` writes. A component that `scenario up
+--deploy-prereqs` installs as a prerequisite is installed synchronously by
+`ensurePlatformPrereqs` (`reg.Install`, not the run engine) and never recorded,
+so on a lab running KEDA, Vault, Kafka and a dozen more Helm releases the
+command said "No platform components have been installed through labctl yet."
+The API's `GET /platform` and `labctl platform status --live` read the cluster
+and are right. Found by the cluster suite on kind.
+
+**Proposed approach.**
+
+1. Make the cluster the source of truth for the default `platform status`:
+   one function, shared with `handlePlatformStatus`, that reads every
+   provider's state from a single `helm list -A` (with explicit status flags,
+   which Helm 3 and 4 both accept) and one namespace listing, with the last run
+   from the history as a column. `--live` then has nothing left to add.
+2. Install prerequisites through `service/platform`, so they get a run, a lock
+   and the inventory record like any `platform up` (part of B16 for the API).
+3. A CLI journey step: activate a scenario with `--deploy-prereqs` against the
+   fixture lab, then `platform status` lists the component it installed.
+
+**Start at.** `src/internal/cli/platform_lifecycle.go`
+(`platformStatusFromStore`), `src/internal/cli/prereqs.go`
+(`ensurePlatformPrereqs`), `src/internal/httpapi/handlers.go`
+(`handlePlatformStatus`).

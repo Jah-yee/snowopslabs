@@ -127,10 +127,15 @@ func (st *Store) Delete(name string) error {
 
 // Collect builds a snapshot of the current lab: platform components from the
 // registry's install markers, scenarios from the scenario engine, and apps by
-// asking kubectl, so apps deployed outside labctl are included.
+// asking kubectl, so apps deployed outside labctl are included. It returns an
+// error matching k8s.ErrUnreachable when the cluster does not answer: a
+// snapshot of a cluster that could not be read would record an empty lab.
 func Collect(ctx context.Context, name, profile, domainSuffix, projectRoot string,
-	reg *platform.Registry, scenes *scenario.Engine) (*Snapshot, []string) {
+	reg *platform.Registry, scenes *scenario.Engine) (*Snapshot, []string, error) {
 
+	if err := k8s.RequireReachable(ctx); err != nil {
+		return nil, nil, err
+	}
 	var warnings []string
 	s := &Snapshot{
 		Name:         name,
@@ -167,7 +172,7 @@ func Collect(ctx context.Context, name, profile, domainSuffix, projectRoot strin
 	}
 	sort.Strings(s.Apps)
 
-	return s, warnings
+	return s, warnings, nil
 }
 
 // Action is one step of a restore or reset plan.

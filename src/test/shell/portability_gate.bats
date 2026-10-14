@@ -35,14 +35,14 @@ value=$(grep -E "pattern" file.txt)
 dir=$(cd "$(dirname "$0")" && pwd)
 echo "$value $dir"'
   [ "$status" -eq 0 ]
-  [[ "$output" == *"portability gate passed"* ]]
+  [[ "$output" == *"portability gate passed"* ]] || false
 }
 
 @test "rejects grep -P" {
   scan 'grep -P "\\d+" file.txt'
   [ "$status" -ne 0 ]
-  [[ "$output" == *"GNU-only"* ]]
-  [[ "$output" == *"candidate.sh"* ]]
+  [[ "$output" == *"GNU-only"* ]] || false
+  [[ "$output" == *"candidate.sh"* ]] || false
 }
 
 @test "rejects sed -i without a backup suffix but allows sed -i.bak" {
@@ -56,7 +56,7 @@ echo "$value $dir"'
 @test "rejects readlink -f" {
   scan 'target=$(readlink -f "$0")'
   [ "$status" -ne 0 ]
-  [[ "$output" == *"readlink -f"* ]]
+  [[ "$output" == *"readlink -f"* ]] || false
 }
 
 @test "rejects date -d" {
@@ -82,7 +82,7 @@ echo "$value $dir"'
 @test "rejects hardcoded linux/amd64 in a shell script" {
   scan 'docker build --platform linux/amd64 .'
   [ "$status" -ne 0 ]
-  [[ "$output" == *"Apple Silicon"* ]]
+  [[ "$output" == *"Apple Silicon"* ]] || false
 }
 
 @test "does not fire on a comment describing the pitfall" {
@@ -98,15 +98,15 @@ echo "$dir"'
 echo two
 readlink -f /tmp'
   [ "$status" -ne 0 ]
-  [[ "$output" == *":3:"* ]]
+  [[ "$output" == *":3:"* ]] || false
 }
 
 @test "reports every distinct violation, not just the first" {
   scan 'readlink -f /tmp
 grep -P "x" f'
   [ "$status" -ne 0 ]
-  [[ "$output" == *"readlink -f"* ]]
-  [[ "$output" == *"PCRE"* ]]
+  [[ "$output" == *"readlink -f"* ]] || false
+  [[ "$output" == *"PCRE"* ]] || false
 }
 
 @test "honours the ignore-file marker" {

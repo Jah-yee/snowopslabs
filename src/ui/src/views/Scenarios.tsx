@@ -301,7 +301,7 @@ export function Scenarios({ notify, requestConfirm }: ScenariosProps) {
 
       {/* Detail modal */}
       {detail && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) closeDetail() }}>
+        <div className="modal-overlay" role="presentation" onClick={e => { if (e.target === e.currentTarget) closeDetail() }}>
           <div className="modal-card modal-tabbed" role="dialog" aria-modal="true" aria-label={`${detail.displayName || detail.name} details`}>
             <button ref={modalCloseRef} className="modal-close" aria-label="Close details" onClick={closeDetail}><Icon name="x" size={18} /></button>
 

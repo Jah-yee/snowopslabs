@@ -68,9 +68,16 @@ func (e *Engine) execute(id string) {
 	timeoutCtx, cancelTimeout := context.WithTimeout(runCtx, timeout)
 	defer cancelTimeout()
 
+	// Shutdown clears started and collects the cancel functions under this
+	// lock. A run registered after that would never be cancelled, so it
+	// cancels itself.
 	e.mu.Lock()
 	e.cancels[id] = cancel
+	stopping := !e.started
 	e.mu.Unlock()
+	if stopping {
+		cancel()
+	}
 	defer func() {
 		e.mu.Lock()
 		delete(e.cancels, id)
@@ -87,6 +94,17 @@ func (e *Engine) execute(id string) {
 	if e.metrics != nil {
 		e.metrics.RunStarted()
 	}
+
+	watchCtx, stopWatch := context.WithCancel(runCtx)
+	watched := make(chan struct{})
+	go func() {
+		defer close(watched)
+		e.watchForOutsideCancel(watchCtx, id, cancel)
+	}()
+	defer func() {
+		stopWatch()
+		<-watched
+	}()
 
 	sink := newLogSink(ctx, e.store, e.subs, id, e.now)
 
@@ -148,6 +166,25 @@ func (e *Engine) execute(id string) {
 	e.finish(ctx, id, rec.Kind, status, exitCode, message, elapsed)
 }
 
+// watchForOutsideCancel cancels a running run once its record is terminal.
+// Another process (the web UI, `labctl runs cancel`) cancels a run by
+// finishing its record in the shared store; this is how the work stops.
+func (e *Engine) watchForOutsideCancel(ctx context.Context, id string, cancel context.CancelFunc) {
+	tick := time.NewTicker(e.cancelPoll)
+	defer tick.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-tick.C:
+			if rec, err := e.store.GetRun(ctx, id); err == nil && rec.Status.Terminal() {
+				cancel()
+				return
+			}
+		}
+	}
+}
+
 // executeFunc runs an in-process operation with its output going to the sink,
 // and returns the same Result/error shape a script run does so classify can
 // treat both alike. A panic in fn becomes a failed run, not a crashed worker.
@@ -182,9 +219,11 @@ func classify(runCtx, timeoutCtx context.Context, timeout time.Duration, res too
 		return store.StatusSucceeded, intPtr(res.ExitCode), ""
 	}
 
+	// The whole error, not only the exit it wraps: an operation that runs
+	// several commands explains what failed and what to do around it.
 	var exitErr *toolchain.ExitError
 	if errors.As(runErr, &exitErr) {
-		return store.StatusFailed, intPtr(exitErr.ExitCode), exitErr.Error()
+		return store.StatusFailed, intPtr(exitErr.ExitCode), runErr.Error()
 	}
 	// Failed to start at all: missing binary, permission denied.
 	return store.StatusFailed, nil, runErr.Error()

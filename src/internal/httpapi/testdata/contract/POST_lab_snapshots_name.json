@@ -1,0 +1,15 @@
+{
+  "snapshot": {
+    "apps": [
+      "demo-app",
+      "go-api"
+    ],
+    "domainSuffix": "lab.test",
+    "name": "before-drill",
+    "platform": null,
+    "profile": "k3d",
+    "scenarios": null,
+    "takenAt": "<time>"
+  },
+  "warnings": null
+}

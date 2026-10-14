@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -308,6 +309,18 @@ func compare(got, op, want string) (bool, error) {
 	gf, gerr := strconv.ParseFloat(got, 64)
 	wf, werr := strconv.ParseFloat(want, 64)
 	numeric := gerr == nil && werr == nil
+	// PromQL answers NaN or Inf when a ratio has nothing to divide. That is
+	// "no data", which must fail a check, never satisfy its threshold.
+	if (gerr == nil && notFinite(gf)) || (werr == nil && notFinite(wf)) {
+		return false, fmt.Errorf("cannot compare %q %s %q: a value is not a finite number, so there was nothing to measure", got, op, want)
+	}
+
+	// kubectl returns "" for an unset field such as .status.readyReplicas
+	// before any replica is ready, so against a number "" counts as 0. Every
+	// operator applies it, or "" would be both ">= 0" and "!= 0".
+	if got == "" && werr == nil {
+		gf, numeric = 0, true
+	}
 
 	switch op {
 	case "==":
@@ -321,11 +334,6 @@ func compare(got, op, want string) (bool, error) {
 		}
 		return got != want, nil
 	case "<", "<=", ">", ">=":
-		// kubectl returns "" for an unset field such as .status.readyReplicas
-		// before any replica is ready, so treat "" as 0.
-		if got == "" && werr == nil {
-			gf, numeric = 0, true
-		}
 		if !numeric {
 			return false, fmt.Errorf("operator %q needs numeric operands, got %q and %q", op, got, want)
 		}
@@ -343,6 +351,8 @@ func compare(got, op, want string) (bool, error) {
 		return false, fmt.Errorf("unknown operator %q", op)
 	}
 }
+
+func notFinite(f float64) bool { return math.IsNaN(f) || math.IsInf(f, 0) }
 
 func firstLine(s string) string {
 	if before, _, ok := strings.Cut(s, "\n"); ok {

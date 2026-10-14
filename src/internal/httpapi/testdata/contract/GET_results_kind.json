@@ -1,0 +1,20 @@
+[
+  {
+    "elapsedSeconds": 0,
+    "endedAt": "<time>",
+    "kind": "incident",
+    "meta": {
+      "category": "workload",
+      "detectSeconds": 0,
+      "firstCheckedAt": "<time>",
+      "resolvedBy": "auto",
+      "severity": "low",
+      "silent": false
+    },
+    "name": "demo-fault",
+    "outcome": "auto-resolved",
+    "score": -1,
+    "startedAt": "<time>",
+    "user": "learner"
+  }
+]

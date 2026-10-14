@@ -14,6 +14,24 @@ import (
 	"github.com/sagar2395/snowopslabs/internal/platform"
 )
 
+// requireCluster fails with what to do next when the cluster's API server
+// does not answer. Commands that read the cluster to decide what to do call
+// it first, so a cluster that is down is never reported as an app that is not
+// deployed.
+func requireCluster(ctx context.Context) error {
+	return withClusterAdvice(k8s.RequireReachable(ctx))
+}
+
+// withClusterAdvice adds the commands that diagnose and restart the lab to an
+// error that reports an unreachable cluster. Any other error is returned as
+// it is.
+func withClusterAdvice(err error) error {
+	if !errors.Is(err, k8s.ErrUnreachable) {
+		return err
+	}
+	return fmt.Errorf("%w\nCheck it with:          labctl status\nBring the lab back with: labctl init", err)
+}
+
 // appNamespace returns the namespace an app deploys into: its app.env NAMESPACE,
 // or the app name by default (matching engine/deploy.sh).
 func appNamespace(app string) string {

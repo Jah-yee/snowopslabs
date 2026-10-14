@@ -30,7 +30,11 @@ Observability components additionally:
 3. Install and uninstall through `helm_upgrade_install` from
    `platform/_lib/helm.sh`, never a raw `helm` call.
 4. A `status.sh` so `platform status --live` can report on it.
-5. Documentation: R05, and the component in the reference.
+5. A bats test in `src/test/shell/` for any branch the scripts take: the calls
+   they make, a second run makes no destructive call, a failing `helm` or
+   `kubectl` makes them exit non-zero. `platform_providers.bats` already runs
+   every provider once under the stubs.
+6. Documentation: R05, and the component in the reference.
 
 ## The traps
 
@@ -65,6 +69,7 @@ three `*SelectorNilUsesHelmValues: false` flags, because an empty selector does
 ## Verify your work
 
 ```bash
+make test-shell test-check                     # hermetic, before touching a cluster
 labctl platform up <category>/<component>
 labctl platform status <category>/<component> --live
 labctl platform up <category>/<component>      # again — must be a clean no-op
@@ -82,6 +87,6 @@ failures. Do not skip it.
 - [ ] Uses `helm_upgrade_install`, not raw `helm`.
 - [ ] Install → reinstall → uninstall → reinstall is clean.
 - [ ] Uninstall leaves no cluster-scoped CRDs behind.
-- [ ] Scripts are POSIX and pass `make lint-shell`.
+- [ ] Scripts are POSIX and pass `make lint-shell`; their branches have bats tests.
 - [ ] R05 updated; an ADR added if the decision is notable.
 - [ ] `make docs-check` passes.

@@ -12,6 +12,17 @@ APP="${WORKLOAD_NAME}"
 JOB="${APP}-mtls-probe"
 TARGET="http://${APP}-canary.${NS}.svc.cluster.local"
 
+# A probe that cannot connect reads as "refused". With no canary pod behind the
+# Service every client is refused, meshed or not, and that proves nothing.
+SERVING="$(kubectl -n "$NS" get pods -l "app=${APP}-canary" \
+  --field-selector=status.phase=Running -o name 2>/dev/null || true)"
+if [ -z "$SERVING" ]; then
+  echo "FAIL: no Running canary pod in $NS (label app=${APP}-canary), so there is nothing to refuse a client." >&2
+  echo "  Bring the canary back, then re-verify:" >&2
+  echo "    kubectl -n $NS get deploy,pods -l app=${APP}-canary" >&2
+  exit 1
+fi
+
 cleanup() {
   kubectl -n "$NS" delete job "$JOB" --ignore-not-found --wait=false >/dev/null 2>&1 || true
 }

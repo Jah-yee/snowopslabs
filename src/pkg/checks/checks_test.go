@@ -3,8 +3,11 @@
 package checks
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestCheckValidate(t *testing.T) {
@@ -157,6 +160,21 @@ func TestCompare(t *testing.T) {
 		{"", ">=", "1", false, false},
 		{"", "<", "1", true, false},
 		{"", ">=", "abc", false, true}, // still errors if the want side isn't numeric
+		// The same holds for equality: no ready replicas is 0, not "something
+		// other than 0".
+		{"", "==", "0", true, false},
+		{"", "!=", "0", false, false},
+		{"", "==", "1", false, false},
+		{"", "!=", "1", true, false},
+		{"", "==", "", true, false}, // two empty strings are still equal text
+		{"", "!=", "v1.0.0", true, false},
+		// PromQL's "nothing to divide" answers never satisfy a threshold.
+		{"NaN", "!=", "0", false, true},
+		{"NaN", "<", "0.01", false, true},
+		{"+Inf", ">=", "0.99", false, true},
+		{"-Inf", "<", "5", false, true},
+		{"1", ">=", "NaN", false, true},
+		{"NaN", "contains", "Na", true, false}, // text matching is not a measurement
 	}
 
 	for _, tt := range tests {
@@ -186,5 +204,98 @@ func TestAllPass(t *testing.T) {
 	}
 	if !AllPass([]Result{{Pass: true}, {Pass: true}}) {
 		t.Error("AllPass with all passes must be true")
+	}
+}
+
+// The edges the mutation run found unpinned.
+func TestValidate_ExpectStatusBounds(t *testing.T) {
+	for status, valid := range map[int]bool{0: true, 99: false, 100: true, 200: true, 599: true, 600: false} {
+		c := Check{Name: "c", Type: TypeHTTP, URL: "http://x", ExpectStatus: status}
+		if err := c.Validate(); (err == nil) != valid {
+			t.Errorf("expectStatus %d: Validate() = %v, want valid=%v", status, err, valid)
+		}
+	}
+}
+
+func TestValidate_NamesAnUnnamedCheck(t *testing.T) {
+	err := (&Check{Type: TypeHTTP}).Validate()
+	if err == nil || !strings.Contains(err.Error(), "(unnamed)") {
+		t.Errorf("Validate() = %v, want the error to call the check (unnamed)", err)
+	}
+}
+
+func TestNewRunner_Defaults(t *testing.T) {
+	if got := NewRunner().DefaultTimeout; got != 30*time.Second {
+		t.Errorf("DefaultTimeout = %s, want 30s", got)
+	}
+}
+
+func TestEventuallyOpts_KeepsAMultiplierOfOne(t *testing.T) {
+	if got := (EventuallyOpts{Multiplier: 1}).withDefaults().Multiplier; got != 1 {
+		t.Errorf("Multiplier = %v, want 1 kept: a fixed interval is a valid choice", got)
+	}
+}
+
+func TestRunHTTP_StatusDefaultsTo200(t *testing.T) {
+	tests := []struct {
+		name   string
+		served int
+		expect int
+		pass   bool
+	}{
+		{"200 with no expectation", http.StatusOK, 0, true},
+		{"201 with no expectation", http.StatusCreated, 0, false},
+		{"201 when 201 is expected", http.StatusCreated, http.StatusCreated, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(tt.served) }))
+			defer srv.Close()
+			res := NewRunner().Run(t.Context(), Check{Name: "c", Type: TypeHTTP, URL: srv.URL, ExpectStatus: tt.expect})
+			if res.Pass != tt.pass {
+				t.Errorf("pass = %v, want %v (%s)", res.Pass, tt.pass, res.Explanation)
+			}
+		})
+	}
+}
+
+// A check with no timeout of its own is still bounded by the runner's default.
+func TestRun_NoTimeoutOfItsOwnUsesTheDefault(t *testing.T) {
+	release := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { <-release }))
+	defer srv.Close()
+	defer close(release)
+	r := NewRunner()
+	r.DefaultTimeout = 50 * time.Millisecond
+	start := time.Now()
+	res := r.Run(t.Context(), Check{Name: "c", Type: TypeHTTP, URL: srv.URL})
+	if res.Pass || time.Since(start) > 5*time.Second {
+		t.Errorf("pass = %v after %s; want a failure at the 50ms default", res.Pass, time.Since(start))
+	}
+}
+
+// A runner with no default timeout runs a check without a deadline, rather
+// than one that has already expired.
+func TestRun_ZeroDefaultTimeoutMeansNoDeadline(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	defer srv.Close()
+	r := NewRunner()
+	r.DefaultTimeout = 0
+	if res := r.Run(t.Context(), Check{Name: "c", Type: TypeHTTP, URL: srv.URL}); !res.Pass {
+		t.Errorf("check failed with no timeout set: %s %s", res.Error, res.Explanation)
+	}
+}
+
+// What an HTTP check wanted is reported in full, and only what it wanted.
+func TestRunHTTP_WantDescribesTheExpectation(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) }))
+	defer srv.Close()
+	plain := NewRunner().Run(t.Context(), Check{Name: "c", Type: TypeHTTP, URL: srv.URL})
+	if plain.Want != "status 200" {
+		t.Errorf("want = %q, want %q", plain.Want, "status 200")
+	}
+	withBody := NewRunner().Run(t.Context(), Check{Name: "c", Type: TypeHTTP, URL: srv.URL, BodyContains: "ok"})
+	if withBody.Want != `status 200, body contains "ok"` || !withBody.Pass {
+		t.Errorf("want = %q, pass = %v", withBody.Want, withBody.Pass)
 	}
 }

@@ -1002,3 +1002,51 @@ func TestLoad_DomainSuffixPinned(t *testing.T) {
 		})
 	}
 }
+
+// The ingress class follows the installed ingress provider unless set, on
+// every runtime the lab ships: an app's Ingress with another controller's
+// class is never routed.
+func TestLoad_IngressClassFollowsTheProvider(t *testing.T) {
+	repo, err := filepath.Abs(filepath.Join("..", "..", ".."))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name    string
+		profile string
+		dotenv  string
+		want    string
+	}{
+		{name: "kind, default provider", profile: "kind", want: "traefik"},
+		{name: "kind, nginx", profile: "kind", dotenv: "INGRESS_PROVIDER=nginx\n", want: "nginx"},
+		{name: "k3d, default provider", profile: "k3d", want: "traefik"},
+		{name: "k3d, nginx", profile: "k3d", dotenv: "INGRESS_PROVIDER=nginx\n", want: "nginx"},
+		{name: "an explicit class wins", profile: "kind", dotenv: "INGRESS_PROVIDER=nginx\nINGRESS_CLASS=internal\n", want: "internal"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, k := range []string{"INGRESS_CLASS", "INGRESS_PROVIDER", "PROFILE"} {
+				t.Setenv(k, "")
+			}
+			root := labRoot(t, "PROFILE="+tc.profile+"\n"+tc.dotenv)
+			runtimeEnv, err := os.ReadFile(filepath.Join(repo, "runtimes", tc.profile, "runtime.env"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			dir := filepath.Join(root, "runtimes", tc.profile)
+			if err := os.MkdirAll(dir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(dir, "runtime.env"), runtimeEnv, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			cfg, err := Load(root)
+			if err != nil {
+				t.Fatalf("Load: %v", err)
+			}
+			if cfg.IngressClass != tc.want {
+				t.Errorf("IngressClass = %q, want %q (provider %q)", cfg.IngressClass, tc.want, cfg.IngressProvider)
+			}
+		})
+	}
+}

@@ -46,6 +46,7 @@ helm_upgrade_install grafana "$NAMESPACE" grafana-community/grafana \
   -f "$VALUES_FILE" \
   --set adminPassword="$GRAFANA_ADMIN_PASSWORD" \
   --set "ingress.hosts[0]=grafana.${DOMAIN_SUFFIX}" \
+  --set "persistence.storageClassName=${STORAGE_CLASS:-local-path}" \
   --wait --timeout 5m
 
 # Wait for Grafana deployment to be ready

@@ -31,7 +31,6 @@ installed, that it is new enough, and that the cluster is reachable.
 Each problem is reported with the reason it matters and how to fix it. Exits
 non-zero if anything required is missing or out of date, so it is safe to use
 as a gate in a script.`,
-		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runDoctor(cmd.Context(), cmd.OutOrStdout(), toolchain.NewExec())
 		},

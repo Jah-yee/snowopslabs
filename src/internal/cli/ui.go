@@ -78,9 +78,9 @@ var uiCmd = &cobra.Command{
 		// Print which UI build is served, so an old one is easy to spot.
 		fmt.Printf("Serving %s\n", server.UIInfo())
 		if uiTLSCert != "" {
-			return server.StartTLS(addr, uiTLSCert, uiTLSKey)
+			return server.ServeTLS(cmd.Context(), addr, uiTLSCert, uiTLSKey)
 		}
-		return server.Start(addr)
+		return server.Serve(cmd.Context(), addr)
 	},
 }
 

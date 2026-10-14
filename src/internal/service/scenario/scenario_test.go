@@ -286,3 +286,43 @@ func TestNew_RequiresDeps(t *testing.T) {
 		t.Fatal("expected an error when dependencies are nil")
 	}
 }
+
+// A teardown whose uninstall fails is a failed run that leaves the scenario
+// active and its components recorded; --force marks it inactive anyway.
+func TestDeactivate_FailedUninstall(t *testing.T) {
+	tests := []struct {
+		name       string
+		force      bool
+		wantStatus store.Status
+		wantActive bool
+	}{
+		{"without force the run fails and the scenario stays active", false, store.StatusFailed, true},
+		{"with force the scenario is marked inactive", true, store.StatusSucceeded, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := newHarness(t)
+			ctx := t.Context()
+			act, _ := h.svc.Activate(ctx, "demo", false)
+			h.waitFor(act, store.StatusSucceeded)
+			h.f.WhenArgsContainStderr("uninstall", "", "Error: Kubernetes cluster unreachable\n", 1)
+
+			deactivate := h.svc.Deactivate
+			if tt.force {
+				deactivate = h.svc.ForceDeactivate
+			}
+			id, err := deactivate(ctx, "demo")
+			if err != nil {
+				t.Fatalf("deactivate: %v", err)
+			}
+			h.waitFor(id, tt.wantStatus)
+			sc, err := h.svc.scenes.Get("demo")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if sc.Active != tt.wantActive {
+				t.Errorf("active = %v, want %v", sc.Active, tt.wantActive)
+			}
+		})
+	}
+}

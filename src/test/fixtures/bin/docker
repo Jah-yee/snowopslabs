@@ -1,0 +1,8 @@
+#!/bin/sh
+# A stand-in for docker: an engine with 8 CPUs and 16 GB that accepts every
+# other call.
+[ -n "${STUB_LOG:-}" ] && printf '%s\t%s\n' docker "$*" >>"$STUB_LOG"
+case "$1" in
+  info) echo "8 16000000000" ;;
+esac
+exit 0

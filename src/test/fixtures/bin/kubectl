@@ -1,0 +1,36 @@
+#!/bin/sh
+# A stand-in for kubectl: a reachable cluster where the lab's two apps each run
+# two ready replicas and the ingress and metrics components are installed.
+# Tests that need another cluster state replace this file.
+[ -n "${STUB_LOG:-}" ] && printf '%s\t%s\n' kubectl "$*" >>"$STUB_LOG"
+for app in demo-app go-api; do
+  case "$*" in
+    "get namespace $app --no-headers")
+      echo "$app Active 1h"
+      exit 0
+      ;;
+    "get deployment -n $app"*)
+      echo "$app 2 2 2"
+      exit 0
+      ;;
+    "get pods -n $app -o json")
+      echo '{"items":[]}'
+      exit 0
+      ;;
+  esac
+done
+case "$*" in
+  "cluster-info") echo "Kubernetes control plane is running at https://127.0.0.1:6443" ;;
+  "config current-context") echo k3d-contract ;;
+  *readyz*) echo ok ;;
+  *"--minify"*) echo https://127.0.0.1:6443 ;;
+  "version -o json") echo '{"serverVersion":{"gitVersion":"v1.33.6+k3s1"}}' ;;
+  "get nodes --no-headers") printf 'server-0 Ready\nagent-0 Ready\n' ;;
+  "get namespace traefik --no-headers") echo "traefik Active 1h" ;;
+  "get namespace monitoring --no-headers") echo "monitoring Active 1h" ;;
+  "get namespace "*) exit 1 ;;
+  "get secret -n monitoring"*) echo "sh.helm.release.v1.prometheus.v1" ;;
+  "get service "*) exit 1 ;;
+  "get hpa"*) echo '{"items":[]}' ;;
+esac
+exit 0

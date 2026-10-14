@@ -20,7 +20,7 @@ teardown() {
 @test "stubs shadow the real binary on PATH" {
   run command -v kubectl
   [ "$status" -eq 0 ]
-  [[ "$output" == "$STUB_BIN/kubectl" ]]
+  [[ "$output" == "$STUB_BIN/kubectl" ]] || false
 }
 
 @test "calls are recorded with their arguments" {
@@ -62,7 +62,7 @@ EOS
   stub_stdout kubectl "nginx-abc123"
   run kubectl get pods -o name
   [ "$status" -eq 0 ]
-  [[ "$output" == "nginx-abc123" ]]
+  [[ "$output" == "nginx-abc123" ]] || false
 }
 
 @test "stub_when matches on arguments, first rule wins" {
@@ -71,7 +71,7 @@ EOS
 
   run helm list -n default
   [ "$status" -eq 0 ]
-  [[ "$output" == "my-release" ]]
+  [[ "$output" == "my-release" ]] || false
 
   run helm upgrade --install my-release ./chart
   [ "$status" -eq 1 ]
@@ -82,7 +82,7 @@ EOS
   stub_stdout helm "default output"
   run helm status my-release
   [ "$status" -eq 0 ]
-  [[ "$output" == "default output" ]]
+  [[ "$output" == "default output" ]] || false
 }
 
 @test "refute_called fails when the command was called" {
@@ -95,8 +95,8 @@ EOS
   kubectl get pods
   run assert_called kubectl "apply"
   [ "$status" -ne 0 ]
-  [[ "$output" == *"recorded calls"* ]]
-  [[ "$output" == *"get pods"* ]]
+  [[ "$output" == *"recorded calls"* ]] || false
+  [[ "$output" == *"get pods"* ]] || false
 }
 
 @test "reset_calls clears history for idempotency assertions" {

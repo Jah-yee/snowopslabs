@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { api } from '../api/client'
 import { qk } from '../lib/queryClient'
 import { useApiQuery } from '../hooks/useApiQuery'
@@ -25,7 +25,7 @@ const PROFILE_BLURB: Record<string, string> = {
 
 export function Traffic({ notify }: TrafficProps) {
   const { data, loading, loaded, loadError, refreshing, reload: load } = useApiQuery(qk.traffic, api.getTraffic)
-  const profiles = data?.profiles ?? []
+  const profiles = useMemo(() => data?.profiles ?? [], [data])
   const [profile, setProfile] = useState('')
   const [rps, setRps] = useState(50)
   const [duration, setDuration] = useState('')

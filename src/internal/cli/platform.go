@@ -150,20 +150,29 @@ func platformDownRun(cmd *cobra.Command, args []string) error {
 			})
 	}
 
-	// Uninstall in reverse install order.
+	// Uninstall in reverse install order. Every component is attempted even
+	// if one fails, so a single run removes as much as it can.
+	var errs []error
 	fmt.Println("Uninstalling grafana...")
-	_ = reg.Uninstall("monitoring", "grafana", scriptExec)
-
+	if err := reg.Uninstall("monitoring", "grafana", scriptExec); err != nil {
+		errs = append(errs, fmt.Errorf("grafana: %w", err))
+	}
 	if cfg.MetricsProvider != "" {
 		fmt.Printf("Uninstalling metrics (%s)...\n", cfg.MetricsProvider)
-		_ = reg.Uninstall("monitoring/metrics", cfg.MetricsProvider, scriptExec)
+		if err := reg.Uninstall("monitoring/metrics", cfg.MetricsProvider, scriptExec); err != nil {
+			errs = append(errs, fmt.Errorf("metrics (%s): %w", cfg.MetricsProvider, err))
+		}
 	}
-
 	if cfg.IngressProvider != "" {
 		fmt.Printf("Uninstalling ingress (%s)...\n", cfg.IngressProvider)
-		_ = reg.Uninstall("ingress", cfg.IngressProvider, scriptExec)
+		if err := reg.Uninstall("ingress", cfg.IngressProvider, scriptExec); err != nil {
+			errs = append(errs, fmt.Errorf("ingress (%s): %w", cfg.IngressProvider, err))
+		}
 	}
-
+	if err := errors.Join(errs...); err != nil {
+		return fmt.Errorf("the platform was not fully uninstalled:\n%w\n"+
+			"Uninstalls are safe to repeat: re-run 'labctl platform down'", err)
+	}
 	fmt.Println("\nPlatform uninstalled.")
 	return nil
 }
@@ -193,6 +202,9 @@ var platformStatusCmd = &cobra.Command{
 		// provider's status.sh against the cluster instead.
 		if !platformStatusLive {
 			return platformStatusFromStore(cmd, args)
+		}
+		if err := requireCluster(cmd.Context()); err != nil {
+			return err
 		}
 
 		categories := reg.Categories()

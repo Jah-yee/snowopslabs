@@ -79,8 +79,8 @@ tag_push() {
   commit 1.7.0-dev "release: v1.6.0 (#65)"
   tag_push
   [ "$status" -eq 1 ]
-  [[ "$output" == *"v1.6.0 was merged without its release commit"* ]]
-  [[ "$output" == *"make release VERSION=1.6.0"* ]]
+  [[ "$output" == *"v1.6.0 was merged without its release commit"* ]] || false
+  [[ "$output" == *"make release VERSION=1.6.0"* ]] || false
 }
 
 @test "the first push of a branch scans its whole history" {

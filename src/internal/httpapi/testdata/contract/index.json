@@ -1,0 +1,392 @@
+[
+  {
+    "method": "GET",
+    "route": "/auth/me",
+    "status": 200,
+    "golden": "GET_auth_me.json"
+  },
+  {
+    "method": "POST",
+    "route": "/auth/login",
+    "status": 200,
+    "golden": "POST_auth_login.json"
+  },
+  {
+    "method": "POST",
+    "route": "/auth/logout",
+    "status": 200,
+    "golden": "POST_auth_logout.json"
+  },
+  {
+    "method": "GET",
+    "route": "/status",
+    "status": 200,
+    "golden": "GET_status.json"
+  },
+  {
+    "method": "GET",
+    "route": "/capacity",
+    "status": 200,
+    "golden": "GET_capacity.json"
+  },
+  {
+    "method": "GET",
+    "route": "/jobs",
+    "status": 200,
+    "golden": "GET_jobs.json"
+  },
+  {
+    "method": "GET",
+    "route": "/dashboards",
+    "status": 200,
+    "golden": "GET_dashboards.json"
+  },
+  {
+    "method": "GET",
+    "route": "/apps",
+    "status": 200,
+    "golden": "GET_apps.json"
+  },
+  {
+    "method": "GET",
+    "route": "/apps/{name}/detail",
+    "status": 200,
+    "golden": "GET_apps_name_detail.json"
+  },
+  {
+    "method": "POST",
+    "route": "/apps/{name}/build",
+    "status": 202,
+    "golden": "POST_apps_name_build.json"
+  },
+  {
+    "method": "POST",
+    "route": "/apps/{name}/deploy",
+    "status": 202,
+    "golden": "POST_apps_name_deploy.json"
+  },
+  {
+    "method": "POST",
+    "route": "/apps/{name}/destroy",
+    "status": 202,
+    "golden": "POST_apps_name_destroy.json"
+  },
+  {
+    "method": "GET",
+    "route": "/platform",
+    "status": 200,
+    "golden": "GET_platform.json"
+  },
+  {
+    "method": "POST",
+    "route": "/platform/up",
+    "status": 202,
+    "golden": "POST_platform_up.json"
+  },
+  {
+    "method": "POST",
+    "route": "/platform/down",
+    "status": 202,
+    "golden": "POST_platform_down.json"
+  },
+  {
+    "method": "GET",
+    "route": "/platform/component/{category}/{name}",
+    "status": 200,
+    "golden": "GET_platform_component_category_name.json"
+  },
+  {
+    "method": "POST",
+    "route": "/platform/component/{category}/{name}/up",
+    "status": 202,
+    "golden": "POST_platform_component_category_name_up.json"
+  },
+  {
+    "method": "POST",
+    "route": "/platform/component/{category}/{name}/down",
+    "status": 202,
+    "golden": "POST_platform_component_category_name_down.json"
+  },
+  {
+    "method": "GET",
+    "route": "/scenarios",
+    "status": 200,
+    "golden": "GET_scenarios.json"
+  },
+  {
+    "method": "GET",
+    "route": "/scenarios/{name}",
+    "status": 200,
+    "golden": "GET_scenarios_name.json"
+  },
+  {
+    "method": "POST",
+    "route": "/scenarios/{name}/up",
+    "status": 202,
+    "golden": "POST_scenarios_name_up.json"
+  },
+  {
+    "method": "POST",
+    "route": "/scenarios/{name}/down",
+    "status": 202,
+    "golden": "POST_scenarios_name_down.json"
+  },
+  {
+    "method": "POST",
+    "route": "/scenarios/{name}/verify",
+    "status": 200,
+    "golden": "POST_scenarios_name_verify.json"
+  },
+  {
+    "method": "GET",
+    "route": "/incidents",
+    "status": 200,
+    "golden": "GET_incidents.json"
+  },
+  {
+    "method": "GET",
+    "route": "/incidents/status",
+    "status": 200,
+    "golden": "GET_incidents_status.json"
+  },
+  {
+    "method": "GET",
+    "route": "/incidents/history",
+    "status": 200,
+    "golden": "GET_incidents_history.json"
+  },
+  {
+    "method": "POST",
+    "route": "/incidents/{name}/inject",
+    "status": 200,
+    "golden": "POST_incidents_name_inject.json"
+  },
+  {
+    "method": "POST",
+    "route": "/incidents/inject-random",
+    "status": 200,
+    "golden": "POST_incidents_inject-random.json"
+  },
+  {
+    "method": "POST",
+    "route": "/incidents/hint",
+    "status": 200,
+    "golden": "POST_incidents_hint.json"
+  },
+  {
+    "method": "POST",
+    "route": "/incidents/resolve",
+    "status": 200,
+    "golden": "POST_incidents_resolve.json"
+  },
+  {
+    "method": "GET",
+    "route": "/lab/snapshots",
+    "status": 200,
+    "golden": "GET_lab_snapshots.json"
+  },
+  {
+    "method": "POST",
+    "route": "/lab/snapshots/{name}",
+    "status": 200,
+    "golden": "POST_lab_snapshots_name.json"
+  },
+  {
+    "method": "DELETE",
+    "route": "/lab/snapshots/{name}",
+    "status": 200,
+    "golden": "DELETE_lab_snapshots_name.json"
+  },
+  {
+    "method": "POST",
+    "route": "/lab/snapshots/{name}/restore",
+    "status": 202,
+    "golden": "POST_lab_snapshots_name_restore.json"
+  },
+  {
+    "method": "POST",
+    "route": "/lab/reset",
+    "status": 202,
+    "golden": "POST_lab_reset.json"
+  },
+  {
+    "method": "GET",
+    "route": "/results",
+    "status": 200,
+    "golden": "GET_results.json"
+  },
+  {
+    "method": "GET",
+    "route": "/results/{kind}",
+    "status": 200,
+    "golden": "GET_results_kind.json"
+  },
+  {
+    "method": "GET",
+    "route": "/leaderboard",
+    "status": 200,
+    "golden": "GET_leaderboard.json"
+  },
+  {
+    "method": "GET",
+    "route": "/progress",
+    "status": 200,
+    "golden": "GET_progress.json"
+  },
+  {
+    "method": "GET",
+    "route": "/comparisons",
+    "status": 200,
+    "golden": "GET_comparisons.json"
+  },
+  {
+    "method": "GET",
+    "route": "/comparisons/{id}",
+    "status": 200,
+    "golden": "GET_comparisons_id.json"
+  },
+  {
+    "method": "GET",
+    "route": "/challenges",
+    "status": 200,
+    "golden": "GET_challenges.json"
+  },
+  {
+    "method": "GET",
+    "route": "/challenges/status",
+    "status": 200,
+    "golden": "GET_challenges_status.json"
+  },
+  {
+    "method": "GET",
+    "route": "/challenges/history",
+    "status": 200,
+    "golden": "GET_challenges_history.json"
+  },
+  {
+    "method": "GET",
+    "route": "/challenges/{name}",
+    "status": 200,
+    "golden": "GET_challenges_name.json"
+  },
+  {
+    "method": "POST",
+    "route": "/challenges/complete",
+    "status": 200,
+    "golden": "POST_challenges_complete.json"
+  },
+  {
+    "method": "GET",
+    "route": "/learn/paths",
+    "status": 200,
+    "golden": "GET_learn_paths.json"
+  },
+  {
+    "method": "GET",
+    "route": "/learn/paths/{name}",
+    "status": 200,
+    "golden": "GET_learn_paths_name.json"
+  },
+  {
+    "method": "GET",
+    "route": "/learn/paths/{name}/progress",
+    "status": 200,
+    "golden": "GET_learn_paths_name_progress.json"
+  },
+  {
+    "method": "POST",
+    "route": "/learn/paths/{name}/start",
+    "status": 200,
+    "golden": "POST_learn_paths_name_start.json"
+  },
+  {
+    "method": "POST",
+    "route": "/learn/paths/{name}/reset",
+    "status": 200,
+    "golden": "POST_learn_paths_name_reset.json"
+  },
+  {
+    "method": "POST",
+    "route": "/learn/paths/{name}/complete",
+    "status": 200,
+    "golden": "POST_learn_paths_name_complete.json"
+  },
+  {
+    "method": "GET",
+    "route": "/services",
+    "status": 200,
+    "golden": "GET_services.json"
+  },
+  {
+    "method": "POST",
+    "route": "/services/{name}/up",
+    "status": 202,
+    "golden": "POST_services_name_up.json"
+  },
+  {
+    "method": "POST",
+    "route": "/services/{name}/down",
+    "status": 202,
+    "golden": "POST_services_name_down.json"
+  },
+  {
+    "method": "GET",
+    "route": "/traffic",
+    "status": 200,
+    "golden": "GET_traffic.json"
+  },
+  {
+    "method": "POST",
+    "route": "/traffic/start",
+    "status": 202,
+    "golden": "POST_traffic_start.json"
+  },
+  {
+    "method": "POST",
+    "route": "/traffic/stop",
+    "status": 202,
+    "golden": "POST_traffic_stop.json"
+  },
+  {
+    "method": "GET",
+    "route": "/runs",
+    "status": 200,
+    "golden": "GET_runs.json"
+  },
+  {
+    "method": "GET",
+    "route": "/runs/{id}",
+    "status": 200,
+    "golden": "GET_runs_id.json"
+  },
+  {
+    "method": "GET",
+    "route": "/runs/{id}/logs",
+    "status": 200,
+    "golden": "GET_runs_id_logs.json"
+  },
+  {
+    "method": "POST",
+    "route": "/runs/{id}/cancel",
+    "status": 200,
+    "golden": "POST_runs_id_cancel.json"
+  },
+  {
+    "method": "GET",
+    "route": "/runtimes",
+    "status": 200,
+    "golden": "GET_runtimes.json"
+  },
+  {
+    "method": "POST",
+    "route": "/runtimes/{name}/activate",
+    "status": 202,
+    "golden": "POST_runtimes_name_activate.json"
+  },
+  {
+    "method": "POST",
+    "route": "/runtimes/{name}/deactivate",
+    "status": 202,
+    "golden": "POST_runtimes_name_deactivate.json"
+  }
+]

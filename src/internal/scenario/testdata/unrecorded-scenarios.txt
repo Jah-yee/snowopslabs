@@ -1,0 +1,3 @@
+# Scenarios with no recorded check fixtures yet. The cluster suite records them
+# (RECORD=1 make test-cluster ITEM=scenario/<name>); remove a name once its
+# test/fixtures/untouched.json and solved.json exist. This list only shrinks.

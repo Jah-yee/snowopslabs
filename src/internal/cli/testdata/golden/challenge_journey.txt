@@ -1,0 +1,84 @@
+$ labctl challenge list
+CHALLENGE                           CATEGORY     PAR       DESCRIPTION
+----------------------------------------------------------------------------
+demo-challenge                      workload     10m       Demo challenge
+
+$ labctl challenge info demo-challenge
+Name:        demo-challenge
+Display:     Demo challenge
+Category:    workload
+Par time:    10m
+Hint cost:   5% per hint
+Setup:       incident demo-fault
+
+Fix the demo fault
+
+$ labctl challenge status
+No challenge is currently active.
+
+$ labctl challenge history
+No challenge history yet.
+
+$ labctl challenge start demo-challenge
+Challenge started: Demo challenge
+Timer:    started at <time>
+Par time: 10m
+
+Fix the demo fault
+
+When you think you've fixed it, run:
+  labctl challenge submit
+
+$ labctl challenge status
+Challenge: demo-challenge
+Name:      Demo challenge
+Elapsed:   <dur>
+Par:       10m (under by 10m)
+Hints used: 0
+
+$ labctl challenge submit
+
+=== Challenge Result: Demo challenge ===
+
+  ✗ marker-gone
+      bash: exit status 1
+
+Checks: 0/1 passed
+Time:   <dur> (par: 10m)
+Hints:  0 used
+Score:  0/100
+Outcome: failed
+
+Still running. Fix what is listed above and submit again,
+or give up and clean the lab with:  labctl challenge abort
+
+$ labctl challenge history
+No challenge history yet.
+
+$ labctl challenge hint
+[Hint 1/3 — -5% score penalty]
+
+look at the pods
+
+$ labctl challenge submit
+
+=== Challenge Result: Demo challenge ===
+
+  ✓ marker-gone
+
+Checks: 1/1 passed
+Time:   <dur> (par: 10m)
+Hints:  1 used
+Score:  95/100
+Outcome: passed
+
+$ labctl challenge status
+No challenge is currently active.
+
+$ labctl incident status
+No incident is active. Inject one with: labctl incident inject --random
+
+$ labctl challenge history
+CHALLENGE                           DATE       ELAPSED  SCORE    HINTS   OUTCOME
+--------------------------------------------------------------------------------
+demo-challenge                      <date> <dur>       95       1       passed

@@ -1,0 +1,108 @@
+$ labctl lab status
+State:     unknown
+
+No lab operation recorded yet. Bring one up with: labctl lab up
+
+$ labctl lab up
+lab up started (run <run>). Following output — Ctrl-C stops it.
+
+Run <run> — lab.up k3d (<state>)
+
+cluster up
+
+Succeeded in <dur>.
+
+$ labctl lab status
+State:     up
+Runtime:   k3d
+Last run:  <run> (<dur> ago)
+
+$ labctl lab status --live
+State:     up
+Runtime:   k3d
+Last run:  <run> (<dur> ago)
+
+Cluster:   reachable (context k3d-contract, v1.33.6+k3s1, 2 node(s))
+
+$ labctl lab snapshots
+No snapshots. Take one with: labctl lab snapshot <name>
+
+$ labctl lab snapshot before-drill
+Snapshot:  before-drill (taken <time>)
+  profile:   k3d
+  platform:  (none)
+  apps:      demo-app, go-api
+  scenarios: demo-scenario
+
+Saved. Restore later with: labctl lab restore before-drill
+
+$ labctl lab snapshots
+NAME           TAKEN              PLATFORM   APPS   SCENARIOS
+before-drill   <when>   0          2      1
+
+$ labctl lab restore before-drill
+Snapshot:  before-drill (taken <time>)
+  profile:   k3d
+  platform:  (none)
+  apps:      demo-app, go-api
+  scenarios: demo-scenario
+
+Restoring 3 steps...
+[1/3] app-deploy demo-app
+deploy deploy demo-app
+[2/3] app-deploy go-api
+deploy deploy go-api
+[3/3] scenario-up demo-scenario
+
+Restore complete. Verify scenarios with: labctl scenario verify <name> --watch
+
+$ labctl lab reset
+Reset will run:
+  - traffic-stop
+  - scenario-down demo-scenario
+  - app-destroy demo-app
+  - app-destroy go-api
+
+This tears down the lab (the cluster stays). Type 'yes' to continue: Aborted.
+
+$ labctl lab reset --yes
+Reset will run:
+  - traffic-stop
+  - scenario-down demo-scenario
+  - app-destroy demo-app
+  - app-destroy go-api
+[1/4] traffic-stop
+traffic stopped
+[2/4] scenario-down demo-scenario
+Deactivating scenario: Demo scenario
+
+[1/1] Uninstalling setup...
+down
+
+Scenario deactivated.
+[3/4] app-destroy demo-app
+deploy destroy demo-app
+[4/4] app-destroy go-api
+deploy destroy go-api
+
+Lab reset to post-init state.
+
+$ labctl lab delete before-drill
+Deleted snapshot before-drill.
+
+$ labctl lab snapshots
+No snapshots. Take one with: labctl lab snapshot <name>
+
+$ labctl lab down
+lab down started (run <run>). Following output — Ctrl-C stops it.
+
+Run <run> — lab.down k3d (<state>)
+
+cluster down
+
+Succeeded in <dur>.
+
+$ labctl lab status
+State:     down
+Runtime:   k3d
+Last run:  <run> (<dur> ago)

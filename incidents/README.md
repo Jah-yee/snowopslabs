@@ -14,11 +14,15 @@ Every fault is a directory `incidents/<name>/` with:
 |------|---------|
 | `fault.yaml` | Metadata + the **detection check** (passes ⇔ the fault is RESOLVED) |
 | `inject.sh` | Breaks the lab. Idempotent: re-running while injected is a no-op. |
-| `resolve.sh` | The escape hatch. Always restores the lab, even after a partial manual fix. Also runs after a hand fix passes `status`, to remove the alert rule and marks, so it must change nothing that is already fixed. |
+| `resolve.sh` | The escape hatch. Always restores the lab, even after a partial manual fix. Also runs after a hand fix passes `status`, to remove the alert rule and the fault's record, so it must change nothing that is already fixed. |
 | `hints.md` | Progressive hints, one `## Hint N` section each (revealed by `labctl incident hint`) |
 | `solution.md` | Full diagnosis + fix walkthrough (spoiler — `labctl incident solution`) |
 | `alerts/rule.yaml` | Required iff `expectAlert` is set: the PrometheusRule that fires the page (armed by `inject.sh`, disarmed by `resolve.sh`) |
 | `manifests/`, `checks/` | Optional supporting files |
+
+Every fault also has tests in `src/test/shell/`: its detection check in
+`incident_checks.bats` and its `inject.sh` and `resolve.sh` in
+`incident_faults.bats`. See [Testing a fault](#testing-a-fault).
 
 ### fault.yaml
 
@@ -140,9 +144,12 @@ Pages land in the in-cluster **pager** (`labctl service up pager`) unless
 
 1. **Target only the demo apps** (`go-api`, `echo-server`) or a dedicated
    fault namespace — never platform components or `kube-system`.
-2. **Record what you change.** Annotate the touched resource
-   (`labfault-<name>=...`, original values in `labfault-<name>-original-*`)
-   so `resolve.sh` can always undo it without guessing.
+2. **Record what you change, away from what you break.** Save the original
+   values with `fault_state_save` from `incidents/_lib/state.sh`; `resolve.sh`
+   reads them with `fault_state_get` and ends with `fault_state_clear`. The
+   record is a ConfigMap `labfault-<name>` in `kube-system`. Never annotate or
+   label the object the fault breaks: the original value would be on screen in
+   the learner's first `kubectl describe`.
 3. **`resolve.sh` must never fail the user.** It runs after any amount of
    manual fixing; every step tolerates "already fixed" (`--ignore-not-found`,
    guards, `|| true` where safe).
@@ -152,6 +159,45 @@ Pages land in the in-cluster **pager** (`labctl service up pager`) unless
    doubles as the resolution detector and the challenge grader.
 6. Hints go from gentle nudge to near-answer; the last hint may name the
    resource, the solution names the command.
+7. **Nothing `inject.sh` prints names the fault**, and nothing it writes on the
+   learner's objects does either. An object the fault adds to the workload's
+   namespace takes the name it would have in a real cluster
+   (`default-deny-ingress`, not `labfault-…`) and no `labfault` label;
+   `resolve.sh` finds it again through the fault's record.
+
+## Testing a fault
+
+The tests run the real scripts against a scripted `kubectl` (`stub_script` in
+`src/test/shell/helpers/stub.bash`), so they need no cluster.
+
+**The detection check** gets one test per lab state in `incident_checks.bats`:
+
+| State | The check must |
+|---|---|
+| Solved | pass |
+| The fault is in | fail, with a message that says what is wrong |
+| Each wrong fix that hides the symptom (scaled to zero, the symptom relabelled away) | fail |
+| The workload or a tool is missing | fail with a reason, never pass and never exit silently |
+
+**`inject.sh` and `resolve.sh`** join the tables at the top of
+`incident_faults.bats`, which assert for every fault that inject makes its
+change, fails when that change fails, records before it changes anything,
+carries on without the alert rule, and gives nothing away in its output or on
+the workload's objects. Add tests of the fault's own for: a second inject
+changes nothing; resolve restores each recorded case; resolve after a hand fix
+leaves the learner's fix alone; resolve with no record still recovers or says
+how.
+
+Run them with `bats src/test/shell/incident_checks.bats
+src/test/shell/incident_faults.bats`. They are the hermetic half; the
+[incident review](../docs/authoring/incident-review.md) on a live lab is the
+other.
+
+**`test/solve.sh`** is the hand fix from `solution.md` as a script, run by the
+nightly cluster suite after a real inject; the detection check must then pass
+([TESTING](../docs/TESTING.md#real-cluster)). It uses `kubectl` the way a
+learner would, never `resolve.sh`. Try it on your own lab with
+`make test-cluster ITEM=incident/<name>`.
 
 ## Reviewing a fault
 

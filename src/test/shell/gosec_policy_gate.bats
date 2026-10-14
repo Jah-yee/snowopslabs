@@ -20,7 +20,7 @@ sec_recipe() {
 @test "the sec target runs gosec through golangci-lint" {
   run sec_recipe
   [ "$status" -eq 0 ]
-  [[ "$output" == *"golangci-lint run --enable-only=gosec"* ]]
+  [[ "$output" == *"golangci-lint run --enable-only=gosec"* ]] || false
 }
 
 @test "the sec target never invokes the gosec binary directly" {
@@ -29,7 +29,7 @@ sec_recipe() {
   run sec_recipe
   [ "$status" -eq 0 ]
   # gosec as a COMMAND, not as the --enable-only=gosec argument.
-  [[ ! "$output" =~ (^|[[:space:]]|@)gosec[[:space:]] ]]
+  [[ ! "$output" =~ (^|[[:space:]]|@)gosec[[:space:]] ]] || false
 }
 
 @test "gosec is enabled in the golangci-lint linter set" {

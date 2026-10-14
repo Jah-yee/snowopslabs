@@ -44,8 +44,18 @@ const VERIFY_TIMEOUT_MS = 5 * 60_000
  *  timeoutSeconds on a broken lab; the server bounds it at 2 min. */
 const INCIDENT_STATUS_TIMEOUT_MS = 2 * 60_000
 
+/** ApiError is a request the server answered with an error status, so a
+ *  caller can tell a refusal (4xx) from a server or network failure. */
+export class ApiError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
 /** Generic fetch wrapper — throws Error with a useful message on every
- *  failure mode: network down, timeout, HTTP error body, malformed JSON. */
+ *  failure mode: network down, timeout, HTTP error body, malformed JSON. An
+ *  error status is thrown as an ApiError. */
 async function req<T>(path: string, opts?: RequestInit, timeoutMs = GET_TIMEOUT_MS): Promise<T> {
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), timeoutMs)
@@ -72,7 +82,7 @@ async function req<T>(path: string, opts?: RequestInit, timeoutMs = GET_TIMEOUT_
       if (body.detail) msg = body.detail
       else if (body.title) msg = body.title
     } catch { /* non-JSON error body — keep the HTTP status message */ }
-    throw new Error(msg)
+    throw new ApiError(msg, res.status)
   }
 
   try {

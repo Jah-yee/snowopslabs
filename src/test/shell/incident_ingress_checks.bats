@@ -58,6 +58,6 @@ checks() {
   for check in $(checks); do
     CODE=000 INGRESS_URL_SUFFIX=snowops.localhost:8081 run bash "$check"
     [ "$status" -eq 1 ]
-    [[ "$output" == *"returned 000."* ]]
+    [[ "$output" == *"returned 000."* ]] || false
   done
 }

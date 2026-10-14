@@ -13,7 +13,7 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { api } from './client'
+import { api, ApiError } from './client'
 import { API, jsonError, page, server } from '../test/server'
 
 describe('api client', () => {
@@ -66,9 +66,26 @@ describe('api client', () => {
     })
   })
 
+  it('carries the status of an error answer, and none for a dropped connection', async () => {
+    server.use(http.get(`${API}/scenarios`, () => jsonError(403, 'not yours')))
+    await expect(api.listScenarios()).rejects.toEqual(expect.objectContaining({ name: 'ApiError', status: 403 }))
+
+    server.use(http.get(`${API}/scenarios`, () => HttpResponse.error()))
+    await expect(api.listScenarios()).rejects.not.toBeInstanceOf(ApiError)
+  })
+
   it('does not swallow a 404 as an empty list', async () => {
     server.use(http.get(`${API}/scenarios`, () => jsonError(404, 'no such collection')))
     await expect(api.listScenarios()).rejects.toThrow(/no such collection/)
+  })
+
+  it('surfaces the size limit when a request body is too large', async () => {
+    server.use(
+      http.post(`${API}/auth/login`, () =>
+        jsonError(413, 'the request body is larger than the 1 MiB limit'),
+      ),
+    )
+    await expect(api.login('operator', 'x')).rejects.toThrow(/larger than the 1 MiB limit/)
   })
 })
 

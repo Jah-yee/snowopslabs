@@ -1,0 +1,66 @@
+$ labctl platform status
+No platform components have been installed through labctl yet.
+Install one with: labctl platform up <category|category/provider>
+Probe the live cluster with: labctl platform status --live
+
+$ labctl platform up ingress
+install ingress/traefik started (run <run>). Following output — Ctrl-C stops it.
+
+Run <run> — platform.install ingress/traefik (<state>)
+
+installing traefik
+
+Succeeded in <dur>.
+
+$ labctl platform status
+COMPONENT         STATE       LAST RUN
+ingress/traefik   installed   <run>
+
+$ labctl platform status ingress
+COMPONENT         STATE       LAST RUN
+ingress/traefik   installed   <run>
+
+$ labctl platform up monitoring/metrics/prometheus
+install monitoring/metrics/prometheus started (run <run>). Following output — Ctrl-C stops it.
+
+Run <run> — platform.install monitoring/metrics/prometheus (<state>)
+
+installing prometheus
+
+Succeeded in <dur>.
+
+$ labctl platform down ingress
+uninstall ingress/traefik started (run <run>). Following output — Ctrl-C stops it.
+
+Run <run> — platform.uninstall ingress/traefik (<state>)
+
+removing traefik
+
+Succeeded in <dur>.
+
+$ labctl platform status
+COMPONENT                       STATE       LAST RUN
+ingress/traefik                 removed     <run>
+monitoring/metrics/prometheus   installed   <run>
+
+$ labctl platform up
+Installing ingress (traefik)...
+installing traefik
+Installing metrics (prometheus)...
+installing prometheus
+Installing grafana...
+installing grafana
+
+Platform installed successfully.
+
+$ labctl platform status --live
+
+$ labctl platform down
+Uninstalling grafana...
+removing grafana
+Uninstalling metrics (prometheus)...
+removing prometheus
+Uninstalling ingress (traefik)...
+removing traefik
+
+Platform uninstalled.

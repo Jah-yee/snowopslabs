@@ -4,6 +4,10 @@ package httpapi
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -121,4 +125,44 @@ func clientAddr(r *http.Request) string {
 		return addr[:i]
 	}
 	return addr
+}
+
+// maxRequestBody is the largest request body the API reads. No route takes
+// more than a few hundred bytes of JSON.
+const maxRequestBody = 1 << 20
+
+// limitBodyMiddleware refuses a request that declares a body over
+// maxRequestBody, and stops reading one that streams past it, so a client
+// cannot make the server buffer an arbitrarily large body.
+func limitBodyMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ContentLength > maxRequestBody {
+			respondTooLarge(w, r)
+			return
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, maxRequestBody)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func respondTooLarge(w http.ResponseWriter, r *http.Request) {
+	respondError(w, r, http.StatusRequestEntityTooLarge, "request_too_large",
+		fmt.Sprintf("the request body is larger than the %d MiB limit", maxRequestBody>>20))
+}
+
+// decodeBody reads the request's JSON body into v. It answers the request
+// itself and returns false when the body is too large or is not valid JSON.
+// With optional set, an empty body is accepted and leaves v as it was.
+func decodeBody(w http.ResponseWriter, r *http.Request, v any, optional bool) bool {
+	err := json.NewDecoder(r.Body).Decode(v)
+	var tooLarge *http.MaxBytesError
+	switch {
+	case err == nil, optional && errors.Is(err, io.EOF):
+		return true
+	case errors.As(err, &tooLarge):
+		respondTooLarge(w, r)
+	default:
+		respondError(w, r, http.StatusBadRequest, "invalid_request", "the request body is not valid JSON")
+	}
+	return false
 }

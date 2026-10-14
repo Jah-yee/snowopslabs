@@ -1,0 +1,13 @@
+[
+  {
+    "challenge": "demo-challenge",
+    "checksPassed": 1,
+    "checksTotal": 1,
+    "elapsedSeconds": 0,
+    "finishedAt": "<time>",
+    "hintsUsed": 0,
+    "outcome": "passed",
+    "score": 100,
+    "startedAt": "<time>"
+  }
+]

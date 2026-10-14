@@ -60,7 +60,7 @@ docker_recovers_after_restart() {
   stub_when kubectl "get --raw" 1 # /healthz probe fails
   run bash "$ROOT/runtimes/k3d/up.sh" testcluster
   [ "$status" -eq 1 ]
-  [[ "$output" == *"labctl reset"* ]]
+  [[ "$output" == *"labctl reset"* ]] || false
   # It tries the ordered restart k3d provides (servers, then agents) first.
   assert_called k3d "cluster stop testcluster"
   assert_called k3d "cluster start testcluster"
@@ -100,7 +100,7 @@ docker_recovers_after_restart() {
   NODE_READY_WAIT=0 NODE_CHECK_INTERVAL=0 run bash "$ROOT/runtimes/k3d/up.sh" testcluster
   [ "$status" -eq 1 ]
   assert_called docker "restart k3d-testcluster-agent-0"
-  [[ "$output" == *"stay NotReady: k3d-testcluster-agent-0"* ]]
+  [[ "$output" == *"stay NotReady: k3d-testcluster-agent-0"* ]] || false
   refute_called k3d "cluster delete"
 }
 
@@ -194,7 +194,7 @@ docker_recovers_after_restart() {
 
   run bash "$ROOT/runtimes/k3d/down.sh" testcluster
   [ "$status" -eq 0 ]
-  [[ "$output" != *"not found"* ]]
+  [[ "$output" != *"not found"* ]] || false
   assert_called docker "ps -aq --filter label=k3d.cluster=testcluster"
   assert_called docker "rm -f abc123"
   assert_called docker "network rm k3d-testcluster"
@@ -214,7 +214,7 @@ docker_recovers_after_restart() {
   stub_when kubectl "get --raw" 1 # /healthz probe fails
   run bash "$ROOT/runtimes/kind/up.sh" testcluster
   [ "$status" -eq 1 ]
-  [[ "$output" == *"labctl reset"* ]]
+  [[ "$output" == *"labctl reset"* ]] || false
   refute_called kind "delete cluster"
   refute_called kind "create cluster"
 }

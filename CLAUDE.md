@@ -35,10 +35,11 @@ code disagree, fix the doc in the same change.
 ```bash
 make cli-build      # build bin/labctl with the UI embedded
 make ui-dev         # serve src/ui/dist live, no Go rebuild
-make test           # Go unit + apps + shell (bats), -race, coverage gate
-make test-go        # Go unit + contract tests (>=80% per package)
-make test-ui        # vitest component tests
+make test           # Go unit + apps + shell (bats), -race, coverage gates, test-check
+make test-go        # Go unit + contract tests (>=80% per package, changed lines >=85%)
+make test-ui        # vitest component tests, same two gates
 make test-e2e       # playwright journeys
+make test-check     # a change to code changed a test with it
 make lint           # fmt-check + shell + Go + UI lint + sec + vuln
 make fmt            # gofmt the tree
 make docs-check     # documentation is in step with the code
@@ -81,8 +82,20 @@ most often broken:
   story behind a change: no bug or incident that prompted it, no decision or
   alternative considered, no measurements or logs, no "used to" / "once" /
   "no longer", no task or ticket numbers. That belongs in the commit message.
+- Every change ships its tests in the same commit, at the layer that owns the
+  behaviour. [TESTING](docs/TESTING.md#what-each-change-needs) has the table of
+  what each kind of change needs; `make test-check` and the changed-lines gate
+  block a change that brings none.
+- A bug fix starts with a test that fails because of that bug. A bug that only
+  a live cluster can reproduce becomes a step in that content's review guide.
+- A test asserts an outcome a user would notice. Break the behaviour once and
+  watch the test fail before you trust it; "ran without error" is not a test.
+- A check, grader or detection script has a test per lab state: solved
+  passes; the work not done, each known wrong fix, and a cluster that cannot
+  answer all fail.
 - Tests are table-driven and hermetic. No live cluster, network or real
   credentials.
+- No new coverage exceptions or exclusions. Floors only go up.
 - Never land code without updating the docs it affects in the same change.
 - Don't commit build artifacts (`bin/`, `dist/`, `coverage.out`, `src/ui/dist/`).
 

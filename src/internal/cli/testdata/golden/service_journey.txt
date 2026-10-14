@@ -1,0 +1,21 @@
+$ labctl service list
+NAME   PATH
+pager  <lab>/src/services/pager
+
+$ labctl service up pager
+Installing service pager...
+installing pager
+Service pager installed.
+
+$ labctl service status
+--- pager ---
+running
+
+
+$ labctl service status pager
+running
+
+$ labctl service down pager
+Uninstalling service pager...
+removing pager
+Service pager uninstalled.

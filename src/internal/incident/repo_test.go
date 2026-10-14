@@ -7,12 +7,17 @@ package incident
 // stub kubectl.
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/sagar2395/snowopslabs/internal/tmpl"
+	"github.com/sagar2395/snowopslabs/internal/workload"
 )
 
 func repoRoot(t *testing.T) string {
@@ -102,9 +107,10 @@ func runWithStubKubectl(t *testing.T, script string) (string, string, error) {
 	cmd.Env = append(os.Environ(),
 		"PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"),
 		"KUBECTL_LOG="+logFile,
-		// With no cluster, a script waiting for its symptom would wait until
-		// its timeout. This shortens that wait for scripts that honour it.
+		// With no cluster, a script waiting for its symptom or sampling the
+		// workload would wait out each interval. These skip the waits.
 		"FAULT_WAIT_SECONDS=0",
+		"FAULT_SAMPLE_SECONDS=0",
 	)
 	out, err := cmd.CombinedOutput()
 	log, _ := os.ReadFile(logFile)
@@ -175,6 +181,51 @@ func TestRepoFaults_UnderscoreDirsAreNotFaults(t *testing.T) {
 		}
 		if _, reported := e.LoadErrors()[name]; reported {
 			t.Errorf("%q was reported as a failed fault load", name)
+		}
+	}
+}
+
+// unexpanded matches one of labctl's own template variables left in rendered
+// text. Other template syntaxes a fault carries are not labctl's.
+var unexpanded = regexp.MustCompile(`\{\{\s*\.(` + strings.Join(tmpl.FieldNames(), "|") + `)\b`)
+
+// TestRepoFaults_RenderForAnyWorkload renders everything a learner reads of
+// each fault (its card, hints and solution) for an app that is not the default
+// one. A template variable left in the output, or the default app's name in a
+// fault that follows the binding, means that text ignores the binding.
+func TestRepoFaults_RenderForAnyWorkload(t *testing.T) {
+	root := repoRoot(t)
+	e := NewEngine(root, "lab.test")
+	bound := workload.Workload{Name: "zz-app", Namespace: "zz-ns", Port: "9999", Metric: "zz_metric"}
+	e.Workload = bound
+
+	faults := e.ListBound(bound)
+	if len(faults) != len(shippedFaults) {
+		t.Fatalf("rendered %d faults, the repository ships %d", len(faults), len(shippedFaults))
+	}
+	for _, f := range faults {
+		card, err := json.Marshal(f)
+		if err != nil {
+			t.Fatalf("%s: marshal: %v", f.Name, err)
+		}
+		texts := map[string]string{"fault.yaml": string(card)}
+		for _, file := range []string{"hints.md", "solution.md"} {
+			raw, err := os.ReadFile(filepath.Join(f.Dir, file))
+			if err != nil {
+				t.Fatalf("%s: %v", f.Name, err)
+			}
+			texts[file] = e.ResolveTemplate(string(raw))
+		}
+		for file, text := range texts {
+			t.Run(f.Name+"/"+file, func(t *testing.T) {
+				if m := unexpanded.FindString(text); m != "" {
+					t.Errorf("an unexpanded template variable reaches the learner: %s", m)
+				}
+				if i := strings.Index(text, workload.DefaultApp); i >= 0 {
+					t.Errorf("names %q although bound to %q: …%s…",
+						workload.DefaultApp, bound.Name, text[max(0, i-60):min(len(text), i+40)])
+				}
+			})
 		}
 	}
 }

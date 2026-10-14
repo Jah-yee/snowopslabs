@@ -4,27 +4,43 @@ set -euo pipefail
 NS="${TARGET_NAMESPACE:-go-api}"
 SVC="${TARGET_WORKLOAD:-go-api}"
 DEPLOY="${TARGET_WORKLOAD:-go-api}"
-MARK="labfault-service-selector-broken"
+FAULT="service-selector-broken"
+MARK="labfault-$FAULT"
+MON_NS="${MONITORING_NAMESPACE:-monitoring}"
+# shellcheck source=incidents/_lib/state.sh
+. "$(cd "$(dirname "$0")/../_lib" && pwd)/state.sh"
 
-# Resolve is idempotent: with no marker there is nothing to undo, and saying so
-# is the honest answer. Failing here instead would make `incident resolve` error
-# on a healthy Service.
-if ! kubectl -n "$NS" get svc "$SVC" \
-  -o "jsonpath={.metadata.annotations.$MARK}" 2>/dev/null | grep -q .; then
-  echo "Nothing to resolve: $SVC carries no $MARK marker."
+# Forget the record, disarm the page, and drop the annotations a lab may still
+# carry on the Service.
+clean_up() {
+  fault_state_clear "$FAULT"
+  kubectl -n "$NS" annotate svc "$SVC" \
+    "$MARK-" "$MARK-original-selector-" --overwrite >/dev/null 2>&1 || true
+  kubectl delete prometheusrule "$MARK" -n "$MON_NS" --ignore-not-found >/dev/null 2>&1 || true
+}
+
+# Resolve also runs after a hand fix passes the check, so it leaves a Service
+# that selects its own pods alone, however the learner got it there: putting
+# the recorded selector back over a fix made on the Deployment's labels would
+# break the Service again.
+POD_LABEL="$(kubectl -n "$NS" get deploy "$DEPLOY" \
+  -o 'jsonpath={.spec.template.metadata.labels.app\.kubernetes\.io/name}' 2>/dev/null || true)"
+SVC_LABEL="$(kubectl -n "$NS" get svc "$SVC" \
+  -o 'jsonpath={.spec.selector.app\.kubernetes\.io/name}' 2>/dev/null || true)"
+if [ -z "$SVC_LABEL" ] || [ "$SVC_LABEL" = "$POD_LABEL" ]; then
+  clean_up
+  echo "Nothing to resolve: $SVC selects its own pods."
   exit 0
 fi
 
-# The Deployment's matchLabels is the authoritative answer to "which pods is
-# this app", so restoring from it converges even when the user edited a
-# different selector key by hand while diagnosing.
 # Prefer the selector recorded at injection: it restores the Service exactly as
-# the fault found it. The Deployment's matchLabels is the fallback — it is the
-# authoritative answer to "which pods is this app" and converges even when the
-# user edited a different key by hand, but it is a SUBSET of what a chart
-# usually puts on a Service, so restoring from it silently drops keys.
-SELECTOR="$(kubectl -n "$NS" get svc "$SVC" \
-  -o "jsonpath={.metadata.annotations.$MARK-original-selector}" 2>/dev/null || true)"
+# the fault found it.
+SELECTOR="$(fault_state_get "$FAULT" original-selector)"
+
+# The Deployment's matchLabels is the fallback. It is the authoritative answer
+# to "which pods is this app" and converges even when the user edited a
+# different key by hand, but it is a SUBSET of what a chart usually puts on a
+# Service, so restoring from it drops keys.
 if [ -z "$SELECTOR" ] || [ "$SELECTOR" = "none" ] || [ "$SELECTOR" = "{}" ]; then
   SELECTOR="$(kubectl -n "$NS" get deploy "$DEPLOY" -o 'jsonpath={.spec.selector.matchLabels}' 2>/dev/null || true)"
 fi
@@ -43,9 +59,6 @@ echo "Restoring $SVC's selector..."
 kubectl -n "$NS" patch svc "$SVC" --type=json \
   -p "[{\"op\":\"replace\",\"path\":\"/spec/selector\",\"value\":$SELECTOR}]"
 
-kubectl -n "$NS" annotate svc "$SVC" \
-  "$MARK-" "$MARK-original-selector-" --overwrite >/dev/null 2>&1 || true
-MON_NS="${MONITORING_NAMESPACE:-monitoring}"
-kubectl delete prometheusrule labfault-service-selector-broken -n "$MON_NS" --ignore-not-found >/dev/null 2>&1 || true
+clean_up
 
 echo "Resolved. Endpoints repopulate within seconds."

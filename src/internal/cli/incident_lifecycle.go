@@ -4,6 +4,7 @@ package cli
 
 import (
 	"context"
+	"io"
 
 	"github.com/spf13/cobra"
 
@@ -33,10 +34,11 @@ var incidentEngineFactory = func(ctx context.Context) (*incsvc.Service, *store.S
 	return svc, st, eng, cleanup, nil
 }
 
-// runIncidentOp starts the run engine, calls submit, and streams the run,
-// returning an error if it fails. submit carries the fault's target, which the
-// scripts receive as TARGET_*.
-func runIncidentOp(cmd *cobra.Command, verb, name string, submit func(context.Context, *incsvc.Service) (string, error)) error {
+// runIncidentOp starts the run engine, calls submit, and streams the run to
+// out, returning an error if it fails. label names the operation in the start
+// line and the failure message, e.g. "inject oom-kill". submit carries the
+// fault's target, which the scripts receive as TARGET_*.
+func runIncidentOp(cmd *cobra.Command, out io.Writer, label string, submit func(context.Context, *incsvc.Service) (string, error)) error {
 	ctx := cmd.Context()
 	svc, st, eng, cleanup, err := incidentEngineFactory(ctx)
 	if err != nil {
@@ -46,7 +48,7 @@ func runIncidentOp(cmd *cobra.Command, verb, name string, submit func(context.Co
 	if err := eng.Start(ctx); err != nil {
 		return err
 	}
-	return streamSubmittedRun(ctx, cmd.OutOrStdout(), st, verb+" "+name, func() (string, error) {
+	return streamSubmittedRun(ctx, out, st, label, func() (string, error) {
 		return submit(ctx, svc)
 	})
 }

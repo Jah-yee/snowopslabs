@@ -1,0 +1,13 @@
+$ labctl traffic profiles
+[stderr]
+spike
+steady
+
+$ labctl traffic status
+not running
+
+$ labctl traffic start
+traffic started
+
+$ labctl traffic stop
+traffic stopped

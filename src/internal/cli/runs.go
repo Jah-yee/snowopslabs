@@ -31,6 +31,9 @@ long after it finished.`,
 }
 
 // openStore opens the run store. Tests replace it.
+// logPollInterval is how long a followed log waits before reading new lines.
+var logPollInterval = 250 * time.Millisecond
+
 var openStore = func(ctx context.Context) (*store.Store, error) {
 	path, err := store.DefaultPath()
 	if err != nil {
@@ -47,9 +50,8 @@ func runsListCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:          "list",
-		Short:        "List recorded runs, newest first",
-		SilenceUsage: true,
+		Use:   "list",
+		Short: "List recorded runs, newest first",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 			st, err := openStore(ctx)
@@ -100,10 +102,9 @@ func runsLogsCmd() *cobra.Command {
 	var follow bool
 
 	cmd := &cobra.Command{
-		Use:          "logs <run-id>",
-		Short:        "Show a run's full output",
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:   "logs <run-id>",
+		Short: "Show a run's full output",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			st, err := openStore(ctx)
@@ -112,6 +113,14 @@ func runsLogsCmd() *cobra.Command {
 			}
 			defer func() { _ = st.Close() }()
 
+			rec, err := st.GetRun(ctx, args[0])
+			if err != nil {
+				return err
+			}
+			if rec.Hidden() {
+				return fmt.Errorf("run %s injected a silent incident: its output is withheld so it cannot name the fault.\n"+
+					"'labctl incident status' says when it is fixed, and 'labctl incident history' then names it", rec.ID)
+			}
 			return streamRunLogs(ctx, cmd.OutOrStdout(), st, args[0], follow)
 		},
 	}
@@ -171,7 +180,7 @@ func streamRunLogs(ctx context.Context, out io.Writer, st *store.Store, runID st
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
-			case <-time.After(250 * time.Millisecond):
+			case <-time.After(logPollInterval):
 			}
 		}
 	}
@@ -212,8 +221,7 @@ group, its children go with it.
 
 If labctl is not the process executing the run (for example the run belongs to
 a server you are not attached to), use the API or the UI instead.`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			st, err := openStore(ctx)

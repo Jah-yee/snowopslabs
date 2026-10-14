@@ -117,7 +117,7 @@ EOF
   "$STUB_DIR/make-tool" "$STUB_BIN/kubectl" kubectl 1.30.2
   run setup_tools Linux ensure_tool kubectl
   [ "$status" -eq 0 ]
-  [[ "$output" == *"kubectl v1.30.2 is installed"* ]]
+  [[ "$output" == *"kubectl v1.30.2 is installed"* ]] || false
   [ ! -e "$CALLS" ] || ! grep -q curl "$CALLS"
 }
 
@@ -146,7 +146,7 @@ EOF
   "$STUB_DIR/make-tool" "$STUB_BIN/helm" helm 3.9.0
   BREW_NOOP=1 run setup_tools Darwin ensure_tool helm
   [ "$status" -eq 1 ]
-  [[ "$output" == *"older than v3.12.0"* ]]
+  [[ "$output" == *"older than v3.12.0"* ]] || false
 }
 
 @test "WSL: Docker Desktop's shim without integration stops with the fix, no second install" {
@@ -158,7 +158,7 @@ EOF
   chmod +x "$STUB_BIN/docker"
   WSL_DISTRO_NAME=Ubuntu run setup_tools Linux install_docker_linux
   [ "$status" -eq 1 ]
-  [[ "$output" == *"WSL Integration"* ]]
+  [[ "$output" == *"WSL Integration"* ]] || false
   ! grep -q "apt-get" "$CALLS" 2>/dev/null
 }
 
@@ -180,8 +180,8 @@ EOF
   }
   WSL_DISTRO_NAME=Ubuntu run setup_tools Linux without_docker_cli install_docker_linux
   [ "$status" -eq 1 ]
-  [[ "$output" == *"Docker Desktop is installed on Windows but not running"* ]]
-  [[ "$output" == *"SNOWOPS_NATIVE_DOCKER=1 labctl init"* ]]
+  [[ "$output" == *"Docker Desktop is installed on Windows but not running"* ]] || false
+  [[ "$output" == *"SNOWOPS_NATIVE_DOCKER=1 labctl init"* ]] || false
   ! grep -q "sudo" "$CALLS" 2>/dev/null
 }
 
@@ -198,7 +198,7 @@ EOF
     "$@"
   }
   SNOWOPS_NATIVE_DOCKER=1 WSL_DISTRO_NAME=Ubuntu run setup_tools Linux native_engine install_docker_linux
-  [[ "$output" != *"is installed on Windows but not running"* ]]
+  [[ "$output" != *"is installed on Windows but not running"* ]] || false
   grep -q "sudo apk add --no-cache docker" "$CALLS"
 }
 
@@ -211,5 +211,5 @@ EOF
   chmod +x "$STUB_BIN/docker"
   run setup_tools Linux install_docker_linux
   [ "$status" -eq 1 ]
-  [[ "$output" == *"log out and back in"* ]]
+  [[ "$output" == *"log out and back in"* ]] || false
 }

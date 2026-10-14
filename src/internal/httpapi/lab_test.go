@@ -11,12 +11,16 @@ import (
 
 	"github.com/sagar2395/snowopslabs/internal/config"
 	"github.com/sagar2395/snowopslabs/internal/lab"
+	"github.com/sagar2395/snowopslabs/internal/labtest"
 	"github.com/sagar2395/snowopslabs/internal/platform"
 	"github.com/sagar2395/snowopslabs/internal/scenario"
 )
 
+// newLabServer serves an empty project with the fixture lab's stand-in
+// kubectl and helm on PATH, so reading the lab never reaches a real cluster.
 func newLabServer(t *testing.T) *Server {
 	t.Helper()
+	labtest.New(t)
 	root := t.TempDir()
 	return &Server{
 		cfg:      &config.Config{ProjectRoot: root, StateDir: t.TempDir(), DomainSuffix: "k3d.local", Profile: "k3d"},

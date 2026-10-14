@@ -1,0 +1,15 @@
+{
+  "category": "ingress",
+  "chart": "",
+  "dependencies": [],
+  "description": "",
+  "installCommands": [],
+  "installVars": null,
+  "installed": true,
+  "name": "traefik",
+  "namespace": "traefik",
+  "ports": [],
+  "provides": [],
+  "resources": [],
+  "usedInScenarios": []
+}

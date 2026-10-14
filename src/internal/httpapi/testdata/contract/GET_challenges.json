@@ -1,0 +1,11 @@
+{
+  "items": [
+    {
+      "category": "workload",
+      "description": "Fix the demo fault",
+      "displayName": "Demo challenge",
+      "name": "demo-challenge",
+      "parTime": "10m"
+    }
+  ]
+}

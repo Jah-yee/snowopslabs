@@ -222,7 +222,8 @@ if docker inspect "$LB" >/dev/null 2>&1; then
     if ! cmp -s "$LB_VALUES" "${LB_VALUES}.new"; then
       docker cp "${LB_VALUES}.new" "${LB}:/etc/confd/values.yaml" >/dev/null 2>&1 &&
         docker restart "$LB" >/dev/null 2>&1 &&
-        echo "    load balancer updated and restarted"
+        echo "    load balancer updated and restarted" &&
+        LB_RESTARTED=1
     else
       # k3d reuses the name where it can, in which case the existing upstream
       # entry is already correct and there is nothing to rewrite.
@@ -233,6 +234,18 @@ if docker inspect "$LB" >/dev/null 2>&1; then
     echo "    WARN: could not read the load balancer's config; if the lab becomes" >&2
     echo "          unreachable after a restart, see docs/scenarios.md." >&2
   fi
+fi
+
+# The load balancer also fronts the API server, so the next kubectl would be
+# refused until it is back.
+if [ "${LB_RESTARTED:-0}" = 1 ]; then
+  waited=0
+  until kubectl get --raw /readyz >/dev/null 2>&1; do
+    [ "$waited" -lt "${API_WAIT_SECONDS:-60}" ] ||
+      die "the API server did not answer within ${API_WAIT_SECONDS:-60}s of the load balancer restart. Check: docker ps --filter name=${LB}"
+    sleep 2
+    waited=$((waited + 2))
+  done
 fi
 
 echo ""
