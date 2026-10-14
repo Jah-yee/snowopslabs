@@ -42,6 +42,37 @@ describe('job tracking', () => {
     expect(done).not.toHaveBeenCalled()
   })
 
+  // A fast job can end, and its event arrive, before the POST that started it
+  // has returned and the caller has started tracking it.
+  it('settles at once a job whose end arrived before it was tracked', () => {
+    completeJob('early-ok', true)
+    completeJob('early-fail', false, 'helm failed')
+    const ok = vi.fn()
+    const failed = vi.fn()
+    trackJob('early-ok', ok)
+    trackJob('early-fail', failed)
+    expect(ok).toHaveBeenCalledWith(true, undefined)
+    expect(failed).toHaveBeenCalledWith(false, 'helm failed')
+    expect(hasTrackedJobs()).toBe(false)
+
+    // The early result is used once: tracking the same id again waits.
+    const again = vi.fn()
+    trackJob('early-ok', again)
+    expect(again).not.toHaveBeenCalled()
+    completeJob('early-ok', true)
+  })
+
+  it('remembers only the most recent early endings', () => {
+    for (let i = 0; i < 150; i++) completeJob(`burst-${i}`, true)
+    const oldest = vi.fn()
+    const newest = vi.fn()
+    trackJob('burst-0', oldest)
+    trackJob('burst-149', newest)
+    expect(newest).toHaveBeenCalledWith(true, undefined)
+    expect(oldest).not.toHaveBeenCalled()
+    completeJob('burst-0', true)
+  })
+
   it('gives up on a job whose end never arrives, and says where to look', () => {
     const done = vi.fn()
     trackJob('j3', done)
