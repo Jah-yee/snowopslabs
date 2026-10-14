@@ -10,8 +10,12 @@ load 'helpers/stub'
 
 setup() {
   ROOT="$(project_root)"
+}
+
+# needs_helm skips a chart-rendering test without helm, except on CI, which
+# must run it.
+needs_helm() {
   if ! command -v helm >/dev/null 2>&1; then
-    # CI must run these; a developer without helm is told why they skipped.
     [ -z "${CI:-}" ] || { echo "helm is not installed on this CI runner"; false; }
     skip "helm is not installed"
   fi
@@ -22,6 +26,7 @@ charts() {
 }
 
 @test "each app chart serves ingress.host, and only it" {
+  needs_helm
   while read -r chart; do
     run helm template t "$chart" --set appName=zz-app --set image.repository=zz-app --set ingress.host=zz-app.lab.test
     [ "$status" -eq 0 ] || { echo "$chart: $output"; false; }
@@ -31,6 +36,7 @@ charts() {
 }
 
 @test "without ingress.host a chart serves its default host" {
+  needs_helm
   while read -r chart; do
     run helm template t "$chart" --set appName=zz-app --set image.repository=zz-app
     [ "$status" -eq 0 ] || { echo "$chart: $output"; false; }

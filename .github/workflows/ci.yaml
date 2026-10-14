@@ -167,6 +167,14 @@ jobs:
       - name: Install bats
         run: npm install -g bats
 
+      # The app chart tests render the charts with the Helm the lab pins.
+      - name: Read the pinned Helm version
+        id: pins
+        run: . config/versions.env && echo "helm=v${HELM_VERSION}" >>"$GITHUB_OUTPUT"
+      - uses: azure/setup-helm@v4
+        with:
+          version: ${{ steps.pins.outputs.helm }}
+
       - name: Shell tests
         run: make test-shell
 
