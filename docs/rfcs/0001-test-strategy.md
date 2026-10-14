@@ -140,7 +140,7 @@ bullet on tests, and mirrored in the invariants and the definition of done in
 `AGENT-CONTEXT.md`:
 
 > - Every change ships its tests in the same commit, at the layer that owns the
->   behaviour. [TESTING.md](docs/TESTING.md) has the table of what each kind of
+>   behaviour. [TESTING.md](../TESTING.md) has the table of what each kind of
 >   change needs.
 > - A bug fix starts with a test that fails because of that bug. A bug that
 >   only a cluster can reproduce goes in the cluster suite.
@@ -489,7 +489,8 @@ machine, found and fixed:
 | `cluster-upgrade-drill`'s `roll-node.sh` restarted the k3d load balancer, which also fronts the API server, and returned while it was down, so the learner's next `kubectl` was refused | it waits for `/readyz` |
 
 Filed: B35, an incident solved by hand leaves its fault record in
-`kube-system` (the runner runs `resolve` after the hand fix to tidy it); B36,
+`kube-system` and its alert rule (the runner runs `resolve` after the hand
+fix to tidy them); B36,
 `platform status` does not see components a scenario installed as
 prerequisites.
 

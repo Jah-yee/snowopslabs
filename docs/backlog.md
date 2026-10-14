@@ -23,7 +23,7 @@ Effort is in engineering days and is an estimate, not a commitment.
 | [B10](#b10--chaos-network-faults-never-reach-the-traffic-generator) | Chaos network faults never reach the traffic generator | content, traffic | 1–2 |
 | [B11](#b11--secrets-management-only-works-for-the-app-the-platform-was-installed-for) | secrets-management only works for the app the platform was installed for | platform, content | 1 |
 | [B12](#b12--every-k3d-node-promises-the-whole-machines-memory) | Every k3d node promises the whole machine's memory | runtime | 1 |
-| [B16](#b16--web-ui-actions-bypass-the-run-engine) | Web UI actions bypass the run engine | API | 4–6 |
+| [B16](#b16--web-ui-actions-bypass-the-run-engine) | Web UI actions bypass the run engine | API, UI | 5–7 |
 | [B18](#b18--internalcli-runs-on-package-level-state) | `internal/cli` runs on package-level state | CLI | 3–4 |
 | [B19](#b19--smaller-go-clean-ups) | Smaller Go clean-ups | Go | 1–2 |
 | [B20](#b20--installsh-leaves-a-fresh-mac-stuck-on-path) | `install.sh` leaves a fresh Mac stuck on `PATH` | install | 0.5 |
@@ -33,7 +33,7 @@ Effort is in engineering days and is an estimate, not a commitment.
 | [B28](#b28--the-pod-memory-panel-cannot-show-one-small-pod) | The pod memory panel cannot show one small pod | dashboards, content | 0.5 |
 | [B29](#b29--oom-kills-output-gives-the-fault-away-and-its-solution-describes-an-older-fault) | oom-kill's output gives the fault away, and its solution describes an older fault | content | 0.5–1 |
 | [B30](#b30--rollout-undo-brings-old-fault-markers-back-onto-the-deployment) | `rollout undo` brings old fault markers back onto the Deployment | content | 0.5 |
-| [B35](#b35--a-hand-fixed-incident-leaves-its-fault-record-behind) | A hand-fixed incident leaves its fault record behind | engine, content | 0.5 |
+| [B35](#b35--a-hand-fixed-incident-leaves-its-fault-record-and-alert-rule-behind) | A hand-fixed incident leaves its fault record and alert rule behind | engine, content | 0.5–1 |
 | [B36](#b36--platform-status-misses-components-a-scenario-installed) | `platform status` misses components a scenario installed | CLI, engine | 0.5–1 |
 
 ---
@@ -321,27 +321,43 @@ scenario so learners know how many they can run at once.
 ## B16 — Web UI actions bypass the run engine
 
 **Problem.** The `/api/v2` handlers for app deploy, destroy and build, platform
-install and uninstall, scenario up and down, services, runtimes, lab restore
-and reset, and traffic start their work in a detached `go func()` through
-`internal/executor`. That executor calls `exec.Command` with no context, takes
-no lock, and keeps its job history in memory. None of that work can be
-cancelled, none of it is refused on a conflict, and none of it survives a
-restart. The CLI's `lab`, `platform` and `incident` commands, meanwhile, go
+install and uninstall, scenario up and down, incident inject, services,
+runtimes, lab restore and reset, and traffic start their work in a detached
+`go func()`, or synchronously, through `internal/executor`. That executor calls
+`exec.Command` with no context, takes no lock, and keeps its job history in
+memory. None of that work can be cancelled, none of it is refused on a
+conflict, none of it survives a restart, and none of it appears in the Runs
+view. The CLI's `lab`, `platform`, `scenario` and `incident` commands go
 through `internal/service` and the run engine. The two interfaces therefore
 behave differently for the same operation, against both the
 [architecture](architecture/ARCHITECTURE.md#1-the-shape-of-the-system) and the
-"everything that shells out goes through `internal/run`" invariant.
+"everything that shells out goes through `internal/run`" invariant. The
+browser journeys for cancelling a run and resuming its log stream have to
+start the run from the CLI (`$E2E_HOLD.labctl`) because no route creates one.
 
-**Proposed approach.** Move one route family at a time onto the service that
-already exists: platform first (its service is complete), then scenario, lab,
-app and traffic. Each handler submits a `run.Spec` and returns `202` with the
-run ID, and the UI streams it from `/api/v2/runs/{id}`. Delete
-`internal/executor` once no handler uses it.
+**What is already in place.** `internal/service/{platform,lab,scenario,incident}`
+submit `run.Spec`s with lock keys. A run cancelled from another process stops
+within a second (the worker watches its record), the Runs view cancels and
+streams any run, and its log stream resumes after a dropped request.
+
+**Proposed approach.** One route family per pull request, each with its
+contract rows (`202` with the run ID, `409 lock_conflict` on a held lock,
+operator-only) and the UI action switched from the job panel to the run:
+
+1. Platform install and uninstall, onto `service/platform` (complete today).
+2. Scenario up and down, onto `service/scenario`.
+3. Incident inject and resolve, onto `service/incident`; the cancel and
+   stream journeys then start their run from the browser.
+4. Lab restore and reset, onto `service/lab`.
+5. App build, deploy and destroy: a new `service/app`.
+6. Traffic start and stop: a new `service/traffic` (GitHub issue #13).
+7. Services and runtimes, then delete `internal/executor`, the in-memory job
+   list and `/api/v2/jobs` with the job WebSocket, and point the UI's output
+   panel at runs.
 
 **Start at.** `src/internal/httpapi/handlers.go` (every `go func()`),
-`src/internal/httpapi/lab.go`, `src/internal/httpapi/traffic.go`,
-`src/internal/service/`.
-
+`src/internal/httpapi/incident.go`, `src/internal/httpapi/lab.go`,
+`src/internal/httpapi/traffic.go`, `src/internal/service/`.
 ---
 
 ## B18 — `internal/cli` runs on package-level state
@@ -356,6 +372,11 @@ bound to more package variables. The newer `learn`, `challenge`, `lab`,
 - Tests share state and can't run in parallel.
 - Command wiring depends on file init order.
 - A reader can't tell from a function's signature what it depends on.
+
+The CLI harness (`internal/cli/root_harness_test.go`) works around this:
+`resetCommands` puts every flag back between runs, and the journey goldens
+pin what each command prints, so a conversion that changes behaviour fails a
+golden.
 
 **Proposed approach.** Introduce an `app` struct holding what
 `PersistentPreRunE` builds, and give each command a constructor that takes it
@@ -392,8 +413,8 @@ Each is small, safe and independent:
   `pkg/checks.NewRunner` builds an `http.Client` with no `Timeout`. Only the
   per-check context bounds a request. Set a client timeout as a second guard.
 - The largest files mix several concerns and are the hardest to review:
-  `internal/scenario/engine.go` (1,420 lines), `internal/httpapi/handlers.go`
-  (1,030), `internal/incident/incident.go` (750). Split them by concern
+  `internal/scenario/engine.go` (1,490 lines), `internal/httpapi/handlers.go`
+  (1,090), `internal/incident/incident.go` (755). Split them by concern
   (install, state, templates; one handler file per resource), moving code
   without changing it.
 
@@ -576,40 +597,58 @@ a mode that lists them from the object. Cover it in
 
 ---
 
-## B35 — A hand-fixed incident leaves its fault record behind
+## B35 — A hand-fixed incident leaves its fault record and alert rule behind
 
 **Problem.** When `labctl incident status` sees the detection check pass, it
-closes the incident as solved by hand, but the fault's record
-(`configmap/labfault-<name>` in `kube-system`) stays, because only
-`resolve.sh` clears it. A later forced `labctl incident resolve <name>` then
-restores the values recorded at inject over whatever the learner has done
-since. Found by the cluster suite on kind; its runner now runs `resolve`
-after the hand fix to tidy up.
+closes the incident as solved by hand, but what `inject.sh` added for its own
+bookkeeping stays: the record (`configmap/labfault-<name>` in `kube-system`)
+and, for every fault with `expectAlert`, its alert rule (a `PrometheusRule` in
+the monitoring namespace). Only `resolve.sh` removes them. A later forced
+`labctl incident resolve <name>` then restores the values recorded at inject
+over whatever the learner has done since. Found by the cluster suite on kind;
+its runner runs `resolve` after the hand fix to tidy up, which hides it.
 
-**Proposed approach.** When `Status` closes an incident as solved by hand,
-clear the record through the run engine, with the same `fault_state_clear`
-that `resolve.sh` calls. Cover it in `internal/incident` and drop the tidy-up
-`resolve` from `src/test/cluster/run.sh`.
+**Proposed approach.** Every `resolve.sh` is already required, and tested in
+`incident_faults.bats`, to leave a hand fix alone, so it is the tidy-up:
+
+1. When `Status` closes an incident as solved by hand, submit the fault's
+   `resolve.sh` through the run engine as a hidden run of its own kind
+   (`incident.tidy`), after the MTTR record is written, so the history still
+   says "manual".
+2. Cover it in `internal/incident` and `internal/service/incident`: a passing
+   status submits the tidy run, a failing one does not, a silent incident's
+   tidy run stays hidden.
+3. Drop the tidy-up `resolve` from `src/test/cluster/run.sh`, so the nightly
+   proves that nothing is left after a hand fix alone.
 
 **Start at.** `src/internal/incident/incident.go` (`Status`, the
-`result.Pass` branch), `incidents/_lib/state.sh`.
-
+`result.Pass` branch), `src/internal/service/incident/`, `src/test/cluster/run.sh`.
 ---
 
 ## B36 — `platform status` misses components a scenario installed
 
-**Problem.** `labctl platform status` reads the component inventory, which
-only `labctl platform up` writes. A component that `scenario up
---deploy-prereqs` installs as a prerequisite never enters it, so on a lab
-running KEDA, Vault, Kafka and a dozen more Helm releases, `platform status`
-said "No platform components have been installed through labctl yet." Found
-by the cluster suite on kind.
+**Problem.** `labctl platform status` lists components from the run history,
+which only `labctl platform up` writes. A component that `scenario up
+--deploy-prereqs` installs as a prerequisite is installed synchronously by
+`ensurePlatformPrereqs` (`reg.Install`, not the run engine) and never recorded,
+so on a lab running KEDA, Vault, Kafka and a dozen more Helm releases the
+command said "No platform components have been installed through labctl yet."
+The API's `GET /platform` and `labctl platform status --live` read the cluster
+and are right. Found by the cluster suite on kind.
 
-**Proposed approach.** Record a prerequisite install in the inventory the way
-a `platform.install` run is recorded, or have `platform status` ask each
-component's `status.sh`, which reads the cluster. Cover it with a CLI journey
-step that activates a scenario with `--deploy-prereqs` and then lists the
-platform.
+**Proposed approach.**
 
-**Start at.** `src/internal/scenario/engine.go` (the prerequisite install),
-`src/internal/cli/platform.go` (`platform status`).
+1. Make the cluster the source of truth for the default `platform status`:
+   one function, shared with `handlePlatformStatus`, that reads every
+   provider's state from a single `helm list -A` (with explicit status flags,
+   which Helm 3 and 4 both accept) and one namespace listing, with the last run
+   from the history as a column. `--live` then has nothing left to add.
+2. Install prerequisites through `service/platform`, so they get a run, a lock
+   and the inventory record like any `platform up` (part of B16 for the API).
+3. A CLI journey step: activate a scenario with `--deploy-prereqs` against the
+   fixture lab, then `platform status` lists the component it installed.
+
+**Start at.** `src/internal/cli/platform_lifecycle.go`
+(`platformStatusFromStore`), `src/internal/cli/prereqs.go`
+(`ensurePlatformPrereqs`), `src/internal/httpapi/handlers.go`
+(`handlePlatformStatus`).
