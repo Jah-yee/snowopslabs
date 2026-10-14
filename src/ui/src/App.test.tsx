@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
-import { describe, it, expect } from 'vitest'
+import { afterEach, describe, it, expect, vi } from 'vitest'
 import App from './App'
 import { server, API } from './test/server'
 
@@ -48,5 +48,41 @@ describe('routing', () => {
     renderAt('/does-not-exist')
     const link = await screen.findByRole('link', { name: 'Dashboard' })
     await waitFor(() => expect(link).toHaveClass('active'))
+  })
+})
+
+// A WebSocket the test opens and closes, so the connection's state does not
+// depend on how the Node version under test treats a socket to nowhere.
+class ControlledSocket {
+  static opened: ControlledSocket[] = []
+  onopen: (() => void) | null = null
+  onclose: (() => void) | null = null
+  onerror: (() => void) | null = null
+  onmessage: ((e: MessageEvent<string>) => void) | null = null
+  constructor() { ControlledSocket.opened.push(this) }
+  close() { this.onclose?.() }
+}
+
+describe('live updates', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    ControlledSocket.opened = []
+  })
+
+  it('says it is reconnecting while the server is gone, and when updates are back', async () => {
+    vi.stubGlobal('WebSocket', ControlledSocket)
+    server.use(http.get(`${API}/dashboards`, () => HttpResponse.json([])))
+    renderAt('/')
+    await waitFor(() => expect(ControlledSocket.opened).toHaveLength(1))
+    ControlledSocket.opened[0].onopen?.()
+
+    ControlledSocket.opened[0].close()
+    expect(await screen.findByText(/Live updates unavailable/)).toBeInTheDocument()
+
+    // The hook retries after a backoff of about a second.
+    await waitFor(() => expect(ControlledSocket.opened).toHaveLength(2), { timeout: 3000 })
+    ControlledSocket.opened[1].onopen?.()
+    expect(await screen.findByText('Reconnected')).toBeInTheDocument()
+    expect(screen.queryByText(/Live updates unavailable/)).not.toBeInTheDocument()
   })
 })
