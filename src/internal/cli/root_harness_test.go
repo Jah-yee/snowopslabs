@@ -185,6 +185,9 @@ var (
 	uuidRe     = regexp.MustCompile(`\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b`)
 	durationRe = regexp.MustCompile(`\b\d+(\.\d+)?(ms|µs|ns)\b|\b\d+(\.\d+)?s\b`)
 	portRe     = regexp.MustCompile(`(127\.0\.0\.1|localhost):\d{4,5}`)
+	// A followed run's header shows its state when printed, which depends on
+	// whether the engine has picked it up yet; the summary line pins the outcome.
+	runStateRe = regexp.MustCompile(`(?m)^(Run <run> — .+) \((queued|running|succeeded|failed|cancelled|timed_out)\)$`)
 	trailingWS = regexp.MustCompile(`[ \t]+\n`)
 )
 
@@ -201,6 +204,7 @@ func (l *terminal) normalise(s string) string {
 	s = minuteRe.ReplaceAllString(s, "<when>")
 	s = dateRe.ReplaceAllString(s, "<date>")
 	s = runIDRe.ReplaceAllString(s, "<run>")
+	s = runStateRe.ReplaceAllString(s, "$1 (<state>)")
 	s = uuidRe.ReplaceAllString(s, "<id>")
 	s = durationRe.ReplaceAllString(s, "<dur>")
 	s = portRe.ReplaceAllString(s, "$1:<port>")

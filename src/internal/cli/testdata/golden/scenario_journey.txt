@@ -36,7 +36,7 @@ Use 'labctl scenario list' to see available scenarios.
 $ labctl scenario up drill
 activate drill started (run <run>). Following output — Ctrl-C stops it.
 
-Run <run> — scenario.activate drill (queued)
+Run <run> — scenario.activate drill (<state>)
 
 Activating scenario: Drill
   Practise on demo-app
@@ -96,7 +96,7 @@ Scenario drill is already active. Re-run with --force to reinstall.
 $ labctl scenario up drill --force
 activate drill started (run <run>). Following output — Ctrl-C stops it.
 
-Run <run> — scenario.activate drill (queued)
+Run <run> — scenario.activate drill (<state>)
 
 Activating scenario: Drill
   Practise on demo-app
@@ -124,7 +124,7 @@ Resetting drill — tearing down first…
 
 deactivate drill started (run <run>). Following output — Ctrl-C stops it.
 
-Run <run> — scenario.deactivate drill (queued)
+Run <run> — scenario.deactivate drill (<state>)
 
 Deactivating scenario: Drill
 
@@ -140,7 +140,7 @@ Re-activating drill…
 
 activate drill started (run <run>). Following output — Ctrl-C stops it.
 
-Run <run> — scenario.activate drill (queued)
+Run <run> — scenario.activate drill (<state>)
 
 Activating scenario: Drill
   Practise on demo-app
@@ -166,7 +166,7 @@ Succeeded in <dur>.
 $ labctl scenario down drill
 deactivate drill started (run <run>). Following output — Ctrl-C stops it.
 
-Run <run> — scenario.deactivate drill (queued)
+Run <run> — scenario.deactivate drill (<state>)
 
 Deactivating scenario: Drill
 

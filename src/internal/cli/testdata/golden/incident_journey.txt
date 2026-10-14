@@ -19,7 +19,7 @@ No incident history yet. Run one: labctl incident inject --random
 $ labctl incident inject demo-fault
 inject demo-fault started (run <run>). Following output — Ctrl-C stops it.
 
-Run <run> — incident.inject demo-fault (queued)
+Run <run> — incident.inject demo-fault (<state>)
 
 
 Succeeded in <dur>.
@@ -80,7 +80,7 @@ It was: demo-fault — Demo fault
 Tidying up: running demo-fault's resolve.sh to remove its alert rule and bookkeeping.
 resolve demo-fault started (run <run>). Following output — Ctrl-C stops it.
 
-Run <run> — incident.resolve demo-fault (queued)
+Run <run> — incident.resolve demo-fault (<state>)
 
 
 Succeeded in <dur>.
@@ -91,7 +91,7 @@ No incident is active. Inject one with: labctl incident inject --random
 $ labctl incident inject demo-fault
 inject demo-fault started (run <run>). Following output — Ctrl-C stops it.
 
-Run <run> — incident.inject demo-fault (queued)
+Run <run> — incident.inject demo-fault (<state>)
 
 
 Succeeded in <dur>.
@@ -107,7 +107,7 @@ Next steps:
 $ labctl incident resolve
 resolve demo-fault started (run <run>). Following output — Ctrl-C stops it.
 
-Run <run> — incident.resolve demo-fault (queued)
+Run <run> — incident.resolve demo-fault (<state>)
 
 
 Succeeded in <dur>.
