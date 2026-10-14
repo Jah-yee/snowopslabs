@@ -198,10 +198,16 @@ labctl lab reset --yes                # non-interactive
 - **Reset** — stops traffic, deactivates all scenarios, destroys deployed apps
   and uninstalls platform components *except* the ingress category. It keeps
   going past individual failures and reports what stuck. The cluster stays up.
+- **An unreachable cluster** — `snapshot` and `reset` read the cluster to learn
+  what runs. When it does not answer they stop with `cannot reach the cluster`
+  and change nothing: a snapshot taken then would record an empty lab, and a
+  reset planned from it would skip everything it should undo.
 
 REST: `GET/POST/DELETE /api/v2/lab/snapshots[/{name}]`,
 `POST /api/v2/lab/snapshots/{name}/restore` (async, returns a job id),
 `POST /api/v2/lab/reset?confirm=true` (async; refuses without `confirm`).
+Taking a snapshot and resetting answer `503 unavailable` when the cluster does
+not answer.
 
 ## Reading back what happened
 
@@ -218,6 +224,14 @@ labctl runs logs <run-id>               # the run's full output
 labctl runs logs <run-id> --follow      # keep printing until the run ends
 labctl runs cancel <run-id>             # cancel a queued or in-progress run
 ```
+
+Ctrl-C (or SIGTERM) stops the command and the run it started: the script's
+process group is sent SIGTERM so it can clean up, and the run is recorded as
+`cancelled`. `runs cancel` and the web UI's **Cancel** record the cancel in
+the run store; the process running the run reads it within a second and stops
+the script the same way. `labctl ui` stops accepting connections and waits up to ten
+seconds for requests in flight. `scenario verify --watch` stops between
+attempts.
 
 | Command | Flag | Default | Meaning |
 |---|---|---|---|

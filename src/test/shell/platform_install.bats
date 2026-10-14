@@ -112,3 +112,22 @@ teardown() {
   refute_called helm "service.spec.type"
   grep -A2 '^service:' "$ROOT/platform/ingress/traefik/values.yaml" | grep -q 'type: LoadBalancer'
 }
+
+# A component's volume uses the runtime's StorageClass (STORAGE_CLASS, from
+# runtimes/<profile>/runtime.env). A class named in a values file exists on one
+# runtime only, so the claim never binds on the others.
+@test "grafana, loki and tempo claim volumes from the runtime's storage class" {
+  for c in "monitoring/grafana|persistence.storageClassName=standard" \
+    "logging/loki|singleBinary.persistence.storageClass=standard" \
+    "tracing/tempo|persistence.storageClassName=standard"; do
+    reset_calls
+    STORAGE_CLASS=standard run bash "$ROOT/platform/${c%%|*}/install.sh"
+    [ "$status" -eq 0 ] || { echo "${c%%|*}: $output"; false; }
+    assert_called helm "${c#*|}"
+  done
+}
+
+@test "no platform values file names a storage class of one runtime" {
+  run grep -rln "local-path" "$ROOT/platform" --include=values.yaml
+  [ "$status" -ne 0 ] || { echo "hardcoded storage class in: $output"; false; }
+}

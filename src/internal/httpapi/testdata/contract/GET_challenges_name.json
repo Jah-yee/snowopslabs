@@ -1,0 +1,12 @@
+{
+  "category": "workload",
+  "description": "Fix the demo fault",
+  "displayName": "Demo challenge",
+  "hintPenalty": 5,
+  "name": "demo-challenge",
+  "parTime": "10m",
+  "setup": {
+    "ref": "demo-fault",
+    "type": "incident"
+  }
+}

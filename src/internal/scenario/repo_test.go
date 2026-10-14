@@ -6,10 +6,15 @@ package scenario
 // pass schema validation, and pass the file checks in preflight.
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/sagar2395/snowopslabs/internal/tmpl"
+	"github.com/sagar2395/snowopslabs/internal/workload"
 )
 
 // repoRoot walks up from the package directory until it finds the project
@@ -102,4 +107,66 @@ func TestRepoScenarios_ObservabilityIsV2(t *testing.T) {
 	if len(s.Checks) < 3 {
 		t.Errorf("observability-sre must declare at least 3 checks, has %d", len(s.Checks))
 	}
+}
+
+// unexpandedVar matches one of labctl's own template variables, or one of the
+// given scenario parameters, left in rendered text. Other template syntaxes
+// content carries (Loki line formats, Grafana legends) are not labctl's.
+func unexpandedVar(params []string) *regexp.Regexp {
+	names := append(tmpl.FieldNames(), params...)
+	return regexp.MustCompile(`\{\{\s*\.(` + strings.Join(names, "|") + `)\b`)
+}
+
+// namesDefaultApp lists the scenarios whose text names the default app on
+// purpose, with the reason.
+var namesDefaultApp = map[string]string{
+	"env-promotion": "points at go-api's releaseNote as an example of a visible code change",
+}
+
+// TestRepoScenarios_RenderForAnyWorkload renders everything a reader sees of
+// each scenario for an app that is not the default one. A template variable
+// left in the output, or the default app's name, means that text ignores the
+// binding.
+func TestRepoScenarios_RenderForAnyWorkload(t *testing.T) {
+	root := repoRoot(t)
+	engine := NewEngine(root, "lab.test", "k3d")
+	bound := workload.Workload{Name: "zz-app", Namespace: "zz-ns", Port: "9999", Metric: "zz_metric"}
+
+	scenarios := engine.List()
+	if len(scenarios) == 0 {
+		t.Fatal("no scenarios found in the repository")
+	}
+	for _, s := range scenarios {
+		t.Run(s.Name, func(t *testing.T) {
+			params := make([]string, 0, len(s.Parameters))
+			for _, p := range s.Parameters {
+				params = append(params, p.Name)
+			}
+			rendered, err := json.Marshal(engine.ResolvedForDisplay(s, engine.ParamDefaults(s), bound))
+			if err != nil {
+				t.Fatalf("marshal: %v", err)
+			}
+			text := string(rendered)
+			if m := unexpandedVar(params).FindString(text); m != "" {
+				t.Errorf("an unexpanded template variable reaches the reader: %s", m)
+			}
+			if i := strings.Index(text, workload.DefaultApp); i >= 0 && namesDefaultApp[s.Name] == "" {
+				t.Errorf("names %q although bound to %q: …%s…",
+					workload.DefaultApp, bound.Name, text[max(0, i-60):min(len(text), i+40)])
+			}
+			if !strings.Contains(text, bound.Name) && strings.Contains(scenarioSource(t, s.Dir), "{{.WorkloadName}}") {
+				t.Errorf("uses {{.WorkloadName}} but the rendered scenario never names %q", bound.Name)
+			}
+		})
+	}
+}
+
+// scenarioSource returns scenario.yaml as written.
+func scenarioSource(t *testing.T, dir string) string {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(dir, "scenario.yaml"))
+	if err != nil {
+		t.Fatalf("read scenario.yaml: %v", err)
+	}
+	return string(data)
 }

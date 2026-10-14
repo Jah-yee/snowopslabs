@@ -88,7 +88,6 @@ checks:
     type: kubectl
     resource: persistentvolumeclaim/restore-data
     namespace: "{{.WorkloadNamespace}}"
-    pending: true
     remediation: "The PVC object is part of the archive. Restore it: bash {{.ProjectRoot}}/scenarios/backup-restore-drill/scripts/restore.sh {{.WorkloadNamespace}}"
 
   - name: pv-data-loss-demonstrated

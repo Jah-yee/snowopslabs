@@ -8,6 +8,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"testing/synctest"
 	"time"
 )
 
@@ -117,37 +118,25 @@ func TestFakeRun(t *testing.T) {
 	})
 
 	t.Run("a blocking rule can be cancelled and reports as signalled", func(t *testing.T) {
-		f := NewFake().WhenArgsContainBlock("install", time.Minute)
+		synctest.Test(t, func(t *testing.T) {
+			f := NewFake().WhenArgsContainBlock("install", time.Minute)
+			ctx, cancel := context.WithCancel(t.Context())
+			time.AfterFunc(50*time.Millisecond, cancel)
 
-		ctx, cancel := context.WithCancel(context.Background())
-		done := make(chan struct {
-			res Result
-			err error
-		}, 1)
-		go func() {
+			start := time.Now()
 			res, err := f.Run(ctx, Command{Path: "/bin/helm", Args: []string{"install"}})
-			done <- struct {
-				res Result
-				err error
-			}{res, err}
-		}()
-
-		time.Sleep(50 * time.Millisecond)
-		cancel()
-
-		select {
-		case got := <-done:
-			if !errors.Is(got.err, context.Canceled) {
-				t.Errorf("error = %v, want context.Canceled", got.err)
+			if !errors.Is(err, context.Canceled) {
+				t.Errorf("error = %v, want context.Canceled", err)
 			}
 			// Matching Exec here is what lets the layers above treat both
 			// runners identically.
-			if !got.res.Signalled {
+			if !res.Signalled {
 				t.Error("Signalled = false; must match Exec's cancellation semantics")
 			}
-		case <-time.After(5 * time.Second):
-			t.Fatal("Run did not return after cancellation")
-		}
+			if elapsed := time.Since(start); elapsed != 50*time.Millisecond {
+				t.Errorf("Run returned after %s, want at the cancellation (50ms)", elapsed)
+			}
+		})
 	})
 
 	t.Run("Delay applies to every command", func(t *testing.T) {

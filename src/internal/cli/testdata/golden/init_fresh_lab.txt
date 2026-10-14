@@ -1,0 +1,36 @@
+$ labctl init
+=== Setting up tools ===
+tools ready for k3d
+
+=== Checking Docker resources ===
+Docker has 8 CPU / 14.9 GB (minimum 2 CPU / 4 GB).
+
+=== Creating runtime ===
+cluster up
+
+=== Installing platform ===
+Installing ingress (traefik)...
+installing traefik
+Installing metrics (prometheus)...
+installing prometheus
+Installing grafana...
+installing grafana
+
+Platform installed successfully.
+
+=== Checking the lab ===
+API server ready; all nodes Ready.
+
+=== Lab is up ===
+
+  Grafana:     http://grafana.clitest.localhost:<port>   (admin / admin)
+  Prometheus:  http://prometheus.clitest.localhost:<port>
+  labctl UI:   run 'labctl ui', then open http://localhost:<port>
+
+Port 80 was taken, so the lab's ingress listens on <port>; every URL and check uses it.
+
+Next: deploy an app, then run a scenario:
+  labctl app build go-api && labctl app deploy go-api
+  labctl scenario up observability-sre   (add --deploy-prereqs to auto-deploy its apps)
+
+After a reboot, 'labctl init' brings the lab back.

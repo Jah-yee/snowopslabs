@@ -1,0 +1,12 @@
+{
+  "items": [
+    {
+      "active": false,
+      "app": "go-api",
+      "category": "reliability",
+      "description": "A scenario for go-api",
+      "displayName": "Demo scenario",
+      "name": "demo-scenario"
+    }
+  ]
+}

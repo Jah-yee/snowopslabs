@@ -1,0 +1,14 @@
+{
+  "demo-path": [
+    {
+      "elapsedSeconds": 0,
+      "endedAt": "<time>",
+      "kind": "module",
+      "name": "demo-path/step-one",
+      "outcome": "completed",
+      "score": -1,
+      "startedAt": "<time>",
+      "user": "learner"
+    }
+  ]
+}

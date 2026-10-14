@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"strings"
@@ -45,18 +46,23 @@ var incidentListCmd = &cobra.Command{
 			return nil
 		}
 		active, _ := incEng.Active()
+		// A silent incident is not marked: that would name it.
+		hidden := active != nil && active.Silent
 
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 		fmt.Fprintln(w, "NAME\tCATEGORY\tSEVERITY\tTARGET\tSTATUS")
 		for _, f := range faults {
 			status := ""
-			if active != nil && active.Fault == f.Name {
+			if active != nil && active.Fault == f.Name && !hidden {
 				status = "ACTIVE"
 			}
 			fmt.Fprintf(w, "%s\t%s\t%s\t%s/%s\t%s\n",
 				f.Name, f.Category, f.Severity, f.Target.Namespace, f.Target.Workload, status)
 		}
 		_ = w.Flush()
+		if hidden {
+			fmt.Println("\nAn incident is active (hidden — silent mode). Check it with: labctl incident status")
+		}
 
 		for key, err := range incEng.LoadErrors() {
 			fmt.Fprintf(os.Stderr, "Warning: fault %s failed to load: %v\n", key, err)
@@ -71,8 +77,7 @@ var incidentInjectCmd = &cobra.Command{
 	Long: `Breaks the lab on purpose. With --random the engine picks an eligible
 fault; add --silent to hide which one (real game-day mode) and --seed N for
 a reproducible pick across a team.`,
-	Args:         cobra.MaximumNArgs(1),
-	SilenceUsage: true,
+	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := ""
 		if len(args) == 1 {
@@ -80,6 +85,14 @@ a reproducible pick across a team.`,
 		}
 		if (name == "") == !injectRandom {
 			return errors.New("pass exactly one of a fault name or --random")
+		}
+		if name != "" {
+			if _, err := incEng.Get(name); err != nil {
+				return err
+			}
+		}
+		if err := requireCluster(cmd.Context()); err != nil {
+			return err
 		}
 		if injectRandom {
 			f, err := incEng.PickRandom(injectSeed, injectCategory)
@@ -116,7 +129,16 @@ a reproducible pick across a team.`,
 			return err
 		}
 		target := incsvc.Target(incEng.ResolvedTarget(f))
-		if err := runIncidentOp(cmd, "inject", name, func(ctx context.Context, svc *incsvc.Service) (string, error) {
+		// In silent mode neither the run's name nor what inject.sh prints may
+		// reach the terminal: both say which fault this is.
+		out, label := cmd.OutOrStdout(), "inject "+name
+		if injectSilent {
+			out, label = io.Discard, "inject (hidden fault)"
+		}
+		if err := runIncidentOp(cmd, out, label, func(ctx context.Context, svc *incsvc.Service) (string, error) {
+			if injectSilent {
+				return svc.InjectSilently(ctx, name, target)
+			}
 			return svc.Inject(ctx, name, target)
 		}); err != nil {
 			return err
@@ -141,9 +163,8 @@ a reproducible pick across a team.`,
 }
 
 var incidentStatusCmd = &cobra.Command{
-	Use:          "status",
-	Short:        "Run the active incident's detection check",
-	SilenceUsage: true,
+	Use:   "status",
+	Short: "Run the active incident's detection check",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := rebindToActiveIncident(); err != nil {
 			return err
@@ -199,7 +220,7 @@ var incidentStatusCmd = &cobra.Command{
 func tidyAfterFix(cmd *cobra.Command, name string, target incsvc.Target) {
 	out := cmd.OutOrStdout()
 	fmt.Fprintf(out, "\nTidying up: running %s's resolve.sh to remove its alert rule and bookkeeping.\n", name)
-	err := runIncidentOp(cmd, "resolve", name, func(ctx context.Context, svc *incsvc.Service) (string, error) {
+	err := runIncidentOp(cmd, out, "resolve "+name, func(ctx context.Context, svc *incsvc.Service) (string, error) {
 		return svc.Resolve(ctx, name, target)
 	})
 	if err != nil {
@@ -208,10 +229,9 @@ func tidyAfterFix(cmd *cobra.Command, name string, target incsvc.Target) {
 }
 
 var incidentResolveCmd = &cobra.Command{
-	Use:          "resolve [fault-name]",
-	Short:        "Escape hatch: undo the active fault (or a named one)",
-	Args:         cobra.MaximumNArgs(1),
-	SilenceUsage: true,
+	Use:   "resolve [fault-name]",
+	Short: "Escape hatch: undo the active fault (or a named one)",
+	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := ""
 		if len(args) == 1 {
@@ -238,7 +258,7 @@ var incidentResolveCmd = &cobra.Command{
 			return err
 		}
 		target := incsvc.Target(incEng.ResolvedTarget(f))
-		if err := runIncidentOp(cmd, "resolve", name, func(ctx context.Context, svc *incsvc.Service) (string, error) {
+		if err := runIncidentOp(cmd, cmd.OutOrStdout(), "resolve "+name, func(ctx context.Context, svc *incsvc.Service) (string, error) {
 			return svc.Resolve(ctx, name, target)
 		}); err != nil {
 			return err
@@ -250,9 +270,8 @@ var incidentResolveCmd = &cobra.Command{
 }
 
 var incidentHintCmd = &cobra.Command{
-	Use:          "hint",
-	Short:        "Reveal the next hint for the active incident (recorded — costs score in challenges)",
-	SilenceUsage: true,
+	Use:   "hint",
+	Short: "Reveal the next hint for the active incident (recorded — costs score in challenges)",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		h, err := incEng.NextHint()
 		if errors.Is(err, incident.ErrNoMoreHints) {
@@ -286,10 +305,9 @@ func chargeHints(n int) {
 var solutionYes bool
 
 var incidentSolutionCmd = &cobra.Command{
-	Use:          "solution [fault-name]",
-	Short:        "Show the full walkthrough (spoiler!)",
-	Args:         cobra.MaximumNArgs(1),
-	SilenceUsage: true,
+	Use:   "solution [fault-name]",
+	Short: "Show the full walkthrough (spoiler!)",
+	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := ""
 		if len(args) == 1 {

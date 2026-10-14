@@ -23,12 +23,19 @@ MESH_PROVIDER=istio labctl platform down mesh
 labctl platform down data/kafka
 ```
 
+`platform down` with no target tries every component even when one fails, then
+exits non-zero and lists what it could not remove. Uninstalls are safe to
+repeat.
+
 ```bash
 labctl platform status                      # from the run history — fast
 labctl platform status --live               # probe the cluster via each provider's status.sh
 labctl platform status mesh
 labctl platform status data/postgres
 ```
+
+`status --live` needs the cluster: when it does not answer, the command says so
+instead of printing an empty table.
 
 Which components install is driven by the provider variables in `.env` —
 `INGRESS_PROVIDER`, `METRICS_PROVIDER`, `LOGGING_PROVIDER`, `TRACING_PROVIDER`,

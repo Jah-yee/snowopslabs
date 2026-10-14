@@ -30,8 +30,8 @@ func TestGet_UnknownNameReturnsError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for unknown scenario, got nil")
 	}
-	if !strings.Contains(err.Error(), "not found") {
-		t.Errorf("error should mention 'not found': %v", err)
+	if want := `scenario "this-does-not-exist" not found (see 'labctl scenario list')`; err.Error() != want {
+		t.Errorf("Get() error = %q, want %q", err, want)
 	}
 }
 
@@ -150,5 +150,27 @@ func TestVerify_UnknownScenarioReturnsError(t *testing.T) {
 	_, err := engine.Verify(context.Background(), "ghost-scenario", runner)
 	if err == nil {
 		t.Fatal("expected error for unknown scenario in Verify, got nil")
+	}
+}
+
+// Checks run under a cancelled context are reported as failed, never passed.
+func TestVerify_CancelledContextPassesNothing(t *testing.T) {
+	root := t.TempDir()
+	writeScenario(t, root, "drill", "name: drill\ndisplayName: Drill\ndescription: x\ncategory: testing\ncomponents: []\nchecks:\n  - {name: ok, type: script, script: ok.sh}\n")
+	if err := os.WriteFile(filepath.Join(root, "scenarios", "drill", "ok.sh"), []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil { //nolint:gosec // a test script must be executable
+		t.Fatal(err)
+	}
+	engine := NewEngine(root, "k3d.local", "k3d")
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	results, err := engine.Verify(ctx, "drill", checks.NewRunner())
+	if err != nil {
+		t.Fatalf("Verify: %v", err)
+	}
+	for _, r := range results {
+		if r.Pass {
+			t.Errorf("check %s passed under a cancelled context", r.Name)
+		}
 	}
 }

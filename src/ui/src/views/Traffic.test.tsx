@@ -1,34 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 //
-// View-behaviour test. The api boundary is mocked here (not MSW) because the
-// component layer runs in jsdom, where the client's AbortController-based fetch
-// is incompatible with undici — the same reason the network-contract tests
-// (api/client.test.ts) run in the node environment. This test asserts what the
-// Traffic view *does* with the client, not the wire format, which client.test
-// covers.
+// Traffic view behaviour. Requests go through the real client to the
+// contract server (test/contract.ts); each test serves the answers it needs.
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
+import { afterEach, describe, it, expect, vi } from 'vitest'
+import { serveContract, type ContractServer } from '../test/contract'
 import { Traffic } from './Traffic'
 
-vi.mock('../api/client', () => ({
-  api: {
-    getTraffic: vi.fn(),
-    startTraffic: vi.fn(),
-    stopTraffic: vi.fn(),
-    listApps: vi.fn(),
-  },
-}))
-
-// Import after the mock so we get the mocked module.
-import { api } from '../api/client'
-const mockApi = api as unknown as {
-  getTraffic: Mock
-  startTraffic: Mock
-  stopTraffic: Mock
-  listApps: Mock
-}
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 // The traffic targets come from the apps API — each app's in-cluster address is
 // the one it declares in its contract, not one the UI reconstructs.
@@ -50,14 +33,33 @@ function renderTraffic() {
   return { notify }
 }
 
+/** A contract server answering GET /traffic with traffic and GET /apps with apps. */
+function serveTraffic(traffic: object | Error, apps: unknown[] = APPS): ContractServer {
+  const server = serveContract()
+  if (traffic instanceof Error) {
+    server.override('GET', '/traffic', 500, { type: 'internal_error', title: 'Internal Server Error', status: 500, detail: traffic.message })
+  } else {
+    server.override('GET', '/traffic', 200, traffic)
+  }
+  server.override('GET', '/apps', 200, apps)
+  return server
+}
+
+/** The body of the one POST /traffic/start the view sent. */
+function startBody(server: ContractServer) {
+  return server.calls.find(c => c.method === 'POST' && c.path === '/traffic/start')?.body
+}
+
 describe('Traffic view', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    mockApi.listApps.mockResolvedValue(APPS)
+  it('reads the profiles and apps the server reports', async () => {
+    serveContract()
+    renderTraffic()
+    expect(await screen.findByRole('option', { name: 'spike' })).toBeInTheDocument()
+    expect(await screen.findByRole('option', { name: /demo-app/ })).toBeInTheDocument()
   })
 
   it('lists the k6 profiles and offers start/stop controls', async () => {
-    mockApi.getTraffic.mockResolvedValue({ profiles: ['steady', 'spike', 'soak'] })
+    serveTraffic({ profiles: ['steady', 'spike', 'soak'] })
     renderTraffic()
 
     const select = await screen.findByRole('combobox', { name: /traffic profile/i })
@@ -68,8 +70,7 @@ describe('Traffic view', () => {
   })
 
   it('starts the selected profile with the chosen rps', async () => {
-    mockApi.getTraffic.mockResolvedValue({ profiles: ['steady', 'spike'] })
-    mockApi.startTraffic.mockResolvedValue({ jobId: 'job-1', status: 'accepted' })
+    const server = serveTraffic({ profiles: ['steady', 'spike'] })
 
     const user = userEvent.setup()
     const { notify } = renderTraffic()
@@ -80,10 +81,9 @@ describe('Traffic view', () => {
     await user.click(screen.getByRole('button', { name: /start traffic/i }))
 
     await waitFor(() =>
-      expect(mockApi.startTraffic).toHaveBeenCalledWith({
+      expect(startBody(server)).toEqual({
         profile: 'spike',
         rps: 50,
-        duration: undefined,
         target: 'http://go-api.go-api.svc.cluster.local:8080/',
       }))
     await waitFor(() =>
@@ -91,24 +91,23 @@ describe('Traffic view', () => {
   })
 
   it('stops traffic', async () => {
-    mockApi.getTraffic.mockResolvedValue({ profiles: ['steady'] })
-    mockApi.stopTraffic.mockResolvedValue({ jobId: 'job-2', status: 'accepted' })
+    const server = serveTraffic({ profiles: ['steady'] })
 
     const user = userEvent.setup()
     renderTraffic()
     await screen.findByRole('button', { name: /stop traffic/i })
     await user.click(screen.getByRole('button', { name: /stop traffic/i }))
-    await waitFor(() => expect(mockApi.stopTraffic).toHaveBeenCalled())
+    await waitFor(() => expect(server.requests).toContain('POST /traffic/stop'))
   })
 
   it('shows an empty state when no profiles exist', async () => {
-    mockApi.getTraffic.mockResolvedValue({ profiles: [] })
+    serveTraffic({ profiles: [] })
     renderTraffic()
     expect(await screen.findByText(/No traffic profiles found/)).toBeInTheDocument()
   })
 
   it('shows a designed error state when the profiles fail to load', async () => {
-    mockApi.getTraffic.mockRejectedValue(new Error('boom'))
+    serveTraffic(new Error('boom'))
     renderTraffic()
     expect(await screen.findByText(/Failed to load traffic profiles/)).toBeInTheDocument()
   })
@@ -116,8 +115,7 @@ describe('Traffic view', () => {
   // A new app — or one on a non-default port — must appear as a target without
   // any UI change. The address is the app's own, never rebuilt by the client.
   it('offers every app the API reports, at its declared in-cluster address', async () => {
-    mockApi.getTraffic.mockResolvedValue({ profiles: ['steady'] })
-    mockApi.startTraffic.mockResolvedValue({ jobId: 'job-3', status: 'accepted' })
+    const server = serveTraffic({ profiles: ['steady'] })
 
     const user = userEvent.setup()
     renderTraffic()
@@ -129,14 +127,13 @@ describe('Traffic view', () => {
     await user.click(screen.getByRole('button', { name: /start traffic/i }))
 
     await waitFor(() =>
-      expect(mockApi.startTraffic).toHaveBeenCalledWith(expect.objectContaining({
+      expect(startBody(server)).toEqual(expect.objectContaining({
         target: 'http://java-api.team-a.svc.cluster.local:9090/',
       })))
   })
 
   it('says so rather than silently targeting nothing when no app declares an address', async () => {
-    mockApi.getTraffic.mockResolvedValue({ profiles: ['steady'] })
-    mockApi.listApps.mockResolvedValue([])
+    serveTraffic({ profiles: ['steady'] }, [])
     renderTraffic()
 
     await screen.findByRole('combobox', { name: /traffic target/i })
@@ -146,11 +143,10 @@ describe('Traffic view', () => {
   // Load aimed at a workload nobody is looking at is worse than no default, and
   // the first app alphabetically is not the one the lab is working on.
   it('preselects the bound workload rather than the first app', async () => {
-    mockApi.getTraffic.mockResolvedValue({
+    serveTraffic({
       profiles: ['steady'],
       workload: { app: 'go-api', namespace: 'go-api', service: 'go-api.go-api.svc.cluster.local', port: '8080', metric: 'm' },
-    })
-    mockApi.listApps.mockResolvedValue([
+    }, [
       { name: 'echo-server', buildStrategy: 'docker', deployStrategy: 'helm', deployed: true, serviceUrl: 'http://echo-server.echo-server.svc.cluster.local:8080/' },
       { name: 'go-api', buildStrategy: 'docker', deployStrategy: 'helm', deployed: true, serviceUrl: 'http://go-api.go-api.svc.cluster.local:8080/' },
     ])

@@ -49,7 +49,7 @@ func (s *Server) handleResults(w http.ResponseWriter, r *http.Request) {
 	store := resultsStore(s)
 	recs, err := store.All()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondInternal(w, r, err)
 		return
 	}
 	if recs == nil {
@@ -75,7 +75,7 @@ func (s *Server) handleResultsByKind(w http.ResponseWriter, r *http.Request) {
 	store := resultsStore(s)
 	recs, err := store.ByKind(kind)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondInternal(w, r, err)
 		return
 	}
 	if recs == nil {
@@ -93,7 +93,7 @@ func (s *Server) handleLeaderboard(w http.ResponseWriter, r *http.Request) {
 	store := resultsStore(s)
 	board, err := store.Leaderboard()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondInternal(w, r, err)
 		return
 	}
 	if board == nil {
@@ -107,7 +107,7 @@ func (s *Server) handleProgress(w http.ResponseWriter, r *http.Request) {
 	store := resultsStore(s)
 	progress, err := store.Progress()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondInternal(w, r, err)
 		return
 	}
 	if progress == nil {

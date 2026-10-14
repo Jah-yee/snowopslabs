@@ -60,7 +60,11 @@ modules:
 |------|--------|
 | `http` | `url`, `expectStatus` — HTTP GET must return the given status (`expectedStatus` is a deprecated alias) |
 | `script` | `script` — bash script relative to the path dir; exit 0 = pass |
-| `promql` | `query`, `operator`, `value` — queries Prometheus |
+| `promql` | `query`, `operator`, `value` — queries Prometheus and compares the result |
+
+A check of any other type, or one missing the fields its type needs, fails
+`labctl validate`: the path runner could not grade it, so the module could
+never be completed.
 
 ## Authoring a new path
 

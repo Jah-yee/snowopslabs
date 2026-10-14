@@ -1,0 +1,15 @@
+name: demo-fault
+displayName: "Demo fault"
+description: "{{.WorkloadName}} is broken"
+category: workload
+severity: low
+target:
+  namespace: "{{.WorkloadNamespace}}"
+  workload: "{{.WorkloadName}}"
+prerequisites:
+  apps: ["{{.WorkloadName}}"]
+detection:
+  name: marker-gone
+  type: script
+  script: checks/resolved.sh
+  timeoutSeconds: 5

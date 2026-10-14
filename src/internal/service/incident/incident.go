@@ -88,16 +88,25 @@ func New(engine *run.Engine, st *store.Store, opts ...Option) (*Service, error) 
 // Inject submits a fault's inject.sh and returns the run ID without waiting
 // for it to finish.
 func (s *Service) Inject(ctx context.Context, name string, target Target) (string, error) {
-	return s.submit(ctx, KindInject, name, "inject.sh", target)
+	return s.submit(ctx, KindInject, name, "inject.sh", target, name)
+}
+
+// InjectSilently is Inject for a fault the learner is not told: the run is
+// recorded with store.HiddenTarget, so the run history neither names the
+// fault nor shows what inject.sh printed.
+func (s *Service) InjectSilently(ctx context.Context, name string, target Target) (string, error) {
+	return s.submit(ctx, KindInject, name, "inject.sh", target, store.HiddenTarget)
 }
 
 // Resolve submits a fault's resolve.sh, which restores the lab, and returns
 // the run ID.
 func (s *Service) Resolve(ctx context.Context, name string, target Target) (string, error) {
-	return s.submit(ctx, KindResolve, name, "resolve.sh", target)
+	return s.submit(ctx, KindResolve, name, "resolve.sh", target, name)
 }
 
-func (s *Service) submit(ctx context.Context, kind, name, script string, target Target) (string, error) {
+// submit runs one of a fault's scripts. label is the run's recorded target:
+// the fault's name, or store.HiddenTarget.
+func (s *Service) submit(ctx context.Context, kind, name, script string, target Target, label string) (string, error) {
 	if !validName.MatchString(name) {
 		return "", fmt.Errorf("incident: invalid fault name %q", name)
 	}
@@ -107,7 +116,7 @@ func (s *Service) submit(ctx context.Context, kind, name, script string, target 
 	maps.Copy(env, target.env())
 	spec := run.Spec{
 		Kind:    kind,
-		Target:  name,
+		Target:  label,
 		LockKey: LockKey,
 		Script:  path.Join("incidents", name, script),
 		Env:     env,

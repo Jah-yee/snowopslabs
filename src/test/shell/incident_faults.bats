@@ -1,0 +1,575 @@
+#!/usr/bin/env bats
+# SPDX-License-Identifier: Apache-2.0
+#
+# What each fault's inject.sh and resolve.sh do to a lab: the change inject
+# makes, that a second inject makes none, that resolve puts back what inject
+# recorded, that a failing kubectl fails the script, and that nothing inject
+# prints or writes on the learner's objects gives the answer away.
+
+load 'helpers/stub'
+
+setup() {
+  stub_setup
+  ROOT="$(project_root)"
+  export TARGET_NAMESPACE=shop TARGET_WORKLOAD=cart
+  export WORKLOAD_NAMESPACE=shop WORKLOAD_NAME=cart
+  export MONITORING_NAMESPACE=monitoring FAULT_WAIT_SECONDS=0 FAULT_SAMPLE_SECONDS=0
+  export DOMAIN_SUFFIX=lab.test INGRESS_URL_SUFFIX=lab.test
+  stub_command sleep
+  lab_stub
+}
+
+teardown() {
+  stub_teardown
+}
+
+# lab_stub is a kubectl that answers as one small lab. Exported variables set
+# its state; a variable left unset is the healthy lab before any fault.
+#   FAIL_ON=<args>   the call whose arguments contain this fails
+#   RECORD_<key>     a value in the fault's record (dashes as underscores)
+lab_stub() {
+  stub_script kubectl <<'STUB'
+if [ -n "${FAIL_ON:-}" ]; then
+  case "$*" in *"$FAIL_ON"*) echo "error: stubbed failure" >&2; exit 1 ;; esac
+fi
+healthy_selector='{"app.kubernetes.io/name":"cart","tier":"web"}'
+case "$*" in
+  *"apply -n monitoring -f -"*) cat >>"$STUB_DIR/applied-monitoring.yaml" ;;
+  *"apply"*"-f -"*) cat >>"$STUB_DIR/applied.yaml" ;;
+  *"create configmap"*) echo "kind: ConfigMap" ;;
+  *"get configmap"*)
+    args="$*"
+    key="${args##*jsonpath=\{.data.}"
+    key="${key%%\}*}"
+    var="RECORD_$(printf '%s' "$key" | tr '-' '_')"
+    printf '%s' "${!var:-}"
+    ;;
+
+  # service-selector-broken
+  *"get svc"*"jsonpath={.spec.selector}"*) printf '%s' "${SELECTOR-$healthy_selector}" ;;
+  *"get svc"*'selector.app\.kubernetes\.io/name}'*) printf '%s' "${SVC_LABEL-cart}" ;;
+  *"get deploy"*'labels.app\.kubernetes\.io/name}'*) printf '%s' "${POD_LABEL-cart}" ;;
+  *"get deploy"*"jsonpath={.spec.selector.matchLabels}"*) printf '%s' "${MATCH_LABELS-}" ;;
+
+  # crashloop-bad-config
+  *"get deploy"*'env[?(@.name=="PORT")].value}'*) printf '%s' "${PORT_NOW-}" ;;
+  *"get deploy"*"ports[0].containerPort}"*) printf '%s' "${CONTAINER_PORT-8080}" ;;
+  *"get deploy"*"jsonpath={.metadata.generation}"*) printf '7' ;;
+  *"get deploy"*"jsonpath={.status.observedGeneration}"*) printf '7' ;;
+  *"get deploy"*'deployment\.kubernetes\.io/revision}'*) printf '5' ;;
+  *"get rs"*"ownerReferences"*) printf 'cart-old cart 4\ncart-new cart 5\nother-old other 4\n' ;;
+
+  # bad-deploy-rollout
+  *"get deploy"*"containers[0].image}"*) printf '%s' "${IMAGE-registry.lab:5000/shop/cart:v1.4.0}" ;;
+  *"get deploy"*"containers[0].name}"*) printf 'app' ;;
+  *"get pods"*"containerStatuses[0].ready"*) [ -z "${SERVING-}" ] || printf '%s\n' "$SERVING" ;;
+
+  # oom-kill
+  *"top pod"*) echo "cart-abc 5m ${WORKING_SET-20Mi}" ;;
+  *"get deploy"*"resources.limits.memory}"*) printf '%s' "${MEM_LIMIT-}" ;;
+  *"get deploy"*"resources.requests.memory}"*) printf '%s' "${MEM_REQUEST-}" ;;
+
+  # network-blackhole: "<policyTypes>|<ingress rules>" of the policy, if any
+  *"get networkpolicy default-deny-ingress -o jsonpath"*)
+    [ -n "${BLACKHOLE_POLICY-}" ] || exit 1
+    printf '%s' "$BLACKHOLE_POLICY"
+    ;;
+  *"get networkpolicy default-deny-ingress"*) [ -n "${BLACKHOLE_POLICY-}" ] || exit 1 ;;
+
+  # noisy-neighbor
+  *"get pods"*"custom-columns=NAME"*) [ -z "${VICTIM_PODS-set}" ] || echo "${VICTIM_PODS-cart-abc node-1 Running}" ;;
+  *"get nodes"*) echo "node/node-1" ;;
+  *"get node "*) printf '%s' "${NODE_CPU-4}" ;;
+  *"get ns"*"jsonpath={.status.phase}"*) printf '%s' "${NS_PHASE-}" ;;
+  *"get ns"*) [ -z "${NS_PHASE-}" ] && exit 1 ;;
+esac
+exit 0
+STUB
+}
+
+inject() {
+  run bash "$ROOT/incidents/$1/inject.sh"
+}
+
+resolve() {
+  run bash "$ROOT/incidents/$1/resolve.sh"
+}
+
+# Each fault with the kubectl call that makes its change.
+faults() {
+  cat <<'EOF'
+service-selector-broken|patch svc cart
+crashloop-bad-config|set env deploy/cart
+bad-deploy-rollout|set image deploy/cart
+oom-kill|set resources deploy/cart
+network-blackhole|rollout restart deploy/cart
+noisy-neighbor|apply -f -
+EOF
+}
+
+# Faults that keep a record of what resolve must undo.
+recording_faults() {
+  faults | grep -v -e '^noisy-neighbor'
+}
+
+# Faults that change the workload's own namespace. noisy-neighbor runs in a
+# namespace of its own instead.
+in_namespace_faults() {
+  faults | grep -v -e '^noisy-neighbor'
+}
+
+# line_of <args> — the position in the call log of the first matching call.
+line_of() {
+  calls_for kubectl | grep -n -- "$1" | head -1 | cut -d: -f1
+}
+
+# ── Every fault ───────────────────────────────────────────────────────────────
+
+@test "inject makes its change on a healthy lab" {
+  while IFS='|' read -r fault change; do
+    reset_calls
+    inject "$fault"
+    [ "$status" -eq 0 ] || { echo "$fault: $output"; return 1; }
+    assert_called kubectl "$change" || { echo "$fault"; return 1; }
+  done < <(faults)
+}
+
+@test "inject output names neither the fault nor the lab's own marker" {
+  while IFS='|' read -r fault _; do
+    inject "$fault"
+    case "$output" in
+      *labfault* | *"$fault"*) echo "$fault gives itself away: $output"; return 1 ;;
+    esac
+  done < <(faults)
+}
+
+@test "inject writes no annotation, label or labfault name on the workload's objects" {
+  while IFS='|' read -r fault _; do
+    reset_calls
+    inject "$fault"
+    refute_called kubectl "annotate" || { echo "$fault"; return 1; }
+    refute_called kubectl " label " || { echo "$fault"; return 1; }
+    if calls_for kubectl | grep -e '-n shop' | grep -q labfault; then
+      echo "$fault writes labfault into the workload's namespace:"
+      calls_for kubectl | grep -e '-n shop' | grep labfault
+      return 1
+    fi
+  done < <(faults)
+}
+
+@test "nothing inject applies in the workload's namespace is named or labelled for the lab" {
+  while IFS='|' read -r fault _; do
+    : >"$STUB_DIR/applied.yaml"
+    inject "$fault"
+    if grep -q -e labfault -e "$fault" "$STUB_DIR/applied.yaml"; then
+      echo "$fault applies an object that names itself:"
+      grep -n -e labfault -e "$fault" "$STUB_DIR/applied.yaml"
+      return 1
+    fi
+  done < <(in_namespace_faults)
+}
+
+@test "inject fails when the call that makes its change fails" {
+  while IFS='|' read -r fault change; do
+    FAIL_ON="$change" inject "$fault"
+    [ "$status" -ne 0 ] || { echo "$fault reported success over a failed change"; return 1; }
+  done < <(faults)
+}
+
+@test "inject carries on without paging when the alert rule cannot be installed" {
+  while IFS='|' read -r fault change; do
+    reset_calls
+    FAIL_ON="apply -n monitoring" inject "$fault"
+    [ "$status" -eq 0 ] || { echo "$fault: $output"; return 1; }
+    [[ "$output" == *"alert rule"* ]] || false
+    assert_called kubectl "$change"
+  done < <(faults)
+}
+
+@test "inject records what resolve needs before it changes anything" {
+  while IFS='|' read -r fault change; do
+    reset_calls
+    inject "$fault"
+    saved="$(line_of "create configmap labfault-$fault")"
+    changed="$(line_of "$change")"
+    [ -n "$saved" ] || { echo "$fault recorded nothing"; return 1; }
+    [ "$saved" -lt "$changed" ] || { echo "$fault changed the lab before recording"; return 1; }
+    assert_called kubectl "-n kube-system create configmap labfault-$fault"
+  done < <(recording_faults)
+}
+
+@test "inject fails without changing anything when the record cannot be saved" {
+  while IFS='|' read -r fault change; do
+    reset_calls
+    FAIL_ON="create configmap" inject "$fault"
+    [ "$status" -ne 0 ] || { echo "$fault injected with no record"; return 1; }
+    refute_called kubectl "$change"
+  done < <(recording_faults)
+}
+
+@test "resolve forgets the record and disarms the page" {
+  while IFS='|' read -r fault _; do
+    reset_calls
+    resolve "$fault"
+    [ "$status" -eq 0 ] || { echo "$fault: $output"; return 1; }
+    assert_called kubectl "delete prometheusrule labfault-$fault -n monitoring"
+  done < <(faults)
+  while IFS='|' read -r fault _; do
+    reset_calls
+    resolve "$fault"
+    assert_called kubectl "-n kube-system delete configmap labfault-$fault --ignore-not-found"
+  done < <(recording_faults)
+}
+
+@test "inject and resolve act on the bound workload, never on the default app" {
+  while IFS='|' read -r fault _; do
+    reset_calls
+    inject "$fault"
+    resolve "$fault"
+    if grep -q 'go-api' "$STUB_LOG" "$STUB_DIR/applied.yaml" 2>/dev/null; then
+      echo "$fault names go-api although bound to shop/cart:"
+      grep 'go-api' "$STUB_LOG" "$STUB_DIR/applied.yaml"
+      return 1
+    fi
+  done < <(faults)
+}
+
+# ── service-selector-broken ───────────────────────────────────────────────────
+
+@test "service-selector-broken: inject points the Service at a renamed label and records the whole selector" {
+  inject service-selector-broken
+  [ "$status" -eq 0 ]
+  assert_called kubectl 'patch svc cart -p {"spec":{"selector":{"app.kubernetes.io/name":"cart-v2"}}}'
+  assert_called kubectl '--from-literal=original-selector={"app.kubernetes.io/name":"cart","tier":"web"}'
+}
+
+@test "service-selector-broken: a second inject changes nothing" {
+  SVC_LABEL=cart-v2 inject service-selector-broken
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already injected"* ]] || false
+  refute_called kubectl "patch"
+  refute_called kubectl "create configmap"
+}
+
+@test "service-selector-broken: the selector inject writes is one the check rejects" {
+  inject service-selector-broken
+  written="$(calls_for kubectl | sed -n 's/.*patch svc cart -p {"spec":{"selector":\(.*\)}}$/\1/p')"
+  [ -n "$written" ]
+  stub_script curl <<'STUB'
+printf '200'
+STUB
+  export CHECK_SELECTOR="$written"
+  stub_script kubectl <<'STUB'
+case "$*" in
+  *"jsonpath={.spec.selector}"*) printf '%s' "$CHECK_SELECTOR" ;;
+  *"jsonpath={.spec.template.metadata.labels}"*) printf '%s' '{"app.kubernetes.io/name":"cart","tier":"web"}' ;;
+esac
+STUB
+  run bash "$ROOT/incidents/service-selector-broken/checks/resolved.sh"
+  [ "$status" -ne 0 ]
+}
+
+@test "service-selector-broken: resolve replaces the selector with the recorded one" {
+  RECORD_original_selector='{"app.kubernetes.io/name":"cart","tier":"web"}' SVC_LABEL=cart-v2 \
+    resolve service-selector-broken
+  [ "$status" -eq 0 ]
+  assert_called kubectl 'patch svc cart --type=json'
+  assert_called kubectl '"op":"replace","path":"/spec/selector","value":{"app.kubernetes.io/name":"cart","tier":"web"}}'
+}
+
+@test "service-selector-broken: resolve with no record on a healthy Service changes nothing" {
+  resolve service-selector-broken
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Nothing to resolve"* ]] || false
+  refute_called kubectl "patch"
+}
+
+@test "service-selector-broken: resolve after a fix made on the Deployment's labels leaves the Service alone" {
+  RECORD_original_selector='{"app.kubernetes.io/name":"cart","tier":"web"}' SVC_LABEL=cart-v2 POD_LABEL=cart-v2 \
+    resolve service-selector-broken
+  [ "$status" -eq 0 ]
+  refute_called kubectl "patch"
+  assert_called kubectl "delete configmap labfault-service-selector-broken"
+  assert_called kubectl "delete prometheusrule labfault-service-selector-broken"
+}
+
+@test "service-selector-broken: resolve with no record on a broken Service restores from the Deployment" {
+  SVC_LABEL=cart-v2 MATCH_LABELS='{"app.kubernetes.io/name":"cart"}' resolve service-selector-broken
+  [ "$status" -eq 0 ]
+  assert_called kubectl '"value":{"app.kubernetes.io/name":"cart"}}]'
+}
+
+@test "service-selector-broken: resolve fails with the command to run when nothing says what to restore" {
+  SVC_LABEL=cart-v2 resolve service-selector-broken
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"restore it by hand"* ]] || false
+  refute_called kubectl "patch"
+}
+
+# ── crashloop-bad-config ──────────────────────────────────────────────────────
+
+@test "crashloop-bad-config: inject sets the bad port and records that there was none" {
+  inject crashloop-bad-config
+  [ "$status" -eq 0 ]
+  assert_called kubectl "set env deploy/cart -c app PORT=80800"
+  assert_called kubectl "--from-literal=original-port=none"
+}
+
+@test "crashloop-bad-config: inject records the port the workload set itself" {
+  PORT_NOW=9090 inject crashloop-bad-config
+  assert_called kubectl "--from-literal=original-port=9090"
+}
+
+@test "crashloop-bad-config: inject retires this Deployment's older ReplicaSets only" {
+  inject crashloop-bad-config
+  assert_called kubectl "scale rs cart-old --replicas=0"
+  refute_called kubectl "scale rs cart-new"
+  refute_called kubectl "scale rs other-old"
+}
+
+@test "crashloop-bad-config: a second inject changes nothing" {
+  PORT_NOW=80800 inject crashloop-bad-config
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already injected"* ]] || false
+  refute_called kubectl "set env"
+  refute_called kubectl "create configmap"
+}
+
+@test "crashloop-bad-config: resolve restores the port in every recorded case" {
+  # recorded port | port now | the call resolve must make ("" for none)
+  while IFS='|' read -r recorded now want; do
+    reset_calls
+    RECORD_original_port="$recorded" PORT_NOW="$now" resolve crashloop-bad-config
+    [ "$status" -eq 0 ] || { echo "recorded=$recorded now=$now: $output"; return 1; }
+    if [ -n "$want" ]; then
+      assert_called kubectl "$want" || { echo "recorded=$recorded now=$now"; return 1; }
+    else
+      refute_called kubectl "set env" || { echo "recorded=$recorded now=$now"; return 1; }
+    fi
+  done <<'EOF'
+9090|80800|set env deploy/cart -c app PORT=9090
+none|80800|set env deploy/cart -c app PORT-
+none|7070|set env deploy/cart -c app PORT-
+|80800|set env deploy/cart -c app PORT=8080
+9090|9090|
+none||
+||
+EOF
+}
+
+# ── bad-deploy-rollout ────────────────────────────────────────────────────────
+
+@test "bad-deploy-rollout: inject swaps the tag and keeps the registry port" {
+  inject bad-deploy-rollout
+  [ "$status" -eq 0 ]
+  assert_called kubectl "set image deploy/cart app=registry.lab:5000/shop/cart:v99.9.9"
+  assert_called kubectl "--from-literal=original-image=registry.lab:5000/shop/cart:v1.4.0"
+}
+
+@test "bad-deploy-rollout: inject tags an image that had no tag" {
+  IMAGE=registry.lab:5000/shop/cart inject bad-deploy-rollout
+  assert_called kubectl "set image deploy/cart app=registry.lab:5000/shop/cart:v99.9.9"
+}
+
+@test "bad-deploy-rollout: a second inject changes nothing" {
+  IMAGE=registry.lab:5000/shop/cart:v99.9.9 inject bad-deploy-rollout
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already injected"* ]] || false
+  refute_called kubectl "set image"
+  refute_called kubectl "create configmap"
+}
+
+@test "bad-deploy-rollout: resolve restores the recorded image" {
+  RECORD_original_image=registry.lab:5000/shop/cart:v1.4.0 IMAGE=registry.lab:5000/shop/cart:v99.9.9 \
+    resolve bad-deploy-rollout
+  [ "$status" -eq 0 ]
+  assert_called kubectl "set image deploy/cart app=registry.lab:5000/shop/cart:v1.4.0"
+}
+
+@test "bad-deploy-rollout: resolve with no record recovers the image from the pod still serving" {
+  IMAGE=registry.lab:5000/shop/cart:v99.9.9 \
+    SERVING="$(printf 'false registry.lab:5000/shop/cart:v99.9.9\ntrue registry.lab:5000/shop/cart:v1.3.0')" \
+    resolve bad-deploy-rollout
+  [ "$status" -eq 0 ]
+  assert_called kubectl "set image deploy/cart app=registry.lab:5000/shop/cart:v1.3.0"
+}
+
+@test "bad-deploy-rollout: resolve with nothing to recover from says how to roll back" {
+  IMAGE=registry.lab:5000/shop/cart:v99.9.9 resolve bad-deploy-rollout
+  [[ "$output" == *"rollout undo deploy/cart"* ]] || false
+  refute_called kubectl "set image"
+}
+
+@test "bad-deploy-rollout: resolve on a healthy lab changes no image" {
+  resolve bad-deploy-rollout
+  [ "$status" -eq 0 ]
+  refute_called kubectl "set image"
+}
+
+@test "bad-deploy-rollout: resolve after a hand fix leaves the release the learner shipped" {
+  RECORD_original_image=registry.lab:5000/shop/cart:v1.4.0 IMAGE=registry.lab:5000/shop/cart:v1.5.0 \
+    resolve bad-deploy-rollout
+  [ "$status" -eq 0 ]
+  refute_called kubectl "set image"
+  assert_called kubectl "delete configmap labfault-bad-deploy-rollout"
+}
+
+# ── oom-kill ──────────────────────────────────────────────────────────────────
+
+@test "oom-kill: inject sizes the limit from the working set and records the originals" {
+  MEM_LIMIT=256Mi MEM_REQUEST=128Mi inject oom-kill
+  [ "$status" -eq 0 ]
+  assert_called kubectl "set resources deploy/cart --limits=memory=60Mi --requests=memory=30Mi"
+  assert_called kubectl "--from-literal=original-limit=256Mi --from-literal=original-request=128Mi"
+}
+
+@test "oom-kill: inject records an unset or zero memory setting as none" {
+  MEM_LIMIT=0 inject oom-kill
+  assert_called kubectl "--from-literal=original-limit=none --from-literal=original-request=none"
+}
+
+@test "oom-kill: inject sizes from the request when there are no metrics" {
+  WORKING_SET="" MEM_REQUEST=128Mi inject oom-kill
+  assert_called kubectl "set resources deploy/cart --limits=memory=32Mi --requests=memory=16Mi"
+}
+
+@test "oom-kill: a second inject changes nothing" {
+  RECORD_original_limit=256Mi MEM_LIMIT=60Mi inject oom-kill
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already injected"* ]] || false
+  refute_called kubectl "set resources"
+}
+
+@test "oom-kill: a record left by a hand fix does not stop a new inject" {
+  RECORD_original_limit=256Mi MEM_LIMIT=256Mi inject oom-kill
+  [ "$status" -eq 0 ]
+  assert_called kubectl "set resources deploy/cart --limits=memory=60Mi"
+}
+
+@test "oom-kill: resolve restores the recorded limit and request" {
+  RECORD_original_limit=256Mi RECORD_original_request=128Mi resolve oom-kill
+  [ "$status" -eq 0 ]
+  assert_called kubectl "set resources deploy/cart --limits=memory=256Mi"
+  assert_called kubectl "set resources deploy/cart --requests=memory=128Mi"
+}
+
+@test "oom-kill: resolve removes settings the workload never had instead of writing zero" {
+  RECORD_original_limit=none RECORD_original_request=none resolve oom-kill
+  [ "$status" -eq 0 ]
+  assert_called kubectl '"op":"remove","path":"/spec/template/spec/containers/0/resources/limits/memory"'
+  assert_called kubectl '"op":"remove","path":"/spec/template/spec/containers/0/resources/requests/memory"'
+  refute_called kubectl "set resources"
+}
+
+@test "oom-kill: resolve with no record leaves the workload's own memory settings alone" {
+  MEM_LIMIT=256Mi MEM_REQUEST=128Mi resolve oom-kill
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"No record of the original memory settings"* ]] || false
+  refute_called kubectl "set resources"
+  refute_called kubectl "patch"
+}
+
+@test "oom-kill: resolve stops the traffic inject started" {
+  resolve oom-kill
+  assert_called kubectl "delete job traffic-k6"
+}
+
+# ── network-blackhole ─────────────────────────────────────────────────────────
+
+deny_all='["Ingress"]|'
+opened='["Ingress"]|[{"from":[{"namespaceSelector":{}}]}]'
+
+@test "network-blackhole: inject applies an unlabelled deny-all under the documented name and turns connections over" {
+  inject network-blackhole
+  [ "$status" -eq 0 ]
+  grep -q 'kind: NetworkPolicy' "$STUB_DIR/applied.yaml"
+  grep -q 'name: default-deny-ingress' "$STUB_DIR/applied.yaml"
+  grep -q 'namespace: shop' "$STUB_DIR/applied.yaml"
+  ! grep -q 'labels:' "$STUB_DIR/applied.yaml"
+  ! grep -q 'TARGET_' "$STUB_DIR/applied.yaml"
+  assert_called kubectl "--from-literal=policy=default-deny-ingress"
+  assert_called kubectl "-n shop rollout restart deploy/cart"
+}
+
+@test "network-blackhole: a second inject changes nothing" {
+  BLACKHOLE_POLICY="$deny_all" inject network-blackhole
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already injected"* ]] || false
+  refute_called kubectl "apply"
+  refute_called kubectl "rollout restart"
+}
+
+@test "network-blackhole: inject refuses to overwrite a policy of that name it did not create" {
+  BLACKHOLE_POLICY="$opened" inject network-blackhole
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"already exists in shop"* ]] || false
+  refute_called kubectl "apply"
+  refute_called kubectl "rollout restart"
+}
+
+@test "network-blackhole: inject re-arms over its own policy after the learner opened it" {
+  BLACKHOLE_POLICY="$opened" RECORD_policy=default-deny-ingress inject network-blackhole
+  [ "$status" -eq 0 ]
+  grep -q 'name: default-deny-ingress' "$STUB_DIR/applied.yaml"
+}
+
+@test "network-blackhole: resolve removes the policy it recorded, and is safe to run twice" {
+  BLACKHOLE_POLICY="$deny_all" RECORD_policy=default-deny-ingress resolve network-blackhole
+  [ "$status" -eq 0 ]
+  assert_called kubectl "delete networkpolicy default-deny-ingress -n shop --ignore-not-found"
+  resolve network-blackhole
+  [ "$status" -eq 0 ]
+}
+
+@test "network-blackhole: resolve leaves a policy of that name it has no record of creating" {
+  BLACKHOLE_POLICY="$deny_all" resolve network-blackhole
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"leaving it in place"* ]] || false
+  [[ "$output" == *"kubectl -n shop delete networkpolicy default-deny-ingress"* ]] || false
+  refute_called kubectl "delete networkpolicy default-deny-ingress"
+}
+
+@test "network-blackhole: resolve also removes the policy under the name older labs carry" {
+  resolve network-blackhole
+  assert_called kubectl "delete networkpolicy labfault-network-blackhole -n shop --ignore-not-found"
+}
+
+# ── noisy-neighbor ────────────────────────────────────────────────────────────
+
+neighbor() {
+  export TARGET_NAMESPACE=labfault-batch TARGET_WORKLOAD=report-batch
+}
+
+@test "noisy-neighbor: inject pins one burner per core to the victim's node" {
+  neighbor
+  inject noisy-neighbor
+  [ "$status" -eq 0 ]
+  grep -q 'values: \["node-1"\]' "$STUB_DIR/applied.yaml"
+  grep -q 'replicas: 4' "$STUB_DIR/applied.yaml"
+  grep -q 'namespace: labfault-batch' "$STUB_DIR/applied.yaml"
+  ! grep -q 'BURNER_\|TARGET_' "$STUB_DIR/applied.yaml"
+}
+
+@test "noisy-neighbor: inject caps the burners at six and never runs fewer than two" {
+  neighbor
+  NODE_CPU=16 inject noisy-neighbor
+  grep -q 'replicas: 6' "$STUB_DIR/applied.yaml"
+  : >"$STUB_DIR/applied.yaml"
+  NODE_CPU=1000m inject noisy-neighbor
+  grep -q 'replicas: 2' "$STUB_DIR/applied.yaml"
+}
+
+@test "noisy-neighbor: inject refuses when the victim app is not running" {
+  neighbor
+  VICTIM_PODS="" inject noisy-neighbor
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"labctl app deploy cart"* ]] || false
+  refute_called kubectl "apply"
+}
+
+@test "noisy-neighbor: resolve deletes the batch namespace without waiting" {
+  neighbor
+  resolve noisy-neighbor
+  [ "$status" -eq 0 ]
+  assert_called kubectl "delete namespace labfault-batch --ignore-not-found --wait=false"
+}

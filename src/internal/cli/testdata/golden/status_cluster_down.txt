@@ -1,0 +1,9 @@
+$ labctl status
+=== Cluster ===
+  Status:   UNREACHABLE (The connection to the server 127.0.0.1:<port> was refused - did you specify the right host or port?)
+  Context:  k3d-clitest
+  Profile:  k3d
+
+The cluster is configured but not answering. Usually Docker is stopped (after a
+reboot) or short of memory. 'labctl doctor' checks Docker; 'labctl init' brings
+the lab back without losing it.

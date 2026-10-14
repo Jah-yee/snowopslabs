@@ -21,30 +21,25 @@ export default defineConfig({
       exclude: [
         'src/main.tsx',
         'src/test/**',
+        'src/**/*.test.{ts,tsx}',
         'src/types/**', // type-only declarations carry no statements
-        // Coverage ratchet — the UI analogue of .coverage-exceptions. These
-        // views, hooks and pre-rebuild components are scheduled for replacement
-        // in the W6/W7 UI rebuild; testing them today only to delete them is
-        // waste. Delete an entry when its module gets real tests, never add one
-        // to dodge the gate. Everything NOT listed here must hold the 80% bar.
-        'src/App.tsx',                    // W6 — shell rebuilt with the new router
-        'src/views/**',                   // W6/W7 — every view rebuilt
-        'src/hooks/**',                   // W6 — useJobRunner/useWebSocket reworked
-        'src/lib/jobs.ts',                // W6 — job polling folded into hooks
-        'src/components/ConfirmDialog.tsx', // W6 — rebuilt with the design system
-        'src/components/ErrorState.tsx',    // W6
-        'src/components/LogPanel.tsx',      // W6 — moves onto the run-engine stream
-        'src/components/Login.tsx',         // W6
-        'src/components/Notification.tsx',  // W6
       ],
-      // Matches the Go bar in docs/TESTING.md. The exclude list above is the
-      // ratchet that lets the pre-rebuild UI meet it honestly; as W6/W7 lands,
-      // entries come off and the gate widens.
+      // Nothing is excluded from the gate. The first block is the floor for
+      // the whole UI; each path below it has its own floor at the level its
+      // tests reach today, so no part can regress. Raise a number when tests
+      // raise the coverage, never lower one. New and edited lines are held to
+      // 85% separately by `make changed-lines-ui`.
       thresholds: {
-        statements: 80,
-        branches: 70,
-        functions: 80,
-        lines: 80,
+        statements: 78,
+        branches: 72,
+        functions: 72,
+        lines: 78,
+        'src/api/**': { statements: 94, branches: 90, functions: 95, lines: 94 },
+        'src/components/**': { statements: 86, branches: 85, functions: 88, lines: 86 },
+        'src/hooks/**': { statements: 100, branches: 90, functions: 100, lines: 100 },
+        'src/lib/**': { statements: 100, branches: 90, functions: 100, lines: 100 },
+        'src/views/**': { statements: 76, branches: 64, functions: 66, lines: 76 },
+        'src/App.tsx': { statements: 58, branches: 66, functions: 24, lines: 58 },
       },
     },
   },

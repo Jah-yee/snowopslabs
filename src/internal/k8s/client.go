@@ -465,12 +465,24 @@ func uniqueLines(out string) []string {
 	return lines
 }
 
-// RunKubectl executes a kubectl command and returns its stdout.
 // Reachable asks the current context's API server whether it is ready. A
 // configured context says nothing about whether the cluster is up.
 func Reachable(ctx context.Context) error {
 	_, err := kubectl(ctx, "get", "--raw=/readyz", "--request-timeout=5s")
 	return err
+}
+
+// ErrUnreachable reports that the cluster's API server did not answer.
+var ErrUnreachable = errors.New("cannot reach the cluster")
+
+// RequireReachable returns nil when the API server answers. Otherwise it
+// returns an error matching ErrUnreachable that carries kubectl's reason, so
+// a caller never mistakes a cluster that is down for one with nothing in it.
+func RequireReachable(ctx context.Context) error {
+	if err := Reachable(ctx); err != nil {
+		return fmt.Errorf("%w (%s)", ErrUnreachable, unreachableReason(err))
+	}
+	return nil
 }
 
 // maxReasonRunes bounds the reason shown for an unreachable cluster, so a long
@@ -506,6 +518,7 @@ type kubectlError struct {
 func (e *kubectlError) Error() string { return e.err.Error() + ": " + e.stderr }
 func (e *kubectlError) Unwrap() error { return e.err }
 
+// RunKubectl executes a kubectl command and returns its stdout.
 func RunKubectl(ctx context.Context, args ...string) (string, error) {
 	return kubectl(ctx, args...)
 }

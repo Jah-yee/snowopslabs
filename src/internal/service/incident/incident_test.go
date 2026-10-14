@@ -130,6 +130,29 @@ func TestInject_SubmitsLockedRunWithTargetEnv(t *testing.T) {
 	}
 }
 
+// A silent inject runs the same script under the same lock, but its run is
+// recorded without the fault's name.
+func TestInjectSilently_HidesTheFault(t *testing.T) {
+	h := newHarness(t)
+	id, err := h.svc.InjectSilently(t.Context(), "oom-kill", oomTarget)
+	if err != nil {
+		t.Fatalf("InjectSilently: %v", err)
+	}
+	rec := h.waitFor(id, store.StatusSucceeded)
+	if rec.Target != store.HiddenTarget || !rec.Hidden() {
+		t.Errorf("Target = %q, want %q", rec.Target, store.HiddenTarget)
+	}
+	if rec.Kind != KindInject || rec.LockKey != LockKey {
+		t.Errorf("Kind = %q, LockKey = %q; want the same kind and lock as Inject", rec.Kind, rec.LockKey)
+	}
+	if !h.f.Called("incidents/oom-kill/inject.sh") {
+		t.Errorf("inject.sh not executed; calls: %v", h.f.CallStrings())
+	}
+	if _, err := h.svc.InjectSilently(t.Context(), "../escape", oomTarget); err == nil {
+		t.Error("an invalid fault name was accepted")
+	}
+}
+
 func TestResolve_SubmitsResolveKind(t *testing.T) {
 	h := newHarness(t)
 	id, err := h.svc.Resolve(context.Background(), "oom-kill", oomTarget)

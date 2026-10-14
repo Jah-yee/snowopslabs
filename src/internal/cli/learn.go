@@ -5,13 +5,11 @@ package cli
 import (
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/sagar2395/snowopslabs/internal/labcheck"
 	"github.com/sagar2395/snowopslabs/internal/learn"
-	"github.com/sagar2395/snowopslabs/pkg/checks"
 	"github.com/spf13/cobra"
 )
 
@@ -142,13 +140,12 @@ After completing the task, run this again to verify the check and advance.`,
 			}
 
 			fmt.Fprintf(out, "Verifying check %q...\n", m.Check.Name)
-			c := checksCheck(m.Check, p.Dir(), learnResolver())
 			runner := labcheck.NewRunner(cfg, scenes.Workload, cfg.ProjectRoot)
-			res := runner.Run(cmd.Context(), c)
+			res, err := eng.Grade(cmd.Context(), p, prog, idx, runner, learnResolver(), "")
+			if err != nil {
+				return err
+			}
 			if res.Pass {
-				if err := eng.MarkCompleteModule(p, prog, idx, ""); err != nil {
-					return err
-				}
 				remaining := learn.NextModuleIdx(p, prog)
 				fmt.Fprintf(out, "✓ Check passed. Module complete!\n")
 				if remaining == -1 {
@@ -263,64 +260,14 @@ func progressSummary(p *learn.Path, prog *learn.Progress) string {
 	return fmt.Sprintf("%d/%d", len(prog.CompletedIdxs), len(p.Modules))
 }
 
-// expandVars expands ${VAR} and ${VAR:-default} in learning-path check
-// fields, using the configured domain suffix for DOMAIN_SUFFIX and the process
-// environment for everything else. Paths written before templates keep
-// working; new ones use {{.IngressURLSuffix}}, which also carries the port.
-func expandVars(s, domainSuffix string) string {
-	return os.Expand(s, func(name string) string {
-		key, def := name, ""
-		if before, after, ok := strings.Cut(name, ":-"); ok {
-			key, def = before, after
-		}
-		v := ""
-		if key == "DOMAIN_SUFFIX" {
-			v = domainSuffix
-		} else {
-			v = os.Getenv(key)
-		}
-		if v == "" {
-			return def
-		}
-		return v
-	})
-}
-
-// learnResolver resolves a learning-path check field: ${VAR} as expandVars
-// does, then template variables such as {{.IngressURLSuffix}}, which carry the
-// ingress port as well as the domain.
+// learnResolver fills a learning-path check field: ${VAR} and the template
+// variables of the lab this process is bound to.
 func learnResolver() func(string) string {
-	return func(s string) string {
-		s = expandVars(s, cfg.DomainSuffix)
-		if incEng != nil {
-			s = incEng.ResolveTemplate(s)
-		}
-		return s
+	var expand func(string) string
+	if incEng != nil {
+		expand = incEng.ResolveTemplate
 	}
-}
-
-// checksCheck converts a learn.Check to a checks.Check for the runner,
-// resolving its URL with resolve.
-func checksCheck(c learn.Check, pathDir string, resolve func(string) string) checks.Check {
-	result := checks.Check{
-		Name:           c.Name,
-		Type:           c.Type,
-		TimeoutSeconds: c.TimeoutSeconds,
-	}
-	switch c.Type {
-	case "http":
-		result.URL = resolve(c.URL)
-		result.ExpectStatus = c.Status()
-	case "promql":
-		result.Query = c.Query
-	case "script":
-		script := c.Script
-		if script != "" && !filepath.IsAbs(script) {
-			script = filepath.Join(pathDir, script)
-		}
-		result.Script = script
-	}
-	return result
+	return learn.Resolver(cfg.DomainSuffix, expand)
 }
 
 func truncate(s string, n int) string {

@@ -1,0 +1,120 @@
+$ labctl incident list
+NAME         CATEGORY   SEVERITY   TARGET              STATUS
+demo-fault   workload   low        demo-app/demo-app
+
+$ labctl incident info demo-fault
+Name:        demo-fault
+Display:     Demo fault
+Category:    workload
+Severity:    low
+Target:      demo-app/demo-app
+Description: demo-app is broken
+
+$ labctl incident status
+No incident is active. Inject one with: labctl incident inject --random
+
+$ labctl incident history
+No incident history yet. Run one: labctl incident inject --random
+
+$ labctl incident inject demo-fault
+inject demo-fault started (run <run>). Following output — Ctrl-C stops it.
+
+Run <run> — incident.inject demo-fault (queued)
+
+
+Succeeded in <dur>.
+
+Incident injected: demo-fault (workload, severity low)
+  demo-app is broken
+
+Next steps:
+  labctl incident status    # check whether you've fixed it
+  labctl incident hint      # progressive hints (recorded)
+  labctl incident resolve   # escape hatch — undo the fault
+
+$ labctl incident list
+NAME         CATEGORY   SEVERITY   TARGET              STATUS
+demo-fault   workload   low        demo-app/demo-app   ACTIVE
+
+$ labctl incident status
+Incident:  demo-fault
+Injected:  <time> (<dur> ago)
+
+NOT RESOLVED — detection check "marker-gone" fails (bash: exit status 1)
+Keep digging, or: labctl incident hint
+
+$ labctl incident hint
+Hint 1 of 3:
+
+look at the pods
+
+$ labctl incident hint
+Hint 2 of 3:
+
+look at the events
+
+$ labctl incident hint
+Hint 3 of 3:
+
+look at the image
+
+$ labctl incident hint
+no more hints — you've seen them all (3/3 revealed)
+Still stuck? labctl incident solution shows the full walkthrough.
+
+$ labctl incident solution
+This spoils the exercise. Type 'yes' to continue: Aborted. Try 'labctl incident hint' instead.
+
+$ labctl incident solution
+This spoils the exercise. Type 'yes' to continue: # Solution
+roll it back
+
+
+$ labctl incident status
+Incident:  demo-fault
+Injected:  <time> (<dur> ago)
+
+RESOLVED — detection check "marker-gone" passes. Nice work.
+It was: demo-fault — Demo fault
+
+Tidying up: running demo-fault's resolve.sh to remove its alert rule and bookkeeping.
+resolve demo-fault started (run <run>). Following output — Ctrl-C stops it.
+
+Run <run> — incident.resolve demo-fault (queued)
+
+
+Succeeded in <dur>.
+
+$ labctl incident status
+No incident is active. Inject one with: labctl incident inject --random
+
+$ labctl incident inject demo-fault
+inject demo-fault started (run <run>). Following output — Ctrl-C stops it.
+
+Run <run> — incident.inject demo-fault (queued)
+
+
+Succeeded in <dur>.
+
+Incident injected: demo-fault (workload, severity low)
+  demo-app is broken
+
+Next steps:
+  labctl incident status    # check whether you've fixed it
+  labctl incident hint      # progressive hints (recorded)
+  labctl incident resolve   # escape hatch — undo the fault
+
+$ labctl incident resolve
+resolve demo-fault started (run <run>). Following output — Ctrl-C stops it.
+
+Run <run> — incident.resolve demo-fault (queued)
+
+
+Succeeded in <dur>.
+
+Incident demo-fault resolved via its resolve.sh. The lab should be healthy again.
+
+$ labctl incident history
+WHEN               FAULT        SEVERITY   TIME-TO-CHECK   MTTR   HINTS   RESOLVED BY
+<when>   demo-fault   low        <dur>              <dur>     3       manual
+<when>   demo-fault   low        -               <dur>     0       auto

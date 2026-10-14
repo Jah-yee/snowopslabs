@@ -50,6 +50,14 @@ func (s Status) Valid() bool {
 // ErrRunNotFound is returned when no run matches an ID.
 var ErrRunNotFound = errors.New("run not found")
 
+// ErrLockHeld is returned by CreateRun when a queued or running run already
+// holds the new run's lock key.
+var ErrLockHeld = errors.New("lock held by an active run")
+
+// HiddenTarget is the target of a run that must not say what it acts on, such
+// as the inject of an incident a learner is to find without being told.
+const HiddenTarget = "(hidden)"
+
 // Run is the durable record of one shelled-out operation.
 type Run struct {
 	ID       string
@@ -69,6 +77,10 @@ type Run struct {
 	ExitCode  *int
 	Error     string
 }
+
+// Hidden reports whether the run's output and steps are withheld: they would
+// name what its target hides.
+func (r Run) Hidden() bool { return r.Target == HiddenTarget }
 
 // CreateRun inserts a queued run. The caller supplies the ID so it can hand
 // it back (for example in an HTTP 202) before the run starts.
@@ -94,17 +106,28 @@ func (s *Store) CreateRun(ctx context.Context, r Run) error {
 		return fmt.Errorf("encoding argv: %w", err)
 	}
 
-	_, err = s.db.ExecContext(ctx, `
+	// An active run takes its lock in the same statement that checks it, so
+	// two writers, in this process or another, can never both hold one.
+	guarded := r.LockKey != "" && (r.Status == StatusQueued || r.Status == StatusRunning)
+	res, err := s.db.ExecContext(ctx, `
 		INSERT INTO runs (id, kind, target, lock_key, status, actor, argv, script,
 		                  timeout_ms, queued_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+		WHERE NOT ? OR NOT EXISTS (
+			SELECT 1 FROM runs WHERE lock_key = ? AND status IN (?, ?))`,
 		r.ID, r.Kind, r.Target, r.LockKey, string(r.Status), r.Actor, string(argv),
-		r.Script, r.Timeout.Milliseconds(), r.QueuedAt.UnixMicro())
+		r.Script, r.Timeout.Milliseconds(), r.QueuedAt.UnixMicro(),
+		guarded, r.LockKey, StatusQueued, StatusRunning)
 	if err != nil {
 		if isUniqueViolation(err) {
 			return fmt.Errorf("store: run %q already exists", r.ID)
 		}
 		return fmt.Errorf("creating run %s: %w", r.ID, err)
+	}
+	if n, err := res.RowsAffected(); err != nil {
+		return fmt.Errorf("creating run %s: %w", r.ID, err)
+	} else if n == 0 {
+		return fmt.Errorf("creating run %s: %w: %s", r.ID, ErrLockHeld, r.LockKey)
 	}
 	return nil
 }

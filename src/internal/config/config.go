@@ -159,7 +159,6 @@ func Load(projectRoot string) (*Config, error) {
 	cfg.LabMemory = resolveEnv(fileVals, "LAB_MEMORY", "4")
 	cfg.Agents = resolveEnv(fileVals, "AGENTS", "1")
 
-	cfg.IngressClass = resolveEnv(fileVals, "INGRESS_CLASS", "traefik")
 	cfg.StorageClass = resolveEnv(fileVals, "STORAGE_CLASS", "local-path")
 	// Every browser resolves *.localhost to this machine, and the cluster name
 	// keeps two labs' hostnames (and so their cookies) apart.
@@ -168,6 +167,9 @@ func Load(projectRoot string) (*Config, error) {
 	cfg.MonitoringNamespace = resolveEnv(fileVals, "MONITORING_NAMESPACE", "monitoring")
 
 	cfg.IngressProvider = resolveEnv(fileVals, "INGRESS_PROVIDER", "traefik")
+	// Each provider installs an IngressClass of its own name, so an Ingress
+	// with any other class is never routed.
+	cfg.IngressClass = resolveEnv(fileVals, "INGRESS_CLASS", cfg.IngressProvider)
 	cfg.MetricsProvider = resolveEnv(fileVals, "METRICS_PROVIDER", "prometheus")
 	cfg.LoggingProvider = resolveEnv(fileVals, "LOGGING_PROVIDER", "")
 	cfg.TracingProvider = resolveEnv(fileVals, "TRACING_PROVIDER", "")

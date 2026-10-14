@@ -1,0 +1,32 @@
+$ labctl app list
+Applications:
+  demo-app             build=         deploy=       port=8080   capabilities=none
+  go-api               build=         deploy=       port=8080   capabilities=none
+
+$ labctl app capabilities
+Workload capabilities:
+  otlp-tracing         honours OTEL_EXPORTER_OTLP_ENDPOINT and exports spans
+  prometheus-metrics   serves the metrics path in Prometheus format, including the request-duration histogram
+  readiness-toggle     readiness can be flipped to failing on demand
+
+$ labctl app verify demo-app --static
+Contract for demo-app
+  port:           8080
+  health:         /health
+  ready:          /ready
+  namespace:      demo-app
+  capabilities:   none
+
+✓ declaration is valid
+
+$ labctl app build demo-app
+Building demo-app...
+build demo-app
+
+$ labctl app deploy demo-app
+Deploying demo-app...
+deploy deploy demo-app
+
+$ labctl app destroy demo-app
+Destroying demo-app...
+deploy destroy demo-app

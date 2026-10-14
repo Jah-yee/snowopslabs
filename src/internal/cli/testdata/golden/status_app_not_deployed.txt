@@ -1,0 +1,15 @@
+$ labctl status
+=== Cluster ===
+  Context:  k3d-contract
+  Server:   https://127.0.0.1:<port>
+  Version:  v1.33.6+k3s1
+  Nodes:    2
+  Profile:  k3d
+
+=== Platform ===
+  Ingress:  traefik  [no workloads]
+  Metrics:  prometheus  [no workloads]
+
+=== Apps ===
+  demo-app             [not deployed]
+  go-api               replicas=2 ready=2

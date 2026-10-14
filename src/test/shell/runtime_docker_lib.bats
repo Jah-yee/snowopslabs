@@ -118,14 +118,14 @@ lib() {
 @test "a stopped daemon on Linux fails with the start command" {
   FAKE_UNAME=Linux run lib ensure_docker_running
   [ "$status" -eq 1 ]
-  [[ "$output" == *"sudo systemctl start docker"* ]]
+  [[ "$output" == *"sudo systemctl start docker"* ]] || false
   ! grep -q "colima" "$STATE/calls"
 }
 
 @test "a stopped daemon on WSL points at Docker Desktop's WSL Integration" {
   FAKE_UNAME=Linux WSL_DISTRO_NAME=Ubuntu run lib ensure_docker_running
   [ "$status" -eq 1 ]
-  [[ "$output" == *"WSL Integration"* ]]
+  [[ "$output" == *"WSL Integration"* ]] || false
 }
 
 @test "a stalled pull times out instead of hanging" {
@@ -137,8 +137,8 @@ lib() {
   PULL_MODE=fail run lib prepull_images rancher/k3s:v1
   [ "$status" -eq 1 ]
   [ "$(grep -c "docker pull rancher/k3s:v1" "$STATE/calls")" -eq 2 ]
-  [[ "$output" == *"could not download rancher/k3s:v1"* ]]
-  [[ "$output" == *"re-run 'labctl init'"* ]]
+  [[ "$output" == *"could not download rancher/k3s:v1"* ]] || false
+  [[ "$output" == *"re-run 'labctl init'"* ]] || false
 }
 
 @test "prepull succeeds on a healthy network" {

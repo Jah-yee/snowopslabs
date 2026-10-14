@@ -6,6 +6,7 @@ import (
 	"context"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 )
 
@@ -68,59 +69,60 @@ func TestEventually_FirstAttemptPasses(t *testing.T) {
 	}
 }
 
+// Under synctest the clock only moves when every goroutine is waiting, so the
+// test can assert exactly when Eventually gives up.
 func TestEventually_DeadlineElapses(t *testing.T) {
-	// Never passes: the resource stays absent.
-	r := testRunner()
-	r.Exec = func(ctx context.Context, name string, args ...string) (string, error) {
-		return "", nil
-	}
+	synctest.Test(t, func(t *testing.T) {
+		// Never passes: the resource stays absent.
+		r := testRunner()
+		r.Exec = func(ctx context.Context, name string, args ...string) (string, error) {
+			return "", nil
+		}
 
-	opts := fastEventually()
-	opts.Deadline = 40 * time.Millisecond
-	start := time.Now()
-	res := r.Eventually(context.Background(), Check{Name: "c", Type: "kubectl", Resource: "pod/x"}, opts)
-	elapsed := time.Since(start)
+		opts := fastEventually()
+		opts.Deadline = 40 * time.Millisecond
+		start := time.Now()
+		res := r.Eventually(t.Context(), Check{Name: "c", Type: "kubectl", Resource: "pod/x"}, opts)
+		elapsed := time.Since(start)
 
-	if res.Pass {
-		t.Fatal("expected failure when the check never passes")
-	}
-	if res.Attempts < 1 {
-		t.Fatalf("Attempts = %d, want >= 1", res.Attempts)
-	}
-	if res.Explanation == "" {
-		t.Fatal("expected an explanation on the final result")
-	}
-	// It must respect the deadline and not run unbounded.
-	if elapsed > 500*time.Millisecond {
-		t.Fatalf("Eventually ran for %s, expected it to stop near the 40ms deadline", elapsed)
-	}
+		if res.Pass {
+			t.Fatal("expected failure when the check never passes")
+		}
+		if res.Attempts < 2 {
+			t.Fatalf("Attempts = %d, want it to retry until the deadline", res.Attempts)
+		}
+		if res.Explanation == "" {
+			t.Fatal("expected an explanation on the final result")
+		}
+		if elapsed < opts.Deadline || elapsed > opts.Deadline+opts.MaxInterval {
+			t.Fatalf("Eventually stopped after %s, want at the %s deadline", elapsed, opts.Deadline)
+		}
+	})
 }
 
 func TestEventually_Cancellation(t *testing.T) {
-	r := testRunner()
-	r.Exec = func(ctx context.Context, name string, args ...string) (string, error) {
-		return "", nil // always fails
-	}
+	synctest.Test(t, func(t *testing.T) {
+		r := testRunner()
+		r.Exec = func(ctx context.Context, name string, args ...string) (string, error) {
+			return "", nil // always fails
+		}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	// Cancel shortly after the poll begins.
-	go func() {
-		time.Sleep(15 * time.Millisecond)
-		cancel()
-	}()
+		ctx, cancel := context.WithCancel(t.Context())
+		time.AfterFunc(15*time.Millisecond, cancel)
 
-	opts := fastEventually()
-	opts.Deadline = 10 * time.Second // long, so cancellation is what stops us
-	start := time.Now()
-	res := r.Eventually(ctx, Check{Name: "c", Type: "kubectl", Resource: "pod/x"}, opts)
-	elapsed := time.Since(start)
+		opts := fastEventually()
+		opts.Deadline = 10 * time.Second // long, so cancellation is what stops it
+		start := time.Now()
+		res := r.Eventually(ctx, Check{Name: "c", Type: "kubectl", Resource: "pod/x"}, opts)
+		elapsed := time.Since(start)
 
-	if res.Pass {
-		t.Fatal("expected failure on cancellation")
-	}
-	if elapsed > time.Second {
-		t.Fatalf("Eventually took %s to notice cancellation", elapsed)
-	}
+		if res.Pass {
+			t.Fatal("expected failure on cancellation")
+		}
+		if elapsed > 15*time.Millisecond+opts.MaxInterval {
+			t.Fatalf("Eventually took %s to notice a cancellation at 15ms", elapsed)
+		}
+	})
 }
 
 func TestEventuallyOpts_Defaults(t *testing.T) {

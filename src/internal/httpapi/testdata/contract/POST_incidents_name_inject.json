@@ -1,0 +1,28 @@
+{
+  "fault": {
+    "category": "workload",
+    "description": "demo-app is broken",
+    "detection": {
+      "name": "marker-gone",
+      "script": "checks/resolved.sh",
+      "timeoutSeconds": 5,
+      "type": "script"
+    },
+    "displayName": "Demo fault",
+    "name": "demo-fault",
+    "prerequisites": {
+      "apps": [
+        "demo-app"
+      ]
+    },
+    "requirements": {},
+    "severity": "low",
+    "target": {
+      "namespace": "demo-app",
+      "workload": "demo-app"
+    },
+    "verified": false
+  },
+  "silent": false,
+  "status": "injected"
+}

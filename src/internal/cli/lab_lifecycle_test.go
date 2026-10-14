@@ -124,7 +124,8 @@ func runLabCmd(t *testing.T, cmd *cobra.Command, args ...string) (string, error)
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs(args)
+	// Never nil: with nil arguments cobra parses the test binary's own.
+	cmd.SetArgs(append([]string{}, args...))
 	err := cmd.ExecuteContext(context.Background())
 	return buf.String(), err
 }

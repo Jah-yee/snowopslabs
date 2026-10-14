@@ -1,0 +1,44 @@
+{
+  "active": false,
+  "apiVersion": "scenario.snowops.net/v2",
+  "category": "reliability",
+  "checks": [
+    {
+      "name": "marker-present",
+      "remediation": "run the setup again",
+      "script": "checks/marker.sh",
+      "type": "script"
+    }
+  ],
+  "components": [
+    {
+      "name": "setup",
+      "script": "setup.sh",
+      "type": "script",
+      "uninstallScript": "teardown.sh"
+    }
+  ],
+  "description": "A scenario for go-api",
+  "displayName": "Demo scenario",
+  "explore": {
+    "commands": [],
+    "tips": null,
+    "urls": []
+  },
+  "name": "demo-scenario",
+  "pinnedApps": [],
+  "prerequisites": {
+    "apps": null,
+    "platform": null
+  },
+  "requirements": {},
+  "runtimes": null,
+  "verified": false,
+  "workload": {
+    "app": "go-api",
+    "metric": "http_server_request_duration_seconds",
+    "namespace": "go-api",
+    "port": "8080",
+    "service": "go-api.go-api.svc.cluster.local"
+  }
+}

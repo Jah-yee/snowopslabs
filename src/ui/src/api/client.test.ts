@@ -13,7 +13,7 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { api } from './client'
+import { api, ApiError } from './client'
 import { API, jsonError, page, server } from '../test/server'
 
 describe('api client', () => {
@@ -64,6 +64,14 @@ describe('api client', () => {
       server.use(http.get(`${API}/scenarios`, respond))
       await expect(api.listScenarios()).rejects.toThrow(pattern)
     })
+  })
+
+  it('carries the status of an error answer, and none for a dropped connection', async () => {
+    server.use(http.get(`${API}/scenarios`, () => jsonError(403, 'not yours')))
+    await expect(api.listScenarios()).rejects.toEqual(expect.objectContaining({ name: 'ApiError', status: 403 }))
+
+    server.use(http.get(`${API}/scenarios`, () => HttpResponse.error()))
+    await expect(api.listScenarios()).rejects.not.toBeInstanceOf(ApiError)
   })
 
   it('does not swallow a 404 as an empty list', async () => {

@@ -69,7 +69,7 @@ func toView(id string, r *compare.Report) comparisonView {
 func (s *Server) handleListComparisons(w http.ResponseWriter, r *http.Request) {
 	reps, ids, err := compareStore(s).List()
 	if err != nil {
-		respondError(w, r, http.StatusInternalServerError, "internal_error", err.Error())
+		respondInternal(w, r, err)
 		return
 	}
 	out := make([]comparisonView, 0, len(reps))

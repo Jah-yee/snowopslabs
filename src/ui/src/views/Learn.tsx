@@ -86,14 +86,18 @@ export function Learn({ notify, requestConfirm }: LearnProps) {
   async function completeModule(name: string, idx: number) {
     setCompletingIdx(idx)
     try {
+      // The server runs the module's check and records it only on a pass.
       const progress = await api.completeLearnModule(name, idx)
       setSelected(prev => (prev && prev.path.name === name ? { ...prev, progress } : prev))
-      if (progress.nextIdx === -1) {
+      if (progress.check && !progress.check.pass) {
+        notify('error', 'Not done yet',
+          progress.check.error || progress.check.explanation || `The check "${progress.check.name}" is not passing yet.`)
+      } else if (progress.nextIdx === -1) {
         notify('success', 'Path complete', `You finished "${name}". Nicely done.`)
       }
       load()
     } catch (e) {
-      notify('error', 'Failed to complete module', e instanceof Error ? e.message : String(e))
+      notify('error', 'Could not check the module', e instanceof Error ? e.message : String(e))
     } finally {
       setCompletingIdx(null)
     }
@@ -218,7 +222,7 @@ export function Learn({ notify, requestConfirm }: LearnProps) {
 
       {/* Path detail modal */}
       {(detailLoading || selected) && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget && !detailLoading) setSelected(null) }}>
+        <div className="modal-overlay" role="presentation" onClick={e => { if (e.target === e.currentTarget && !detailLoading) setSelected(null) }}>
           <div className="modal-card" role="dialog" aria-modal="true" aria-label="Learning path details">
             <button className="modal-close" aria-label="Close" onClick={() => setSelected(null)}><Icon name="x" size={18} /></button>
 
@@ -269,7 +273,7 @@ export function Learn({ notify, requestConfirm }: LearnProps) {
                               disabled={completingIdx !== null}
                               onClick={() => completeModule(selected.path.name, idx)}
                             >
-                              {completingIdx === idx ? 'Marking…' : 'Mark complete'}
+                              {completingIdx === idx ? 'Checking…' : 'Check'}
                             </button>
                           ) : (
                             <Badge variant={status === 'done' ? 'running' : 'stopped'}>
@@ -298,8 +302,8 @@ export function Learn({ notify, requestConfirm }: LearnProps) {
                       onClick={() => completeModule(selected.path.name, selected.progress.nextIdx!)}
                     >
                       {completingIdx === selected.progress.nextIdx
-                        ? 'Marking…'
-                        : `Complete “${selected.path.modules[selected.progress.nextIdx]?.displayName || selected.path.modules[selected.progress.nextIdx]?.name || 'module'}” & continue`}
+                        ? 'Checking…'
+                        : `Check “${selected.path.modules[selected.progress.nextIdx]?.displayName || selected.path.modules[selected.progress.nextIdx]?.name || 'module'}” & continue`}
                     </button>
                   ) : (
                     <Badge variant="running"><Icon name="check" size={13} /> Path complete</Badge>

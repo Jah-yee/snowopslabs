@@ -22,14 +22,14 @@ teardown() {
 @test "--list prints every step" {
   run bash "$ROOT/scripts/release-acceptance.sh" --list
   [ "$status" -eq 0 ]
-  [[ "$output" == *"init"* ]]
-  [[ "$output" == *"incident"* ]]
+  [[ "$output" == *"init"* ]] || false
+  [[ "$output" == *"incident"* ]] || false
 }
 
 @test "an unknown step is refused before anything runs" {
   run bash "$ROOT/scripts/release-acceptance.sh" --only init,nope
   [ "$status" -eq 2 ]
-  [[ "$output" == *"unknown step: nope"* ]]
+  [[ "$output" == *"unknown step: nope"* ]] || false
   refute_called labctl
 }
 

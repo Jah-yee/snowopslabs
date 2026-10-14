@@ -39,7 +39,7 @@ type faultResp struct {
 func (s *Server) handleListIncidents(w http.ResponseWriter, r *http.Request) {
 	active, err := s.incidents.Active()
 	if err != nil {
-		respondError(w, r, http.StatusInternalServerError, "internal_error", err.Error())
+		respondInternal(w, r, err)
 		return
 	}
 	// Show faults for the app they would be injected into: the active
@@ -55,9 +55,24 @@ func (s *Server) handleListIncidents(w http.ResponseWriter, r *http.Request) {
 
 	writeJSONCached(w, r, http.StatusOK, map[string]any{
 		"faults":   out,
-		"active":   active,
+		"active":   hideSilent(active),
 		"workload": workloadResp(bound),
 	})
+}
+
+// hiddenFault stands in for a silent incident's name in every answer.
+const hiddenFault = "(hidden)"
+
+// hideSilent returns active without the fault's name when the incident was
+// injected silently. The name stays on the server until the detection check
+// passes, so no client can read the answer out of a response.
+func hideSilent(active *incident.Active) *incident.Active {
+	if active == nil || !active.Silent {
+		return active
+	}
+	masked := *active
+	masked.Fault = hiddenFault
+	return &masked
 }
 
 func (s *Server) handleIncidentInject(w http.ResponseWriter, r *http.Request) {
@@ -65,20 +80,27 @@ func (s *Server) handleIncidentInject(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	s.injectAndRespond(w, r, name)
+	s.injectAndRespond(w, r, func(*incident.Engine) (string, bool) { return name, true })
 }
 
 func (s *Server) handleIncidentInjectRandom(w http.ResponseWriter, r *http.Request) {
 	seed, _ := strconv.ParseInt(r.URL.Query().Get("seed"), 10, 64)
-	f, err := s.incidents.PickRandom(seed, r.URL.Query().Get("category"))
-	if err != nil {
-		respondError(w, r, http.StatusConflict, "no_eligible_fault", err.Error())
-		return
-	}
-	s.injectAndRespond(w, r, f.Name)
+	// The pick runs on the engine bound to the requested app: which faults are
+	// eligible depends on the workload they would break.
+	s.injectAndRespond(w, r, func(bound *incident.Engine) (string, bool) {
+		f, err := bound.PickRandom(seed, r.URL.Query().Get("category"))
+		if err != nil {
+			respondError(w, r, http.StatusConflict, "no_eligible_fault", err.Error())
+			return "", false
+		}
+		return f.Name, true
+	})
 }
 
-func (s *Server) injectAndRespond(w http.ResponseWriter, r *http.Request, name string) {
+// injectAndRespond binds the app named in the request, asks pick which fault
+// to inject on that binding, and injects it. pick answers the request itself
+// and returns false when it has no fault to offer.
+func (s *Server) injectAndRespond(w http.ResponseWriter, r *http.Request, pick func(bound *incident.Engine) (string, bool)) {
 	force := r.URL.Query().Get("force") == "true"
 	silent := r.URL.Query().Get("silent") == "true"
 
@@ -95,6 +117,11 @@ func (s *Server) injectAndRespond(w http.ResponseWriter, r *http.Request, name s
 		return
 	}
 	defer release()
+
+	name, ok := pick(incidents)
+	if !ok {
+		return
+	}
 
 	f, err := incidents.Inject(name, s.exec, force, silent)
 	if err != nil {
@@ -138,7 +165,7 @@ func (s *Server) handleIncidentStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		respondError(w, r, http.StatusInternalServerError, "internal_error", err.Error())
+		respondInternal(w, r, err)
 		return
 	}
 
@@ -153,7 +180,7 @@ func (s *Server) handleIncidentStatus(w http.ResponseWriter, r *http.Request) {
 	// In silent mode, don't leak the fault's identity until it's resolved.
 	if res.Active.Silent && !res.Resolved {
 		respondJSON(w, http.StatusOK, map[string]any{
-			"active":   map[string]any{"fault": "(hidden)", "injectedAt": res.Active.InjectedAt, "silent": true},
+			"active":   map[string]any{"fault": hiddenFault, "injectedAt": res.Active.InjectedAt, "silent": true},
 			"resolved": false,
 			"check":    map[string]any{"pass": false},
 		})
@@ -172,7 +199,7 @@ func (s *Server) handleIncidentHint(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, incident.ErrNoMoreHints):
 			respondError(w, r, http.StatusConflict, "no_more_hints", err.Error())
 		default:
-			respondError(w, r, http.StatusInternalServerError, "internal_error", err.Error())
+			respondInternal(w, r, err)
 		}
 		return
 	}
@@ -183,7 +210,7 @@ func (s *Server) handleIncidentHint(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleIncidentHistory(w http.ResponseWriter, r *http.Request) {
 	recs, err := s.incidents.History()
 	if err != nil {
-		respondError(w, r, http.StatusInternalServerError, "internal_error", err.Error())
+		respondInternal(w, r, err)
 		return
 	}
 	if recs == nil {

@@ -3,7 +3,6 @@
 package httpapi
 
 import (
-	"encoding/json"
 	"net/http"
 	"path/filepath"
 
@@ -44,8 +43,7 @@ func (s *Server) handleTrafficInfo(w http.ResponseWriter, r *http.Request) {
 // replaces the running generator.
 func (s *Server) handleTrafficStart(w http.ResponseWriter, r *http.Request) {
 	var req trafficStartRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, r, http.StatusBadRequest, "invalid_request", "invalid JSON body")
+	if !decodeBody(w, r, &req, false) {
 		return
 	}
 	opts := traffic.Options{

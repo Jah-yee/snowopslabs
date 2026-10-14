@@ -13,6 +13,9 @@ but not *through the network path*. What Kubernetes objects can silently
 drop traffic between two healthy points?
 
 ## Hint 3
-`kubectl get networkpolicy -n {{.WorkloadNamespace}}`. A policy with `podSelector: {}`,
-`policyTypes: [Ingress]`, and **no rules** means "select every pod, allow
-no ingress" — a deny-all. Delete it and the service comes back instantly.
+`kubectl get networkpolicy -n {{.WorkloadNamespace}}`, then
+`kubectl describe networkpolicy -n {{.WorkloadNamespace}}` to read what each one
+allows. A policy with `podSelector: {}`, `policyTypes: [Ingress]`, and **no
+rules** means "select every pod, allow no ingress" — a deny-all. Its name will
+not tell you it is the problem; its AGE and its empty rule list will. Delete it
+and the service comes back instantly.

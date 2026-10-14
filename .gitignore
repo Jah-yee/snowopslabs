@@ -18,6 +18,7 @@ apps/go-api/app
 
 ## Coverage output
 coverage.out
+test-time.log
 coverage.html
 .coverage-func.txt
 

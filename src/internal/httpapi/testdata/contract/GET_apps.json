@@ -1,0 +1,22 @@
+[
+  {
+    "buildStrategy": "",
+    "deployStrategy": "",
+    "deployed": true,
+    "name": "demo-app",
+    "ready": "2",
+    "replicas": "2",
+    "serviceUrl": "http://demo-app.demo-app.svc.cluster.local:8080/",
+    "url": "http://demo-app.lab.test"
+  },
+  {
+    "buildStrategy": "",
+    "deployStrategy": "",
+    "deployed": true,
+    "name": "go-api",
+    "ready": "2",
+    "replicas": "2",
+    "serviceUrl": "http://go-api.go-api.svc.cluster.local:8080/",
+    "url": "http://go-api.lab.test"
+  }
+]

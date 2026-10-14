@@ -1,0 +1,23 @@
+$ labctl users list
+No users defined. Add one with: labctl users add <name> --role operator
+
+$ labctl users add olive --role operator --password s3cret-pass
+User "olive" added (role: operator)
+
+$ labctl users add pat --role participant
+Password: User "pat" added (role: participant)
+
+$ labctl users list
+NAME    ROLE
+olive   operator
+pat     participant
+
+$ labctl users add pat --role operator --password another-pass
+User "pat" updated (role: operator)
+
+$ labctl users remove olive
+User "olive" removed
+
+$ labctl users list
+NAME   ROLE
+pat    operator

@@ -22,13 +22,14 @@ import (
 // Check mirrors the scenario checks schema — reused for module completion.
 type Check struct {
 	Name string `yaml:"name"`
-	Type string `yaml:"type"` // http | kubectl | promql | script
+	Type string `yaml:"type"` // http | script | promql
 	URL  string `yaml:"url,omitempty"`
 	// ExpectStatus is the canonical expected HTTP status.
 	ExpectStatus   int    `yaml:"expectStatus,omitempty"`
 	ExpectedStatus int    `yaml:"expectedStatus,omitempty"`
-	Command        string `yaml:"command,omitempty"`
 	Query          string `yaml:"query,omitempty"`
+	Operator       string `yaml:"operator,omitempty"`
+	Value          string `yaml:"value,omitempty"`
 	Script         string `yaml:"script,omitempty"`
 	TimeoutSeconds int    `yaml:"timeoutSeconds,omitempty"`
 }
@@ -42,10 +43,35 @@ func (c Check) Status() int {
 	return c.ExpectedStatus
 }
 
+// problem says what stops the path runner grading this check, or "" when it
+// can. A path that declared a check the runner cannot grade would have a
+// module no learner could ever complete.
+func (c Check) problem() string {
+	switch c.Type {
+	case "":
+		return "check.type is required"
+	case "http":
+		if c.URL == "" {
+			return "an http check needs a url"
+		}
+	case "script":
+		if c.Script == "" {
+			return "a script check needs a script"
+		}
+	case "promql":
+		if c.Query == "" || c.Operator == "" || c.Value == "" {
+			return "a promql check needs query, operator and value"
+		}
+	default:
+		return fmt.Sprintf("check.type %q is not supported in a learning path (use http, script or promql)", c.Type)
+	}
+	return ""
+}
+
 // Action declares how the learner should complete the module.
 type Action struct {
-	Type string `yaml:"type"` // command | scenario | incident
-	Ref  string `yaml:"ref"`  // the command, scenario name, or fault name
+	Type string `yaml:"type" json:"type"` // command | scenario | incident
+	Ref  string `yaml:"ref" json:"ref"`   // the command, scenario name, or fault name
 }
 
 // Module is one step in a learning path.
@@ -97,8 +123,8 @@ func (p *Path) Validate() []string {
 		if m.Check.Name == "" {
 			errs = append(errs, prefix+": check.name is required")
 		}
-		if m.Check.Type == "" {
-			errs = append(errs, prefix+": check.type is required")
+		if msg := m.Check.problem(); msg != "" {
+			errs = append(errs, prefix+": "+msg)
 		}
 		if m.Intro != "" && unsafePath(m.Intro) {
 			errs = append(errs, prefix+": intro path must not use .. or be absolute")
@@ -169,19 +195,32 @@ func (e *Engine) Paths() ([]*Path, error) {
 func (e *Engine) LoadPath(name string) (*Path, error) {
 	dir := filepath.Join(e.learnDir, name)
 	data, err := os.ReadFile(filepath.Join(dir, "path.yaml"))
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, &notFoundError{name: name}
+	}
 	if err != nil {
 		return nil, fmt.Errorf("load %s: %w", name, err)
 	}
 	var p Path
 	if err := yaml.Unmarshal(data, &p); err != nil {
-		return nil, fmt.Errorf("parse %s: %w", name, err)
+		return nil, fmt.Errorf("learning path %s is malformed (run 'labctl validate'): %w", name, err)
 	}
 	p.dir = dir
 	if errs := p.Validate(); len(errs) > 0 {
-		return nil, fmt.Errorf("validate %s: %s", name, strings.Join(errs, "; "))
+		return nil, fmt.Errorf("learning path %s is malformed (run 'labctl validate'): %s", name, strings.Join(errs, "; "))
 	}
 	return &p, nil
 }
+
+// notFoundError reports a learning path that does not exist. It matches
+// fs.ErrNotExist, and its text names the command that lists the ones that do.
+type notFoundError struct{ name string }
+
+func (e *notFoundError) Error() string {
+	return fmt.Sprintf("learning path %q not found (see 'labctl learn list')", e.name)
+}
+
+func (e *notFoundError) Is(target error) bool { return target == fs.ErrNotExist }
 
 // IntroText returns the intro markdown for a module, or empty string if none.
 func (e *Engine) IntroText(p *Path, m Module) (string, error) {

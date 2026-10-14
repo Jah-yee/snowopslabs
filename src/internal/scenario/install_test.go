@@ -302,8 +302,19 @@ func TestHelmReleaseExists(t *testing.T) {
 			if got := helmReleaseExists("loki", "monitoring", rec); got != tt.want {
 				t.Errorf("helmReleaseExists = %v, want %v", got, tt.want)
 			}
-			if call := rec.find("helm", "list"); flagValue(call, "--filter") != "^loki$" {
+			call := rec.find("helm", "list")
+			if flagValue(call, "--filter") != "^loki$" {
 				t.Errorf("filter must match the exact name, got call %v", call)
+			}
+			// Helm 4, the pinned version, rejects --all; naming every status
+			// lists a release in any state on Helm 3 and 4 alike.
+			if slices.Contains(call, "--all") || slices.Contains(call, "-a") {
+				t.Errorf("helm list passes --all, which Helm 4 rejects: %v", call)
+			}
+			for _, status := range []string{"--deployed", "--failed", "--pending", "--superseded", "--uninstalling", "--uninstalled"} {
+				if !slices.Contains(call, status) {
+					t.Errorf("helm list leaves out %s releases: %v", status, call)
+				}
 			}
 		})
 	}
@@ -513,6 +524,90 @@ func TestHelm_AdoptedReleaseIsNotUninstalled(t *testing.T) {
 			got := rec.find("helm", "uninstall") != nil
 			if got != tt.wantUninstall {
 				t.Errorf("helm uninstall ran = %v, want %v", got, tt.wantUninstall)
+			}
+		})
+	}
+}
+
+// uninstallFailingExec is a recordingExec whose scripts fail when their path contains
+// one of failOn.
+type uninstallFailingExec struct {
+	recordingExec
+	failOn []string
+}
+
+func (f *uninstallFailingExec) RunScriptStreamed(label, scriptPath string, args ...string) (string, error) {
+	_, _ = f.recordingExec.RunScriptStreamed(label, scriptPath, args...)
+	for _, s := range f.failOn {
+		if strings.Contains(scriptPath, s) {
+			return "", errors.New("exit status 1: the server is currently unable to handle the request")
+		}
+	}
+	return "", nil
+}
+
+// A scenario whose uninstall fails stays active, so `scenario down` can be
+// run again; every component is still attempted.
+func TestEngine_Down_KeepsTheScenarioActiveWhenAnUninstallFails(t *testing.T) {
+	const twoScripts = `name: drill
+displayName: Drill
+description: x
+category: testing
+components:
+  - {name: first, type: script, script: up1.sh, uninstallScript: down1.sh}
+  - {name: second, type: script, script: up2.sh, uninstallScript: down2.sh}
+`
+	tests := []struct {
+		name       string
+		failOn     []string
+		force      bool
+		wantErr    string
+		wantActive bool
+	}{
+		{"every uninstall succeeds", nil, false, "", false},
+		{"one uninstall fails", []string{"down2.sh"}, false, "could not uninstall second", true},
+		{"both fail", []string{"down1.sh", "down2.sh"}, false, "could not uninstall second, first", true},
+		{"one fails with force", []string{"down2.sh"}, true, "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root := t.TempDir()
+			writeScenario(t, root, "drill", twoScripts)
+			for _, f := range []string{"up1.sh", "up2.sh", "down1.sh", "down2.sh"} {
+				if err := os.WriteFile(filepath.Join(root, "scenarios", "drill", f), []byte("#!/bin/sh\n"), 0o755); err != nil { //nolint:gosec // a test script must be executable
+					t.Fatal(err)
+				}
+			}
+			eng := NewEngine(root, "k3d.local", "k3d", "monitoring")
+			var out strings.Builder
+			eng.SetOutput(&out)
+			if err := eng.markActive("drill", nil); err != nil {
+				t.Fatal(err)
+			}
+			ex := &uninstallFailingExec{failOn: tt.failOn}
+
+			down := eng.Down
+			if tt.force {
+				down = eng.ForceDown
+			}
+			err := down("drill", ex)
+			if tt.wantErr == "" && err != nil {
+				t.Fatalf("Down: %v", err)
+			}
+			if tt.wantErr != "" && (err == nil || !strings.Contains(err.Error(), tt.wantErr)) {
+				t.Fatalf("Down error = %v, want it to say %q", err, tt.wantErr)
+			}
+			if tt.wantErr != "" && !strings.Contains(err.Error(), "labctl scenario down drill") {
+				t.Errorf("the error does not say how to retry: %v", err)
+			}
+			if got := eng.isActive("drill"); got != tt.wantActive {
+				t.Errorf("active after Down = %v, want %v", got, tt.wantActive)
+			}
+			if len(ex.calls) != 2 {
+				t.Errorf("uninstalls attempted = %v, want both components", ex.calls)
+			}
+			if tt.wantActive && strings.Contains(out.String(), "Scenario deactivated.") {
+				t.Errorf("the output says the scenario was deactivated:\n%s", out.String())
 			}
 		})
 	}

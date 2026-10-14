@@ -54,6 +54,42 @@ func TestFuncRun_ErrorBecomesFailed(t *testing.T) {
 	}
 }
 
+// Another process cancels a run by finishing its record in the shared store:
+// the web UI and `labctl runs cancel` both do. The process running it must
+// then stop the work, not carry on after the lock it held was released.
+func TestFuncRun_StopsWhenAnotherProcessCancelsIt(t *testing.T) {
+	h := newHarness(t, WithCancelPoll(10*time.Millisecond))
+	started := make(chan struct{})
+	stopped := make(chan struct{})
+	id, err := h.engine.Submit(t.Context(), Spec{
+		Kind: "incident.inject", LockKey: "incident",
+		Func: func(ctx context.Context, _ io.Writer) error {
+			close(started)
+			<-ctx.Done()
+			close(stopped)
+			return ctx.Err()
+		},
+	})
+	if err != nil {
+		t.Fatalf("Submit: %v", err)
+	}
+	<-started
+	h.waitForStatus(id, store.StatusRunning)
+
+	if err := h.store.FinishRun(t.Context(), id, store.StatusCancelled, nil, "cancelled by user", time.Now(), 0); err != nil {
+		t.Fatalf("FinishRun: %v", err)
+	}
+
+	select {
+	case <-stopped:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the run kept going after another process cancelled it")
+	}
+	if rec := h.waitForStatus(id, store.StatusCancelled); rec.Error != "cancelled by user" {
+		t.Errorf("error = %q, want the cancelling process's reason kept", rec.Error)
+	}
+}
+
 func TestFuncRun_HonoursCancellation(t *testing.T) {
 	h := newHarness(t)
 	started := make(chan struct{})

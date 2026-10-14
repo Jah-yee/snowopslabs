@@ -3,12 +3,20 @@
 package lab
 
 import (
+	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/sagar2395/snowopslabs/internal/k8s"
+	"github.com/sagar2395/snowopslabs/internal/labtest"
+	"github.com/sagar2395/snowopslabs/internal/platform"
+	"github.com/sagar2395/snowopslabs/internal/scenario"
 )
 
 func sampleSnapshot(name string) *Snapshot {
@@ -181,5 +189,76 @@ func TestResetPlan_EmptyLabStillStopsTraffic(t *testing.T) {
 	plan := ResetPlan(nil, nil, nil)
 	if len(plan) != 1 || plan[0].Kind != "traffic-stop" {
 		t.Fatalf("expected only traffic-stop, got %v", plan)
+	}
+}
+
+func collectFixture(t *testing.T, l *labtest.Lab) (*Snapshot, []string, error) {
+	t.Helper()
+	return Collect(t.Context(), "now", "k3d", "lab.test", l.Root,
+		platform.NewRegistry(l.Root), scenario.NewEngine(l.Root, "lab.test", "k3d"))
+}
+
+func TestCollect_RecordsWhatTheClusterRuns(t *testing.T) {
+	l := labtest.New(t)
+	snap, warnings, err := collectFixture(t, l)
+	if err != nil {
+		t.Fatalf("Collect() error = %v", err)
+	}
+	if len(warnings) != 0 {
+		t.Errorf("warnings = %v", warnings)
+	}
+	if want := []string{"demo-app", "go-api"}; !slices.Equal(snap.Apps, want) {
+		t.Errorf("apps = %v, want %v", snap.Apps, want)
+	}
+	if snap.Name != "now" || snap.Profile != "k3d" || snap.DomainSuffix != "lab.test" {
+		t.Errorf("snapshot = %+v, want the name, profile and domain it was asked for", snap)
+	}
+}
+
+// An app whose namespace is gone is left out; the others are still recorded.
+func TestCollect_LeavesOutAnAppThatIsNotDeployed(t *testing.T) {
+	l := labtest.New(t)
+	l.Stub(t, "kubectl", `#!/bin/sh
+case "$*" in
+  *readyz*) echo ok ;;
+  "get namespace go-api --no-headers") echo "go-api Active 1h" ;;
+  "get namespace "*) exit 1 ;;
+  "get deployment -n go-api"*) echo "go-api 1 1 1" ;;
+  "get pods"*) echo '{"items":[]}' ;;
+esac
+`)
+	snap, _, err := collectFixture(t, l)
+	if err != nil {
+		t.Fatalf("Collect() error = %v", err)
+	}
+	if want := []string{"go-api"}; !slices.Equal(snap.Apps, want) {
+		t.Errorf("apps = %v, want %v", snap.Apps, want)
+	}
+}
+
+// A cluster that does not answer gives no snapshot: recording it would save an
+// empty lab, and a reset planned from it would skip everything it should undo.
+func TestCollect_UnreachableClusterIsAnError(t *testing.T) {
+	l := labtest.New(t)
+	l.Stub(t, "kubectl", "#!/bin/sh\necho 'connection refused' >&2\nexit 1\n")
+	snap, _, err := collectFixture(t, l)
+	if !errors.Is(err, k8s.ErrUnreachable) {
+		t.Fatalf("Collect() error = %v, want one matching k8s.ErrUnreachable", err)
+	}
+	if snap != nil {
+		t.Errorf("Collect() returned a snapshot of a cluster it could not read: %+v", snap)
+	}
+}
+
+// A cancelled collection records nothing: it cannot tell a lab from an empty
+// one.
+func TestCollect_CancelledContext(t *testing.T) {
+	l := labtest.New(t)
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	snap, _, err := Collect(ctx, "now", "k3d", "lab.test", l.Root,
+		platform.NewRegistry(l.Root), scenario.NewEngine(l.Root, "lab.test", "k3d"))
+	if err == nil || snap != nil {
+		t.Errorf("Collect(cancelled) = %+v, %v; want no snapshot and an error", snap, err)
 	}
 }

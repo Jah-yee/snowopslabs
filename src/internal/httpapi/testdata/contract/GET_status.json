@@ -1,0 +1,51 @@
+{
+  "apps": [
+    {
+      "buildStrategy": "",
+      "deployStrategy": "",
+      "deployed": true,
+      "name": "demo-app",
+      "ready": "2",
+      "replicas": "2",
+      "serviceUrl": "http://demo-app.demo-app.svc.cluster.local:8080/",
+      "url": "http://demo-app.lab.test"
+    },
+    {
+      "buildStrategy": "",
+      "deployStrategy": "",
+      "deployed": true,
+      "name": "go-api",
+      "ready": "2",
+      "replicas": "2",
+      "serviceUrl": "http://go-api.go-api.svc.cluster.local:8080/",
+      "url": "http://go-api.lab.test"
+    }
+  ],
+  "cluster": {
+    "connected": true,
+    "context": "k3d-contract",
+    "k8sVersion": "v1.33.6+k3s1",
+    "nodeCount": 2,
+    "server": "https://127.0.0.1:6443"
+  },
+  "domainSuffix": "lab.test",
+  "ingressUrlSuffix": "lab.test",
+  "platform": {
+    "ingress": {
+      "active": true,
+      "provider": "traefik"
+    },
+    "logging": {
+      "active": false,
+      "provider": "loki"
+    },
+    "metrics": {
+      "active": true,
+      "provider": "prometheus"
+    },
+    "tracing": {
+      "active": false,
+      "provider": "tempo"
+    }
+  }
+}

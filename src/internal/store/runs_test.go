@@ -6,8 +6,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -351,21 +353,6 @@ func TestActiveRunForLock(t *testing.T) {
 		}
 		if found {
 			t.Error("a finished run must not still hold its lock")
-		}
-	})
-
-	t.Run("returns the oldest holder", func(t *testing.T) {
-		s := newStore(t)
-		base := time.Date(2026, 7, 26, 10, 0, 0, 0, time.UTC)
-		if err := s.CreateRun(ctx, Run{ID: "second", Kind: "test", LockKey: "k", QueuedAt: base.Add(time.Minute)}); err != nil {
-			t.Fatalf("CreateRun: %v", err)
-		}
-		if err := s.CreateRun(ctx, Run{ID: "first", Kind: "test", LockKey: "k", QueuedAt: base}); err != nil {
-			t.Fatalf("CreateRun: %v", err)
-		}
-		got, found, _ := s.ActiveRunForLock(ctx, "k")
-		if !found || got.ID != "first" {
-			t.Errorf("holder = %q (found=%v), want first", got.ID, found)
 		}
 	})
 
@@ -730,5 +717,82 @@ func TestConcurrentWrites(t *testing.T) {
 		if r.Status != StatusSucceeded {
 			t.Errorf("run %s: status = %q, want succeeded", r.ID, r.Status)
 		}
+	}
+}
+
+func TestRun_Hidden(t *testing.T) {
+	for target, want := range map[string]bool{HiddenTarget: true, "oom-kill": false, "": false} {
+		if got := (Run{Target: target}).Hidden(); got != want {
+			t.Errorf("Run{Target: %q}.Hidden() = %v, want %v", target, got, want)
+		}
+	}
+}
+
+// Only one active run can hold a lock, even when two writers race: the check
+// and the insert are one statement.
+func TestCreateRun_LockIsHeldByOneActiveRun(t *testing.T) {
+	ctx := t.Context()
+	st := newStore(t)
+	run := func(id string) Run { return Run{ID: id, Kind: "platform.install", LockKey: "platform/ingress"} }
+
+	if err := st.CreateRun(ctx, run("first")); err != nil {
+		t.Fatalf("first CreateRun: %v", err)
+	}
+	if err := st.CreateRun(ctx, run("second")); !errors.Is(err, ErrLockHeld) {
+		t.Fatalf("second CreateRun = %v, want ErrLockHeld while the first is queued", err)
+	}
+	if _, err := st.GetRun(ctx, "second"); !errors.Is(err, ErrRunNotFound) {
+		t.Errorf("the refused run was recorded anyway: %v", err)
+	}
+
+	// Another lock, and no lock at all, are unaffected.
+	if err := st.CreateRun(ctx, Run{ID: "other", Kind: "platform.install", LockKey: "platform/metrics"}); err != nil {
+		t.Errorf("a run on another lock was refused: %v", err)
+	}
+	if err := st.CreateRun(ctx, Run{ID: "free-1", Kind: "status"}); err != nil {
+		t.Errorf("a run with no lock was refused: %v", err)
+	}
+	if err := st.CreateRun(ctx, Run{ID: "free-2", Kind: "status"}); err != nil {
+		t.Errorf("a second run with no lock was refused: %v", err)
+	}
+
+	// Once the holder finishes, the lock is free again.
+	if err := st.FinishRun(ctx, "first", StatusSucceeded, nil, "", time.Now(), time.Second); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.CreateRun(ctx, run("third")); err != nil {
+		t.Errorf("CreateRun after the holder finished: %v", err)
+	}
+}
+
+func TestCreateRun_ConcurrentWritersShareOneLock(t *testing.T) {
+	ctx := t.Context()
+	path := filepath.Join(t.TempDir(), "runs.db")
+	var stores []*Store
+	for range 4 {
+		st, err := Open(ctx, path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = st.Close() })
+		stores = append(stores, st)
+	}
+
+	var wg sync.WaitGroup
+	var created atomic.Int32
+	for i := range 40 {
+		wg.Go(func() {
+			err := stores[i%len(stores)].CreateRun(ctx, Run{ID: fmt.Sprintf("r%d", i), Kind: "incident.inject", LockKey: "incident"})
+			switch {
+			case err == nil:
+				created.Add(1)
+			case !errors.Is(err, ErrLockHeld):
+				t.Errorf("CreateRun: %v", err)
+			}
+		})
+	}
+	wg.Wait()
+	if n := created.Load(); n != 1 {
+		t.Errorf("%d runs hold the incident lock, want exactly 1", n)
 	}
 }

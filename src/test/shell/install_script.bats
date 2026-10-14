@@ -46,7 +46,7 @@ release() {
   [ "$("$HOME/.local/bin/labctl")" = "labctl v1" ]
   [ "$(cat "$HOME/.snowops/lab-dir")" = "$CLONE" ]
   [ -f "$CLONE/.env" ]
-  [[ "$output" == *"labctl init"* ]]
+  [[ "$output" == *"labctl init"* ]] || false
 }
 
 @test "works when run from another directory" {
@@ -72,7 +72,7 @@ release() {
   echo "9.9.10-dev" >"$CLONE/LAB_VERSION"
   run sh "$CLONE/install.sh"
   [ "$status" -ne 0 ]
-  [[ "$output" == *"development content"*"git switch stable"* ]]
+  [[ "$output" == *"development content"*"git switch stable"* ]] || false
 }
 
 @test "snowops_version overrides lab_version" {
@@ -87,7 +87,7 @@ release() {
   mkdir -p "$WORK/elsewhere" && cp "$ROOT/install.sh" "$WORK/elsewhere/"
   run sh "$WORK/elsewhere/install.sh"
   [ "$status" -ne 0 ]
-  [[ "$output" == *"run install.sh from your snowopslabs clone"* ]]
+  [[ "$output" == *"run install.sh from your snowopslabs clone"* ]] || false
 }
 
 @test "a corrupt download is refused and the current labctl is untouched" {
@@ -98,7 +98,7 @@ release() {
     >"$WORK/releases/download/v9.9.9/checksums.txt"
   run sh "$CLONE/install.sh"
   [ "$status" -ne 0 ]
-  [[ "$output" == *"checksum mismatch"* ]]
+  [[ "$output" == *"checksum mismatch"* ]] || false
   [ "$("$HOME/.local/bin/labctl")" = "labctl v1" ]
 }
 
@@ -106,12 +106,12 @@ release() {
   echo "0.0.1" >"$CLONE/LAB_VERSION"
   run sh "$CLONE/install.sh"
   [ "$status" -ne 0 ]
-  [[ "$output" == *"could not download"*"v0.0.1"* ]]
+  [[ "$output" == *"could not download"*"v0.0.1"* ]] || false
 }
 
 @test "says how to put labctl on PATH when it is not" {
   release v1
   run env PATH="/usr/bin:/bin:/usr/sbin:/sbin" sh "$CLONE/install.sh"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"is not on your PATH"* ]]
+  [[ "$output" == *"is not on your PATH"* ]] || false
 }

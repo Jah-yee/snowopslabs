@@ -12,6 +12,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/sagar2395/snowopslabs/internal/checkfixture"
 	"github.com/sagar2395/snowopslabs/internal/labcheck"
 	resultspkg "github.com/sagar2395/snowopslabs/internal/results"
 	"github.com/sagar2395/snowopslabs/internal/scaffold"
@@ -100,6 +101,9 @@ var scenarioUpCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		if err := requireCluster(cmd.Context()); err != nil {
+			return err
+		}
 		// Check the lab has room before installing any prerequisite for it.
 		// Warnings are left to the activation itself, which checks again.
 		if scenes.Admit != nil && !s.Active {
@@ -146,6 +150,9 @@ var scenarioDownCmd = &cobra.Command{
 			return err
 		}
 		return runScenarioOp(cmd, "deactivate", name, func(ctx context.Context, svc *scnsvc.Service) (string, error) {
+			if scenarioDownForce {
+				return svc.ForceDeactivate(ctx, name)
+			}
 			return svc.Deactivate(ctx, name)
 		})
 	},
@@ -158,8 +165,7 @@ var scenarioResetCmd = &cobra.Command{
 it deactivates the scenario (if active) and re-activates it, both as recorded,
 cancellable runs. Because component installs are idempotent, a retry converges
 in seconds rather than minutes.`,
-	Args:         cobra.ExactArgs(1),
-	SilenceUsage: true,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runScenarioReset(cmd, args[0])
 	},
@@ -224,6 +230,7 @@ var (
 	verifyInterval     time.Duration
 	verifyTimeout      time.Duration
 	verifyCheckTimeout time.Duration
+	verifyRecord       string
 )
 
 var scenarioVerifyCmd = &cobra.Command{
@@ -235,20 +242,23 @@ if any check fails, so it is safe to use in CI and scripts.
 
 With --watch, checks are re-run every --interval until they all pass or
 --timeout elapses — useful right after 'scenario up' while pods settle.`,
-	Args:         cobra.ExactArgs(1),
-	SilenceUsage: true, // a failing check is a result, not a usage error
+	Args: cobra.ExactArgs(1), // a failing check is a result, not a usage error
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Check the app the scenario was activated against; check scripts read
 		// WORKLOAD_* from scriptExec.
 		if err := rebindTo(scenes.ActiveApp(args[0])); err != nil {
 			return err
 		}
-		runner := newCheckRunner()
-		ctx := context.Background()
+		ctx := cmd.Context()
 		startedAt := time.Now()
 		deadline := startedAt.Add(verifyTimeout)
 
 		for {
+			runner := newCheckRunner()
+			fixture := checkfixture.New()
+			if verifyRecord != "" {
+				checkfixture.Record(runner, fixture)
+			}
 			results, err := scenes.Verify(ctx, args[0], runner)
 			if err != nil {
 				return err
@@ -257,7 +267,7 @@ With --watch, checks are re-run every --interval until they all pass or
 			if checks.AllPass(results) {
 				fmt.Printf("All %d checks passed.\n", len(results))
 				recordScenarioVerify(args[0], results, startedAt)
-				return nil
+				return saveFixture(args[0], fixture, results)
 			}
 			// Count failures separately from pending checks, which are waiting
 			// for the learner's next step.
@@ -274,6 +284,9 @@ With --watch, checks are re-run every --interval until they all pass or
 			if !verifyWatch || time.Now().After(deadline) {
 				printVerifyRemediation(results)
 				recordScenarioVerify(args[0], results, startedAt)
+				if err := saveFixture(args[0], fixture, results); err != nil {
+					return err
+				}
 				if failed == 0 && pending > 0 {
 					// Nothing failed; the learner has steps left to do.
 					return fmt.Errorf("%d step(s) still pending — complete the drill above, then re-verify", pending)
@@ -282,9 +295,35 @@ With --watch, checks are re-run every --interval until they all pass or
 			}
 			fmt.Printf("\n%d of %d checks not yet passing — retrying in %s (until %s)...\n\n",
 				failed+pending, len(results), verifyInterval, deadline.Format("15:04:05"))
-			time.Sleep(verifyInterval)
+			select {
+			case <-ctx.Done():
+				return fmt.Errorf("stopped before the checks passed: %w", ctx.Err())
+			case <-time.After(verifyInterval):
+			}
 		}
 	},
+}
+
+// saveFixture writes what the lab answered this verify's declared checks to
+// --record, for the scenario's replay tests. It does nothing without --record.
+func saveFixture(name string, f *checkfixture.Fixture, results []checks.Result) error {
+	if verifyRecord == "" {
+		return nil
+	}
+	vars, err := scenes.CheckVars(name)
+	if err != nil {
+		return err
+	}
+	// Paths on this machine name no lab state, and a fixture is committed.
+	delete(vars, "ProjectRoot")
+	delete(vars, "StateDir")
+	f.Vars = vars
+	f.SetResults(results)
+	if err := f.Save(verifyRecord); err != nil {
+		return fmt.Errorf("writing the check fixture: %w", err)
+	}
+	fmt.Printf("Recorded the lab's answers to %s.\n", verifyRecord)
+	return nil
 }
 
 // recordScenarioVerify appends a scenario verification record, with the
@@ -420,8 +459,7 @@ for the app named by --app, or the app the scenario was activated for. Use it to
 apply a manifest the scenario leaves to you:
 
   labctl scenario render node-drain-drill manifests/baseline.yaml --app go-api | kubectl apply -f -`,
-	Args:         cobra.ExactArgs(2),
-	SilenceUsage: true,
+	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		s, err := scenes.Get(args[0])
 		if err != nil {
@@ -555,9 +593,13 @@ var scenarioInfoCmd = &cobra.Command{
 	},
 }
 
+var scenarioDownForce bool
+
 func init() {
+	scenarioDownCmd.Flags().BoolVar(&scenarioDownForce, "force", false, "mark the scenario inactive even when a component will not uninstall; remove what is left by hand")
 	scenarioVerifyCmd.Flags().BoolVar(&verifyWatch, "watch", false, "re-run checks until they all pass or --timeout elapses")
 	scenarioVerifyCmd.Flags().DurationVar(&verifyInterval, "interval", 10*time.Second, "delay between re-runs in --watch mode")
+	scenarioVerifyCmd.Flags().StringVar(&verifyRecord, "record", "", "write what the lab answered the declared checks to this file, for the scenario's replay tests")
 	scenarioVerifyCmd.Flags().DurationVar(&verifyTimeout, "timeout", 5*time.Minute, "overall deadline in --watch mode")
 	scenarioVerifyCmd.Flags().DurationVar(&verifyCheckTimeout, "check-timeout", 30*time.Second, "per-check timeout")
 

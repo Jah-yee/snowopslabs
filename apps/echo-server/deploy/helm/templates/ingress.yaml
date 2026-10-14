@@ -1,4 +1,10 @@
 {{- if .Values.ingress.enabled }}
+{{- /* ingress.host, which the deploy engine sets from the lab's domain, names
+the one host the app is served on; ingress.hosts is the chart's default. */}}
+{{- $hosts := .Values.ingress.hosts }}
+{{- with .Values.ingress.host }}
+{{- $hosts = list (dict "host" . "paths" (index $.Values.ingress.hosts 0).paths) }}
+{{- end }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -17,13 +23,13 @@ spec:
   {{- if .Values.ingress.tls.enabled }}
   tls:
     - hosts:
-        {{- range .Values.ingress.hosts }}
+        {{- range $hosts }}
         - {{ .host | quote }}
         {{- end }}
       secretName: {{ include "echo-server.fullname" . }}-tls
   {{- end }}
   rules:
-    {{- range .Values.ingress.hosts }}
+    {{- range $hosts }}
     - host: {{ .host | quote }}
       http:
         paths:

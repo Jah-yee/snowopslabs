@@ -3,7 +3,10 @@ set -euo pipefail
 
 NS="${TARGET_NAMESPACE:-go-api}"
 DEPLOY="${TARGET_WORKLOAD:-go-api}"
-MARK="labfault-oom-kill"
+FAULT="oom-kill"
+LIB="$(cd "$(dirname "$0")/../_lib" && pwd)"
+# shellcheck source=incidents/_lib/state.sh
+. "$LIB/state.sh"
 
 # The limit must sit between what the app uses at rest and what it needs under
 # load, so the failure is the one that actually happens in production — healthy
@@ -45,7 +48,7 @@ mem_to_mib() {
 # `|| true` is load-bearing: with `set -o pipefail`, `kubectl top` exiting
 # non-zero because metrics-server has no sample for a just-rolled pod fails the
 # whole assignment and aborts the script.
-# Sample a few times and keep the largest. A reading taken in the first seconds
+# Sample a few times, FAULT_SAMPLE_SECONDS apart, and keep the largest. A reading taken in the first seconds
 # after a rollout is cold — the same pod reported 1Mi and then 3Mi a minute
 # later — and sizing the limit from the cold number produces one so tight the
 # container cannot start, which is the failure this rule exists to avoid.
@@ -58,7 +61,7 @@ for _ in 1 2 3; do
     USED_MIB="$mib"
     USED_RAW="$sample"
   fi
-  sleep 3
+  sleep "${FAULT_SAMPLE_SECONDS:-3}"
 done
 
 REQUEST_RAW="$(kubectl -n "$NS" get deploy "$DEPLOY" \
@@ -81,13 +84,12 @@ LIMIT_MIB="${DERIVED_LIMIT_MIB}"
 FAULT_LIMIT="${LIMIT_MIB}Mi"
 echo "Sizing the change from ${BASIS}."
 
-# Trust the cluster, not just the marker. An annotation left behind by a partial
-# resolve, or a limit someone restored by hand, makes the marker alone claim the
+# Trust the cluster, not just the record. A record left behind by a partial
+# resolve, or a limit someone restored by hand, makes the record alone claim the
 # fault is live when it is not — and the detection check then grades a healthy
 # lab as already fixed.
 CURRENT_LIMIT="$(kubectl -n "$NS" get deploy "$DEPLOY" -o 'jsonpath={.spec.template.spec.containers[0].resources.limits.memory}' 2>/dev/null || true)"
-if [ "$(kubectl -n "$NS" get deploy "$DEPLOY" -o "jsonpath={.metadata.annotations.$MARK}" 2>/dev/null)" = "injected" ] &&
-  [ "$CURRENT_LIMIT" = "$FAULT_LIMIT" ]; then
+if [ -n "$(fault_state_get "$FAULT" original-limit)" ] && [ "$CURRENT_LIMIT" = "$FAULT_LIMIT" ]; then
   echo "Fault already injected — nothing to do."
   exit 0
 fi
@@ -98,8 +100,8 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 # Arm the paging rule first so the on-call drill measures real detection.
 # Tolerate a missing prometheus operator — the fault still works unpaged.
 MON_NS="${MONITORING_NAMESPACE:-monitoring}"
-# shellcheck source=/dev/null
-. "$(cd "$(dirname "$0")/../_lib" && pwd)/render.sh"
+# shellcheck source=incidents/_lib/render.sh
+. "$LIB/render.sh"
 render_targeted "$SCRIPT_DIR/alerts/rule.yaml" | kubectl apply -n "$MON_NS" -f - 2>/dev/null ||
   echo "Note: alert rule not installed (monitoring stack missing?) — continuing without paging."
 
@@ -119,11 +121,9 @@ ORIG_REQUEST="$(kubectl -n "$NS" get deploy "$DEPLOY" -o 'jsonpath={.spec.templa
 # Nothing printed here names the fault: the brief is fault.yaml's description
 # and the page this armed.
 echo "Applying a resource change to $NS/$DEPLOY..."
-kubectl -n "$NS" annotate deploy "$DEPLOY" \
-  "$MARK=injected" \
-  "$MARK-original-limit=$(none_if_unset "$ORIG_LIMIT")" \
-  "$MARK-original-request=$(none_if_unset "$ORIG_REQUEST")" \
-  --overwrite >/dev/null
+fault_state_save "$FAULT" \
+  "original-limit=$(none_if_unset "$ORIG_LIMIT")" \
+  "original-request=$(none_if_unset "$ORIG_REQUEST")"
 
 apply_limit() {
   kubectl -n "$NS" set resources "deploy/$DEPLOY" \
@@ -139,8 +139,12 @@ apply_limit() {
 
 apply_limit "$LIMIT_MIB"
 
+# The steady profile requests the target as given. The write profile posts to
+# /echo, which only echo-server serves: against any other workload every request
+# is a 404, so its logs and the request dashboards show failures the fault did
+# not cause, before it bites and after it is fixed.
 echo "Driving allocation with the k6 traffic generator..."
-TRAFFIC_PROFILE=write \
+TRAFFIC_PROFILE=steady \
   TRAFFIC_TARGET="http://$DEPLOY.$NS.svc.cluster.local:8080/" \
   TRAFFIC_RPS="${FAULT_RPS:-60}" \
   TRAFFIC_DURATION="${FAULT_DURATION:-30m}" \

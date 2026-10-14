@@ -20,4 +20,16 @@ done
 echo "Removing the workloads those Applications managed..."
 kubectl delete namespace gitops-demo gitops-broken --ignore-not-found --timeout=120s || true
 
+# The deletes above are allowed to fail so every one is tried; what decides
+# the outcome is whether the namespaces are gone.
+left=""
+for ns in gitops-demo gitops-broken; do
+  if kubectl get namespace "$ns" >/dev/null 2>&1; then
+    left="$left $ns"
+  fi
+done
+if [ -n "$left" ]; then
+  echo "Still present:$left. Re-run 'labctl scenario down gitops-cicd' once the cluster answers." >&2
+  exit 1
+fi
 echo "✓ gitops-demo and gitops-broken removed"

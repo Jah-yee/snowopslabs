@@ -59,6 +59,6 @@ teardown() {
   for issuer in "CN = TRAEFIK DEFAULT CERT" "CN = lab-ca-evil"; do
     ISSUER="$issuer" DOMAIN_SUFFIX=snowops.localhost run bash "$CHECK"
     [ "$status" -eq 1 ]
-    [[ "$output" == *"not sign"* ]]
+    [[ "$output" == *"not sign"* ]] || false
   done
 }

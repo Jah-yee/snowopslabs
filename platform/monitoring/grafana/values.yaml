@@ -23,7 +23,6 @@ service:
 persistence:
   type: pvc
   enabled: true
-  storageClassName: local-path
   accessModes:
     - ReadWriteOnce
   size: 5Gi

@@ -1,0 +1,25 @@
+$ labctl app verify demo-app
+Contract for demo-app
+  port:           8080
+  health:         /health
+  ready:          /ready
+  namespace:      demo-app
+  capabilities:   none
+
+✓ declaration is valid
+
+Verifying 4 check(s) against the deployed workload...
+
+FAIL  workload-ready        (kubectl)  error: kubectl: exit status 1  <dur>
+FAIL  serves-contract-port  (kubectl)  error: kubectl: exit status 1  <dur>
+FAIL  liveness-probe-path   (kubectl)  error: kubectl: exit status 1  <dur>
+FAIL  readiness-probe-path  (kubectl)  error: kubectl: exit status 1  <dur>
+[stderr]
+
+Next step(s):
+  → workload-ready: deployment/demo-app has no ready replicas. Deploy it first: labctl app deploy demo-app
+  → serves-contract-port: No container exposes port 8080. Either fix the chart's containerPort or correct APP_PORT in apps/demo-app/app.env.
+  → liveness-probe-path: The liveness probe does not target /health. A scenario that restarts the app relies on this path; align the chart with APP_HEALTH_PATH.
+  → readiness-probe-path: The readiness probe does not target /ready. Align the chart with APP_READY_PATH.
+Error: app "demo-app" does not honour its declared contract
+[exit 1]

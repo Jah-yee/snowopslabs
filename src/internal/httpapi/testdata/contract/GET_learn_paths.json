@@ -1,0 +1,13 @@
+{
+  "items": [
+    {
+      "completedCount": 0,
+      "description": "A path with one module",
+      "displayName": "Demo path",
+      "estimatedMinutes": 0,
+      "moduleCount": 1,
+      "name": "demo-path",
+      "tags": null
+    }
+  ]
+}

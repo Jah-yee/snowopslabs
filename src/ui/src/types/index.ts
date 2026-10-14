@@ -453,6 +453,9 @@ export interface LearnProgress {
   nextIdx?: number
   startedAt?: string
   updatedAt?: string
+  /** On a completion request: the module's check, run on the server. The
+   *  module is recorded only when it passed. */
+  check?: ScenarioCheckResult
 }
 
 // ── Challenges ────────────────────────────────────────────────────────────────

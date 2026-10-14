@@ -1,0 +1,14 @@
+name: demo-path
+displayName: "Demo path"
+description: "A path with one module"
+modules:
+  - name: step-one
+    displayName: "Step one"
+    action:
+      type: command
+      ref: "labctl runtime up"
+    check:
+      name: cluster-up
+      type: script
+      script: checks/cluster-up.sh
+      timeoutSeconds: 30

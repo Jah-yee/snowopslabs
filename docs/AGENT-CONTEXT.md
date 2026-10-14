@@ -98,10 +98,19 @@ These hold everywhere. Breaking one is a review rejection, not a discussion.
 
 **Tests**
 
+- Every change ships its tests in the same commit, at the layer that owns the
+  behaviour: [what each change needs](TESTING.md#what-each-change-needs).
+- A bug fix starts with a test that fails because of that bug.
+- A test asserts an outcome a user would notice, and has been seen to fail when
+  that behaviour is broken.
+- A check, grader or detection script has a test per lab state: solved
+  passes; the work not done, each known wrong fix, and a cluster that cannot
+  answer all fail.
 - Table-driven and hermetic: `t.TempDir()`, `toolchain.Fake`, temp SQLite. No
   live cluster, no network, no real credentials.
-- Happy path plus at least two error cases. Any `context.Context` argument gets
+- Happy path plus every error return. Any `context.Context` argument gets
   cancellation and deadline-exceeded tests.
+- No new coverage exceptions or exclusions; floors only go up.
 
 **Comments**
 
@@ -113,7 +122,10 @@ These hold everywhere. Breaking one is a review rejection, not a discussion.
 
 ## Definition of done
 
-1. Code changed, `make lint` and `make test` pass.
+1. Code changed, `make lint` and `make test` pass (`make test-ui` and
+   `make test-e2e` too for a UI change). `make test` ends with
+   [the gates on a change](TESTING.md#gates-on-a-change): the change brought
+   tests with it, and at least 85% of the lines it touches are tested.
 2. Every doc the change touches is updated — schema, CLI reference, runbook.
 3. A notable decision gets an ADR under `docs/adr/`.
 4. `make docs-check` passes. It fails a change to `src/` or content with no

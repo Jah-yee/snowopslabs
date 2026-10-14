@@ -59,11 +59,11 @@ version_at() {
   for bad in v1.6.0 1.6 1.6.0-rc1; do
     run sh "$CLONE/scripts/release.sh" "$bad"
     [ "$status" -eq 1 ]
-    [[ "$output" == *"X.Y.Z"* ]]
+    [[ "$output" == *"X.Y.Z"* ]] || false
   done
   run sh "$CLONE/scripts/release.sh" 1.6.0 1.7.0
   [ "$status" -eq 1 ]
-  [[ "$output" == *"X.Y.Z-dev"* ]]
+  [[ "$output" == *"X.Y.Z-dev"* ]] || false
   refute_called gh
 }
 
@@ -71,7 +71,7 @@ version_at() {
   echo change >"$CLONE/LAB_VERSION"
   run sh "$CLONE/scripts/release.sh" 1.6.0
   [ "$status" -eq 1 ]
-  [[ "$output" == *"working tree has changes"* ]]
+  [[ "$output" == *"working tree has changes"* ]] || false
   refute_called gh
 }
 
@@ -80,7 +80,7 @@ version_at() {
   git -C "$CLONE" push --quiet origin v1.6.0
   run sh "$CLONE/scripts/release.sh" 1.6.0
   [ "$status" -eq 1 ]
-  [[ "$output" == *"already tagged"* ]]
+  [[ "$output" == *"already tagged"* ]] || false
 }
 
 @test "refuses when main is not on a -dev version" {
@@ -89,6 +89,6 @@ version_at() {
   git -C "$CLONE" push --quiet origin main
   run sh "$CLONE/scripts/release.sh" 1.6.0
   [ "$status" -eq 1 ]
-  [[ "$output" == *"not a -dev version"* ]]
+  [[ "$output" == *"not a -dev version"* ]] || false
   refute_called gh
 }

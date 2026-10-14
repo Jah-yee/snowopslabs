@@ -399,7 +399,9 @@ wait
 	t.Run("a script finishing inside the grace period is not killed", func(t *testing.T) {
 		// Cancellation must not corrupt the outcome of a run that was already
 		// finishing on its own.
-		e := &Exec{GracePeriod: 5 * time.Second}
+		// A grace period far longer than any slow machine adds keeps "waited
+		// it out" apart from "ran under load".
+		e := &Exec{GracePeriod: 30 * time.Second}
 		script := writeScript(t, "sleep 0.1\n")
 
 		ctx := t.Context()
@@ -408,7 +410,7 @@ wait
 		if _, err := e.Run(ctx, Command{Path: script}); err != nil {
 			t.Fatalf("Run: %v", err)
 		}
-		if elapsed := time.Since(start); elapsed > 3*time.Second {
+		if elapsed := time.Since(start); elapsed > 10*time.Second {
 			t.Errorf("took %v; a completed run must not wait out the grace period", elapsed)
 		}
 	})

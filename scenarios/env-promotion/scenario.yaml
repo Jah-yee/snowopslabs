@@ -119,9 +119,8 @@ checks:
     pending: true
     remediation: "Build a newer image and promote it through to prod: bash {{.ProjectRoot}}/scenarios/env-promotion/scripts/build-image.sh v1.1.0 --app {{.WorkloadName}} --namespace {{.WorkloadNamespace}} && kubectl -n env-dev set image deployment/{{.WorkloadName}} {{.WorkloadName}}={{.WorkloadName}}:v1.1.0 && kubectl -n env-dev rollout status deployment/{{.WorkloadName}} (then repeat for env-staging and env-prod, updating each env-metadata declared_tag to v1.1.0)."
 
-  # Objective 5 was previously only a suggestion in explore. It is graded here on
-  # the one thing a rollback leaves behind that rolling forward cannot: prod
-  # serving a ReplicaSet older than the newest it has created.
+  # Graded on the one thing a rollback leaves behind that rolling forward
+  # cannot: prod serving a ReplicaSet that carries a revision history.
   - name: rollback-was-exercised
     type: script
     script: checks/rollback-was-exercised.sh
@@ -201,7 +200,7 @@ explore:
     - "'labctl scenario verify' grades the real outcome: declared_tag must equal the running image in every env, and a newer-than-baseline release must have reached prod."
     - "spec vs status is the core Kubernetes lesson here. 'kubectl set image' only writes .spec — your intent. The Deployment controller writes .status once reality catches up. Compare them yourself: kubectl -n env-prod get deploy {{.WorkloadName}} -o jsonpath='{.metadata.generation} {.status.observedGeneration} {.status.updatedReplicas}/{.spec.replicas}'"
     - "Drift detection is the real-world skill: a release record that claims v1.1.0 while the cluster serves v1.0.0 is exactly what ArgoCD reports as OutOfSync. Steps 9-12 make you cause it deliberately — spec says v9.9.9, the rollout never converges, pods still run the old tag, and the check tells you all three."
-    - "A rollback is graded on what it leaves behind. Rolling FORWARD always creates a new ReplicaSet; coming back re-activates an older one and bumps its revision. So 'prod is serving a ReplicaSet that is not the newest it has created' means prod went somewhere and returned — and it is true whether you used 'rollout undo' or set the image back by hand, because those are the same operation."
+    - "A rollback is graded on what it leaves behind. Rolling FORWARD always creates a new ReplicaSet; coming back re-activates an older one, bumps its revision, and records the revisions it served before in its deployment.kubernetes.io/revision-history annotation. So 'prod is serving a ReplicaSet with a revision history' means prod went somewhere and returned — and it is true whether you used 'rollout undo' or set the image back by hand, because those are the same operation. See it: kubectl -n env-prod get rs -o custom-columns=NAME:.metadata.name,REV:.metadata.annotations.deployment\\.kubernetes\\.io/revision,HISTORY:.metadata.annotations.deployment\\.kubernetes\\.io/revision-history"
     - "Watch the ReplicaSet count on the dashboard across steps 9-12: it goes up when you ship v9.9.9 and does NOT go up when you undo. That is the whole reason a rollback is seconds and a rebuild is minutes — nothing is being built."
     - "Deleting the workload namespaces is not how you finish. 'labctl scenario down env-promotion' removes the three environments and the versioned images it built; the ':latest' tag every other scenario runs on is deliberately left alone."
     - "Break it on purpose: patch env-metadata's declared_tag WITHOUT running 'kubectl set image', then verify — the consistency check catches the drift. That is why the ConfigMap alone is not a promotion."

@@ -1,0 +1,20 @@
+{
+  "done": false,
+  "lines": [
+    {
+      "at": "<time>",
+      "seq": 1,
+      "stream": "stdout",
+      "text": "line one"
+    },
+    {
+      "at": "<time>",
+      "seq": 2,
+      "stream": "stdout",
+      "text": "line two"
+    }
+  ],
+  "nextAfter": 2,
+  "runId": "run-1",
+  "status": "succeeded"
+}

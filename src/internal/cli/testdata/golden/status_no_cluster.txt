@@ -1,0 +1,6 @@
+$ labctl status
+=== Cluster ===
+  Status:   NO CLUSTER (no kubectl context is set)
+  Profile:  k3d
+
+Create the lab with: labctl init

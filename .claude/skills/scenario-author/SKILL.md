@@ -103,10 +103,16 @@ scenario is healthy", not "what did I just install".
   claims to grade — flip the weights to 100/0, delete the fault, set mTLS to
   `PERMISSIVE` — and re-run `verify`. If it stays green, replace the check with
   a `promql` or `script` check on the observable outcome.
+- A `script` check ships with a bats test of its own:
+  [Testing a check script](../../../docs/reference/scenario-schema.md#testing-a-check-script).
+  One test per lab state — as activated, solved, each shortcut that fakes the
+  result, the cluster unable to answer. An empty answer from a failed query is
+  never a pass.
 
 ## Verify your work
 
 ```bash
+bats src/test/shell/scenario_my_scenario_checks.bats   # hermetic, before a cluster
 labctl validate                       # schema, cross-references, templates
 labctl scenario up my-scenario
 labctl scenario verify my-scenario    # every check must pass
@@ -148,5 +154,11 @@ draft, whatever `validate` says.
 - [ ] Every metric the description promises is plotted on a dashboard the
       scenario links, and a `promql` check asserts it exists.
 - [ ] Every check was sabotage-tested and went red.
+- [ ] Every `script` check has a bats test for the activated, solved, shortcut
+      and cannot-answer states; `make test-shell` passes.
+- [ ] `test/solve.sh` does the learner's work, has a test in
+      `src/test/shell/cluster_solves.bats`, and
+      `RECORD=1 make test-cluster ITEM=scenario/<name>` passes on a lab, writing
+      `test/fixtures/untouched.json` and `solved.json`.
 - [ ] `scenario-review` scores it 4.8 or better.
 - [ ] `make docs-check` passes.

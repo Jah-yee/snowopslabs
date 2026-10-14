@@ -125,6 +125,10 @@ const defaultQueueSize = 256
 // defaultWorkers is how many non-conflicting runs execute at once.
 const defaultWorkers = 4
 
+// defaultCancelPoll is how often a running run re-reads its record, so a
+// cancel another process writes to the store stops it.
+const defaultCancelPoll = time.Second
+
 // Engine queues, executes and records runs. Build it with New, call Start,
 // then Submit work; call Shutdown before exiting.
 type Engine struct {
@@ -137,6 +141,8 @@ type Engine struct {
 	dir       string
 	timeouts  map[string]time.Duration
 	now       func() time.Time
+	// cancelPoll is how often a running run re-reads its record.
+	cancelPoll time.Duration
 
 	queue chan string
 
@@ -232,6 +238,16 @@ func WithTimeouts(t map[string]time.Duration) Option {
 	return func(e *Engine) { e.timeouts = t }
 }
 
+// WithCancelPoll sets how often a running run checks the store for a cancel
+// written by another process.
+func WithCancelPoll(d time.Duration) Option {
+	return func(e *Engine) {
+		if d > 0 {
+			e.cancelPoll = d
+		}
+	}
+}
+
 // WithClock replaces the time source; tests use it for determinism.
 func WithClock(now func() time.Time) Option {
 	return func(e *Engine) { e.now = now }
@@ -250,17 +266,18 @@ func New(st *store.Store, runner toolchain.Runner, resolver *toolchain.Resolver,
 	}
 
 	e := &Engine{
-		store:     st,
-		runner:    runner,
-		resolver:  resolver,
-		workers:   defaultWorkers,
-		queueSize: defaultQueueSize,
-		timeouts:  DefaultTimeouts,
-		now:       time.Now,
-		cancels:   make(map[string]context.CancelFunc),
-		pending:   make(map[string]struct{}),
-		subs:      newSubscribers(),
-		shutdown:  make(chan struct{}),
+		store:      st,
+		runner:     runner,
+		resolver:   resolver,
+		workers:    defaultWorkers,
+		queueSize:  defaultQueueSize,
+		timeouts:   DefaultTimeouts,
+		now:        time.Now,
+		cancelPoll: defaultCancelPoll,
+		cancels:    make(map[string]context.CancelFunc),
+		pending:    make(map[string]struct{}),
+		subs:       newSubscribers(),
+		shutdown:   make(chan struct{}),
 	}
 	for _, opt := range opts {
 		opt(e)
@@ -406,6 +423,13 @@ func (e *Engine) Submit(ctx context.Context, spec Spec) (string, error) {
 		QueuedAt: e.now(),
 	}
 	if err := e.store.CreateRun(ctx, rec); err != nil {
+		// Another writer took the lock between the check above and this
+		// insert; report it as the same conflict.
+		if errors.Is(err, store.ErrLockHeld) {
+			if holder, held, herr := e.store.ActiveRunForLock(ctx, spec.LockKey); herr == nil && held {
+				return "", &LockConflictError{LockKey: spec.LockKey, Holder: holder, Since: e.now().Sub(holder.QueuedAt)}
+			}
+		}
 		return "", err
 	}
 	_ = e.store.Audit(ctx, store.AuditEntry{

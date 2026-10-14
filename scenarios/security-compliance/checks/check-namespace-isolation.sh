@@ -107,14 +107,27 @@ PROBE_NS="${ISOLATION_PROBE_NAMESPACE:-default}"
 PROBE="isolation-probe-$$"
 PORT="${WORKLOAD_PORT:-8080}"
 
+# The probe meets the Pod Security policies this scenario has the learner
+# enforce; otherwise admission refuses it once they are in Enforce.
+URL="http://${WORKLOAD_NAME}.${NS}.svc.cluster.local:${PORT}/health"
+OVERRIDES="{\"spec\":{\"containers\":[{\"name\":\"$PROBE\",\"image\":\"curlimages/curl:8.11.1\",
+\"command\":[\"curl\",\"-s\",\"-o\",\"/dev/null\",\"-w\",\"%{http_code}\",\"--max-time\",\"8\",\"$URL\"],
+\"securityContext\":{\"runAsNonRoot\":true,\"runAsUser\":65534,\"allowPrivilegeEscalation\":false},
+\"resources\":{\"limits\":{\"cpu\":\"50m\",\"memory\":\"64Mi\"}}}]}}"
 code=$(kubectl -n "$PROBE_NS" run "$PROBE" \
   --image=curlimages/curl:8.11.1 --restart=Never --rm -i --quiet --timeout=90s \
-  --command -- curl -s -o /dev/null -w '%{http_code}' --max-time 8 \
-  "http://${WORKLOAD_NAME}.${NS}.svc.cluster.local:${PORT}/health" 2>/dev/null || true)
+  --overrides="$(printf '%s' "$OVERRIDES" | tr -d '\n')" 2>/dev/null || true)
 kubectl -n "$PROBE_NS" delete pod "$PROBE" --ignore-not-found --wait=false >/dev/null 2>&1 || true
 
 case "$code" in
-  000 | "")
+  000) ;;
+  "")
+    # No answer is not a refusal: the probe pod may never have started, and a
+    # connection that was allowed would then go unseen.
+    echo "FAIL: the probe pod in $PROBE_NS gave no answer, so enforcement is unverified." >&2
+    echo "  It may not have started (image pull, quota). Re-run verify; if it repeats:" >&2
+    echo "    kubectl -n $PROBE_NS get events --sort-by=.lastTimestamp | tail" >&2
+    exit 1
     ;;
   *)
     echo "FAIL: a pod in namespace $PROBE_NS reached $NS and got HTTP $code." >&2

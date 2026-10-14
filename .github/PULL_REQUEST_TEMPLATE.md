@@ -10,7 +10,8 @@
 
 ## How it was tested
 
-<!-- Commands you ran, cluster you tested on (k3d/AKS/EKS), scenario verify output, etc. -->
+<!-- The tests this PR adds, and for a bug fix the test that failed before it.
+     Then anything run by hand: cluster (k3d/kind), scenario verify output. -->
 
 ## Type of change
 
@@ -27,4 +28,4 @@
 - [ ] Cross-platform & idempotent (no GNU-only shell flags; safe to re-run)
 - [ ] Updated relevant **docs** and the **runbook** (golden rule 8)
 - [ ] New source files carry an SPDX header (`// SPDX-License-Identifier: Apache-2.0`)
-- [ ] `go test ./...`, shellcheck, and yamllint pass locally
+- [ ] Tests ship with the change (docs/TESTING.md); `make lint` and `make test` pass locally

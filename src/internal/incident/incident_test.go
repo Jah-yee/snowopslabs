@@ -479,3 +479,26 @@ func TestResolvedLeavesNoTemplateAReaderCouldSee(t *testing.T) {
 		t.Errorf("resolved against the wrong binding: %q", f.Description)
 	}
 }
+
+// A status request that is cancelled before its check finishes never
+// resolves the incident, even on a fixed lab: the check did not pass, it was
+// not run.
+func TestStatus_CancelledContextNeverResolves(t *testing.T) {
+	e, root := testEngine(t, "fault-a")
+	if _, err := e.Inject("fault-a", executor.New(root), false, false); err != nil {
+		t.Fatalf("Inject: %v", err)
+	}
+	if err := os.Remove(filepath.Join(root, "incidents", "fault-a", "BROKEN")); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	res, err := e.Status(ctx, testRunner(), "")
+	if err == nil && res.Resolved {
+		t.Fatal("a cancelled status check resolved the incident")
+	}
+	if active, _ := e.Active(); active == nil {
+		t.Error("a cancelled status check cleared the active incident")
+	}
+}

@@ -114,6 +114,9 @@ func FieldNames() []string {
 // expressions ({{ index .data "x" | base64decode }}).
 var varRef = regexp.MustCompile(`{{\s*\.(\w+)\s*}}`)
 
+// nestedOpen matches a "{{" that opens before the previous one has closed.
+var nestedOpen = regexp.MustCompile(`{{[^{}]*{{[^}]*}}`)
+
 // domainSuffixURL matches a URL whose host ends in {{.DomainSuffix}}. A URL
 // needs {{.IngressURLSuffix}}, which carries a non-default ingress port.
 var domainSuffixURL = regexp.MustCompile(`https?://(?:[A-Za-z0-9.-]|{{\s*\.\w+\s*}})*?{{\s*\.DomainSuffix\s*}}`)
@@ -133,6 +136,10 @@ func Validate(input string, extra ...string) error {
 	known := Context{}.Vars()
 	for _, name := range extra {
 		known[name] = ""
+	}
+	if m := nestedOpen.FindString(input); m != "" {
+		return fmt.Errorf("placeholder opened inside another in %q: only the inner one would be filled, "+
+			"leaving a raw placeholder behind; write each {{.Var}} on its own", m)
 	}
 	if m := domainSuffixURL.FindString(input); m != "" {
 		return fmt.Errorf("URL %q is built from {{.DomainSuffix}}; use {{.IngressURLSuffix}} "+
@@ -167,8 +174,18 @@ func Expand(input string, ctx Context, extra map[string]string) string {
 			data[k] = v
 		}
 	}
+	return ExpandVars(input, data)
+}
+
+// ExpandVars replaces each {{.Var}} placeholder named in vars and leaves every
+// other placeholder unchanged. It renders a document with a set of variables
+// recorded earlier, such as those a verify run used.
+func ExpandVars(input string, vars map[string]string) string {
+	if input == "" || !strings.Contains(input, "{{") {
+		return input
+	}
 	return varRef.ReplaceAllStringFunc(input, func(match string) string {
-		if v, ok := data[varRef.FindStringSubmatch(match)[1]]; ok {
+		if v, ok := vars[varRef.FindStringSubmatch(match)[1]]; ok {
 			return v
 		}
 		return match // unknown {{.Var}} — leave it for whoever else consumes it

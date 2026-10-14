@@ -354,6 +354,7 @@ function AppLayout({ auth, onLogout }: { auth: AuthStatus; onLogout: () => void 
           <span className="brand-name"><span className="accent">SnowOps</span> Labs</span>
         </div>
 
+        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- arrow keys move focus between the links inside; the handler only sees their bubbled keydown */}
         <nav className="sidebar-nav" aria-label="Sections" onKeyDown={onNavKeyDown}>
           {NAV_GROUPS.map(group => (
             <div className="nav-group" key={group.label}>

@@ -16,7 +16,7 @@ DEPLOY="${TARGET_WORKLOAD:-go-api}"
 # INGRESS_URL_SUFFIX keeps the ingress port when it is not 80.
 SUFFIX="${INGRESS_URL_SUFFIX:-${DOMAIN_SUFFIX:-${CLUSTER_NAME:-snowops}.localhost}}"
 
-# Look for the fault's OWN policy, by its label, rather than for any deny-all.
+# Look for the fault's OWN policy, by its name, rather than for any deny-all.
 # A namespace-wide deny baseline with targeted allows beside it is the pattern
 # the security-compliance scenario teaches and production uses — flagging every
 # empty-ingress policy would make this incident unresolvable whenever that
@@ -26,9 +26,18 @@ SUFFIX="${INGRESS_URL_SUFFIX:-${DOMAIN_SUFFIX:-${CLUSTER_NAME:-snowops}.localhos
 # rescue the traffic it does not name, because ingress rules are a union of what
 # the policies allow: adding a permissive policy beside this one restores the
 # service while leaving the trap in place for whoever removes that policy next.
-DENYING="$(kubectl -n "$NS" get networkpolicy -l labfault \
-  -o 'jsonpath={range .items[*]}{.metadata.name}{"|"}{.spec.policyTypes}{"|"}{.spec.ingress}{"\n"}{end}' 2>/dev/null |
-  awk -F'|' '$2 ~ /Ingress/ && ($3 == "" || $3 == "[]") { print "    " $1 }')"
+POLICY="default-deny-ingress"
+
+# A failed query is not "no policy": without the list nothing says whether the
+# fault's policy is still there.
+if ! POLICIES="$(kubectl -n "$NS" get networkpolicy \
+  -o 'jsonpath={range .items[*]}{.metadata.name}{"|"}{.spec.policyTypes}{"|"}{.spec.ingress}{"\n"}{end}' 2>/dev/null)"; then
+  echo "FAIL: could not list the NetworkPolicies in ${NS}." >&2
+  echo "  Is the cluster reachable? kubectl -n ${NS} get networkpolicy" >&2
+  exit 1
+fi
+DENYING="$(printf '%s\n' "$POLICIES" |
+  awk -F'|' -v p="$POLICY" '$1 == p && $2 ~ /Ingress/ && ($3 == "" || $3 == "[]") { print "    " $1 }')"
 
 if [ -n "$DENYING" ]; then
   echo "FAIL: a NetworkPolicy in ${NS} admits no ingress traffic at all:" >&2

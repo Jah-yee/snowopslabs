@@ -16,8 +16,17 @@ import (
 
 func newMetricsServer(t *testing.T, opts ...ServerOption) *Server {
 	t.Helper()
+	// NewServer opens the default run store, so labctl's home is a temp
+	// directory: the test must never open the developer's own.
+	t.Setenv("SNOWOPS_HOME", t.TempDir())
 	cfg := &config.Config{ProjectRoot: t.TempDir(), StateDir: t.TempDir()}
-	return NewServer(cfg, nil, nil, nil, nil, nil, nil, nil, opts...)
+	s := NewServer(cfg, nil, nil, nil, nil, nil, nil, nil, opts...)
+	t.Cleanup(func() {
+		if s.runStore != nil {
+			_ = s.runStore.Close()
+		}
+	})
+	return s
 }
 
 func TestMetricsEndpoint_EnabledServesExposition(t *testing.T) {

@@ -7,15 +7,21 @@ import { render, screen, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { axe, toHaveNoViolations } from 'jest-axe'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
+import { afterEach, describe, it, expect, vi } from 'vitest'
 import { Compare } from './Compare'
 import type { Comparison, ComparisonMetric } from '../types'
+import { serveContract } from '../test/contract'
 
 expect.extend(toHaveNoViolations)
 
-vi.mock('../api/client', () => ({ api: { getComparisons: vi.fn() } }))
-import { api } from '../api/client'
-const mockApi = api as unknown as { getComparisons: Mock }
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+/** Serves the given reports as GET /comparisons. */
+function serveComparisons(reports: Comparison[]) {
+  serveContract().override('GET', '/comparisons', 200, reports)
+}
 
 function renderCompare() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -52,10 +58,15 @@ const comparison = (over: Partial<Comparison> = {}): Comparison => ({
 })
 
 describe('Compare view', () => {
-  beforeEach(() => vi.clearAllMocks())
+  it('shows the report the server records', async () => {
+    serveContract()
+    renderCompare()
+    expect((await screen.findAllByText('autoscaling-under-load')).length).toBeGreaterThan(0)
+    expect(screen.getAllByText('java-api').length).toBeGreaterThan(0)
+  })
 
   it('offers the command to run one when there are none', async () => {
-    mockApi.getComparisons.mockResolvedValue([])
+    serveComparisons([])
     renderCompare()
     expect(await screen.findByText(/no comparisons recorded yet/i)).toBeInTheDocument()
     expect(screen.getAllByText(/labctl compare run/).length).toBeGreaterThan(0)
@@ -65,7 +76,7 @@ describe('Compare view', () => {
   // how to run it — otherwise it is a results table for a feature the reader has
   // no way to reach.
   it('explains what a comparison is and how to start one, with results or without', async () => {
-    mockApi.getComparisons.mockResolvedValue([comparison()])
+    serveComparisons([comparison()])
     renderCompare()
     expect(await screen.findByText(/how a comparison works/i)).toBeInTheDocument()
     expect(screen.getByText(/one app is under load at a time/i)).toBeInTheDocument()
@@ -76,7 +87,7 @@ describe('Compare view', () => {
   // The conditions are what make two numbers comparable. Rendering the numbers
   // without them would invite exactly the comparison the harness refuses to make.
   it('shows the conditions every app was held to', async () => {
-    mockApi.getComparisons.mockResolvedValue([comparison()])
+    serveComparisons([comparison()])
     renderCompare()
     const conditions = await screen.findByLabelText(/conditions every app was held to/i)
     expect(within(conditions).getByText(/steady at 30 req\/s/)).toBeInTheDocument()
@@ -85,7 +96,7 @@ describe('Compare view', () => {
   })
 
   it('scales raw values into the unit the server named', async () => {
-    mockApi.getComparisons.mockResolvedValue([comparison()])
+    serveComparisons([comparison()])
     renderCompare()
     // 0.005s → 5.0 ms, and 9 MiB of bytes → 9.0 MiB.
     expect(await screen.findByText('5.0 ms')).toBeInTheDocument()
@@ -94,7 +105,7 @@ describe('Compare view', () => {
 
   // Colour alone would read "+100%" on latency as an improvement.
   it('states the verdict in words, not colour', async () => {
-    mockApi.getComparisons.mockResolvedValue([comparison()])
+    serveComparisons([comparison()])
     renderCompare()
     // java-api's p99 is double the baseline's, on a lower-is-better metric.
     expect(await screen.findByText(/100% worse/)).toBeInTheDocument()
@@ -103,7 +114,7 @@ describe('Compare view', () => {
   })
 
   it('marks the baseline column', async () => {
-    mockApi.getComparisons.mockResolvedValue([comparison()])
+    serveComparisons([comparison()])
     renderCompare()
     const header = await screen.findByRole('columnheader', { name: /go-api/i })
     expect(within(header).getByText(/baseline/i)).toBeInTheDocument()
@@ -113,7 +124,7 @@ describe('Compare view', () => {
   it('shows a dash for a metric the cluster did not export', async () => {
     const c = comparison()
     c.measurements[1].values = { requests_per_second: 30 }
-    mockApi.getComparisons.mockResolvedValue([c])
+    serveComparisons([c])
     renderCompare()
     expect(await screen.findAllByText('—')).not.toHaveLength(0)
   })
@@ -122,7 +133,7 @@ describe('Compare view', () => {
   it('claims no verdict for a metric with no better direction', async () => {
     const c = comparison()
     c.measurements[1].values.peak_ready_replicas = 3
-    mockApi.getComparisons.mockResolvedValue([c])
+    serveComparisons([c])
     renderCompare()
     const row = await screen.findByRole('row', { name: /peak ready replicas/i })
     expect(within(row).queryByText(/better|worse/)).toBeNull()
@@ -130,7 +141,7 @@ describe('Compare view', () => {
 
   it('switches between recorded runs', async () => {
     const older = comparison({ id: 'older', scenario: 'cost-right-sizing', startedAt: '2026-09-08T10:00:00Z' })
-    mockApi.getComparisons.mockResolvedValue([comparison(), older])
+    serveComparisons([comparison(), older])
     renderCompare()
     // The newest run is shown first; the table's caption names what is on screen.
     expect(await screen.findByText(/autoscaling-under-load measured across/i)).toBeInTheDocument()
@@ -140,7 +151,7 @@ describe('Compare view', () => {
   })
 
   it('has no accessibility violations', async () => {
-    mockApi.getComparisons.mockResolvedValue([comparison()])
+    serveComparisons([comparison()])
     const { container } = renderCompare()
     await screen.findByLabelText(/conditions every app was held to/i)
     expect(await axe(container)).toHaveNoViolations()

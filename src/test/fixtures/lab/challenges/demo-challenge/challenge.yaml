@@ -1,0 +1,11 @@
+name: demo-challenge
+displayName: "Demo challenge"
+description: "Fix the demo fault"
+category: workload
+parTime: "10m"
+setup:
+  type: incident
+  ref: demo-fault
+grading:
+  useDetectionCheck: true
+hintPenalty: 5

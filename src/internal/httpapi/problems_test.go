@@ -140,3 +140,33 @@ func scanRespondErrorSlugs(t *testing.T) map[string]bool {
 	}
 	return used
 }
+
+// TestHandlers_NeverWritePlainTextErrors keeps every error on the problem+json
+// path. http.Error writes text/plain, which the UI's error handler cannot read:
+// the user then sees "HTTP 400 Bad Request" in place of the reason.
+func TestHandlers_NeverWritePlainTextErrors(t *testing.T) {
+	entries, err := os.ReadDir(".")
+	if err != nil {
+		t.Fatalf("read package dir: %v", err)
+	}
+	scanned := 0
+	for _, e := range entries {
+		name := e.Name()
+		if e.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Clean(name))
+		if err != nil {
+			t.Fatalf("read %s: %v", name, err)
+		}
+		scanned++
+		for i, line := range strings.Split(string(data), "\n") {
+			if strings.Contains(line, "http.Error(") {
+				t.Errorf("%s:%d writes a plain-text error; use respondError with a slug from knownProblemSlugs", name, i+1)
+			}
+		}
+	}
+	if scanned == 0 {
+		t.Fatal("scanned no source files — the test is looking in the wrong directory")
+	}
+}

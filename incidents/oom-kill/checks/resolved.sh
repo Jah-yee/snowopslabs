@@ -11,6 +11,11 @@ set -euo pipefail
 NS="${TARGET_NAMESPACE:-go-api}"
 DEPLOY="${TARGET_WORKLOAD:-go-api}"
 
+# shellcheck source=/dev/null
+. "$(cd "$(dirname "$0")/../../_lib" && pwd)/assert.sh"
+
+assert_scaled_up "$NS" "$DEPLOY"
+
 # kubectl's own failure here is "error: timed out waiting for the condition",
 # which tells a learner nothing about what it was waiting for.
 if ! kubectl -n "$NS" rollout status "deploy/$DEPLOY" --timeout=15s >/dev/null 2>&1; then
@@ -28,8 +33,11 @@ fi
 # completed rollout exactly one ReplicaSet is scaled above zero.
 HASH="$(kubectl -n "$NS" get rs \
   -o "jsonpath={range .items[?(@.spec.replicas>0)]}{.metadata.ownerReferences[0].name}{'='}{.metadata.labels.pod-template-hash}{'\n'}{end}" 2>/dev/null |
-  grep "^$DEPLOY=" | head -1 | cut -d= -f2)"
-[ -n "$HASH" ] || exit 0
+  grep "^$DEPLOY=" | head -1 | cut -d= -f2 || true)"
+if [ -z "$HASH" ]; then
+  echo "FAIL: cannot find the ReplicaSet serving $NS/$DEPLOY, so its pods cannot be checked." >&2
+  exit 1
+fi
 
 reasons="$(kubectl -n "$NS" get pods -l "pod-template-hash=$HASH" \
   -o 'jsonpath={.items[*].status.containerStatuses[*].lastState.terminated.reason}' 2>/dev/null || true)"

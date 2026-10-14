@@ -301,7 +301,7 @@ function ComponentDetailModal({ detail, loading, onClose, onCopy }: {
   const installVars = detail.installVars ?? []
   const usedInScenarios = detail.usedInScenarios ?? []
   return (
-    <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+    <div className="modal-overlay" role="presentation" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="modal-card" role="dialog" aria-modal="true" aria-label={`${detail.name} details`}>
         <button className="modal-close" aria-label="Close details" onClick={onClose}><Icon name="x" size={18} /></button>
 

@@ -28,7 +28,7 @@ teardown() {
   stub_when kubectl "cluster-info" 1
   run bash "$ROOT/runtimes/incluster/up.sh"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"cannot reach"* ]]
+  [[ "$output" == *"cannot reach"* ]] || false
 }
 
 @test "incluster up never creates a cluster (uses the hosting one)" {

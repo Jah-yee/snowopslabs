@@ -1,0 +1,13 @@
+{
+  "profiles": [
+    "spike",
+    "steady"
+  ],
+  "workload": {
+    "app": "go-api",
+    "metric": "http_server_request_duration_seconds",
+    "namespace": "go-api",
+    "port": "8080",
+    "service": "go-api.go-api.svc.cluster.local"
+  }
+}

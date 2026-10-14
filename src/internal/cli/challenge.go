@@ -3,7 +3,6 @@
 package cli
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -12,8 +11,7 @@ import (
 	"time"
 
 	"github.com/sagar2395/snowopslabs/internal/challenge"
-	"github.com/sagar2395/snowopslabs/internal/executor"
-	"github.com/sagar2395/snowopslabs/internal/labcheck"
+	chalsvc "github.com/sagar2395/snowopslabs/internal/service/challenge"
 	"github.com/sagar2395/snowopslabs/pkg/checks"
 	"github.com/spf13/cobra"
 )
@@ -37,6 +35,8 @@ and how many hints you needed.`,
 	return cmd
 }
 
+var errNoActiveChallenge = errors.New("no active challenge — start one with `labctl challenge start <name>`")
+
 func challengeEngine() *challenge.Engine {
 	root := cfg.ProjectRoot
 	return challenge.New(
@@ -44,6 +44,18 @@ func challengeEngine() *challenge.Engine {
 		filepath.Join(cfg.StateDir, "challenges"),
 		filepath.Join(cfg.StateDir, "history"),
 	)
+}
+
+// challengeGrader sets up, grades and cleans up challenges on the lab this
+// process is bound to.
+func challengeGrader() *chalsvc.Grader {
+	return &chalsvc.Grader{
+		Engine:    challengeEngine(),
+		Scenarios: scenes,
+		Incidents: incEng,
+		Config:    cfg,
+		Exec:      scriptExec,
+	}
 }
 
 func challengeListCmd() *cobra.Command {
@@ -115,6 +127,9 @@ func challengeStartCmd() *cobra.Command {
 				return err
 			}
 
+			if err := requireCluster(cmd.Context()); err != nil {
+				return err
+			}
 			// The setup breaks a running app, so check it and the platform it
 			// needs are there first (or install them with --deploy-prereqs).
 			if err := ensurePlatformPrereqs(cmd.Context(), cmd.OutOrStdout(), challengePlatformPrereqs(c), deployPrereqs); err != nil {
@@ -124,11 +139,12 @@ func challengeStartCmd() *cobra.Command {
 				return err
 			}
 
-			if err := runChallengeSetup(cmd.Context(), c, scriptExec); err != nil {
+			grader := challengeGrader()
+			if err := grader.Setup(c); err != nil {
 				// A failed setup may have changed the cluster, and no run is
 				// recorded yet for `challenge abort` to clean up, so undo it
 				// here.
-				if cleanupErr := runChallengeCleanup(cmd.Context(), c, scriptExec); cleanupErr != nil {
+				if cleanupErr := grader.Cleanup(c); cleanupErr != nil {
 					fmt.Fprintf(cmd.OutOrStdout(), "Warning: could not undo the partial setup: %v\n", cleanupErr)
 				}
 				return fmt.Errorf("setup failed: %w", err)
@@ -234,7 +250,7 @@ func challengeHintCmd() *cobra.Command {
 				return err
 			}
 			if active == nil {
-				return errors.New("no active challenge — start one with `labctl challenge start <name>`")
+				return errNoActiveChallenge
 			}
 			c, err := eng.Load(active.ChallengeName)
 			if err != nil {
@@ -265,59 +281,25 @@ func challengeSubmitCmd() *cobra.Command {
 		Use:   "submit",
 		Short: "Run the grading checks and record your score",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			eng := challengeEngine()
-			active, err := eng.Active()
+			sub, err := challengeGrader().Submit(cmd.Context(), "")
+			if errors.Is(err, challenge.ErrNoActive) {
+				return errNoActiveChallenge
+			}
 			if err != nil {
 				return err
 			}
-			if active == nil {
-				return errors.New("no active challenge")
-			}
-			c, err := eng.Load(active.ChallengeName)
-			if err != nil {
-				return err
-			}
-
-			gradingChecks, scriptDir, err := resolveGradingChecks(cmd.Context(), c, cfg.ProjectRoot)
-			if err != nil {
-				return err
-			}
-
-			runner := labcheck.NewRunner(cfg, scenes.Workload, scriptDir)
-			results := runner.RunAll(cmd.Context(), gradingChecks)
-
-			passed := 0
-			for _, r := range results {
-				if r.Pass {
-					passed++
-				}
-			}
-			total := len(results)
 			out := cmd.OutOrStdout()
+			printGradingResults(out, sub.Challenge, sub.Record, sub.Checks)
 
 			// A failed submit does not end the run: the learner can fix the
 			// failing checks and submit again, or abort.
-			if passed < total {
-				rec, err := eng.Attempt(passed, total)
-				if err != nil {
-					return err
-				}
-				printGradingResults(out, c, rec, results)
+			if !sub.Passed {
 				fmt.Fprintln(out, "\nStill running. Fix what is listed above and submit again,")
 				fmt.Fprintln(out, "or give up and clean the lab with:  labctl challenge abort")
 				return nil
 			}
-
-			rec, err := eng.Complete(passed, total, "passed", "")
-			if err != nil {
-				return err
-			}
-			printGradingResults(out, c, rec, results)
-
-			// Undo the setup, as abort does, so no incident stays active to
-			// block the next challenge.
-			if err := runChallengeCleanup(cmd.Context(), c, scriptExec); err != nil {
-				fmt.Fprintf(out, "Warning: cleanup failed: %v\n", err)
+			if sub.CleanupErr != nil {
+				fmt.Fprintf(out, "Warning: cleanup failed: %v\n", sub.CleanupErr)
 			}
 			return nil
 		},
@@ -343,7 +325,7 @@ func challengeAbortCmd() *cobra.Command {
 				return err
 			}
 
-			if err := runChallengeCleanup(cmd.Context(), c, scriptExec); err != nil {
+			if err := challengeGrader().Cleanup(c); err != nil {
 				fmt.Fprintf(cmd.OutOrStdout(), "Warning: cleanup failed: %v\n", err)
 			}
 
@@ -386,69 +368,6 @@ func challengeHistoryCmd() *cobra.Command {
 			return nil
 		},
 	}
-}
-
-// runChallengeSetup executes the challenge's setup action.
-func runChallengeSetup(_ context.Context, c *challenge.Challenge, ex *executor.Executor) error {
-	switch c.Setup.Type {
-	case "incident":
-		_, err := incEng.Inject(c.Setup.Ref, ex, false, false)
-		return err
-	case "scenario":
-		return scenes.Up(c.Setup.Ref, ex, false)
-	default:
-		return fmt.Errorf("unknown setup type %q", c.Setup.Type)
-	}
-}
-
-// runChallengeCleanup undoes the challenge's setup action.
-func runChallengeCleanup(_ context.Context, c *challenge.Challenge, ex *executor.Executor) error {
-	switch c.Setup.Type {
-	case "incident":
-		_, err := incEng.Resolve(c.Setup.Ref, ex, "")
-		return err
-	case "scenario":
-		return scenes.Down(c.Setup.Ref, ex)
-	default:
-		return fmt.Errorf("unknown setup type %q", c.Setup.Type)
-	}
-}
-
-// resolveGradingChecks returns the checks to grade with and the directory
-// their scripts are relative to: the fault's directory for a detection check,
-// otherwise the project root.
-func resolveGradingChecks(_ context.Context, c *challenge.Challenge, projectRoot string) ([]checks.Check, string, error) {
-	if c.Grading.UseDetectionCheck && c.Setup.Type == "incident" {
-		f, err := incEng.Get(c.Setup.Ref)
-		if err != nil {
-			return nil, "", fmt.Errorf("loading detection check for %s: %w", c.Setup.Ref, err)
-		}
-		return []checks.Check{incEng.ResolveCheck(f.Detection)}, f.Dir, nil
-	}
-	var cs []checks.Check
-	for _, g := range c.Grading.Checks {
-		cs = append(cs, resolveGradingCheck(c, checks.Check{
-			Name:           g.Name,
-			Type:           g.Type,
-			URL:            g.URL,
-			ExpectStatus:   g.ExpectStatus,
-			Script:         g.Script,
-			Query:          g.Query,
-			Operator:       g.Operator,
-			Value:          g.Value,
-			TimeoutSeconds: g.TimeoutSeconds,
-		}))
-	}
-	return cs, projectRoot, nil
-}
-
-// resolveGradingCheck expands template variables with the engine that runs
-// the challenge's setup (scenario or incident).
-func resolveGradingCheck(c *challenge.Challenge, k checks.Check) checks.Check {
-	if c.Setup.Type == "scenario" {
-		return scenes.ResolveCheck(k)
-	}
-	return incEng.ResolveCheck(k)
 }
 
 func printGradingResults(out io.Writer, c *challenge.Challenge, rec *challenge.RunRecord, results []checks.Result) {

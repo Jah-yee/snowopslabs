@@ -4,32 +4,42 @@
 # Sourced, not executed:
 #   . "$(cd "$(dirname "$0")/../../_lib" && pwd)/assert.sh"
 
-# assert_workload_healthy <namespace> <deployment>
+# assert_scaled_up <namespace> <deployment>
 #
-# Exits non-zero unless the workload is genuinely serving.
+# Returns non-zero unless the Deployment exists and asks for at least one
+# replica, and leaves the count in DESIRED_REPLICAS.
 #
-# `kubectl rollout status` alone is NOT enough: it reports success on a
-# Deployment scaled to zero, so a learner who runs `kubectl scale --replicas=0`
-# grades a still-broken lab as fixed. The fault's own spec is untouched; there is
-# simply nothing left to be unhealthy. Verified: scaling go-api to 0 made the
-# bare rollout-status check exit 0 while the bad image was still in the spec.
-#
-# So check the replica count first, then that the rollout actually completed.
-assert_workload_healthy() {
+# Scaling to zero silences every symptom without repairing anything: nothing is
+# left to crash, be killed or fail a probe, and `kubectl rollout status` reports
+# success. A check that grades health has to rule it out first.
+assert_scaled_up() {
   ns="$1"
   deploy="$2"
 
-  desired="$(kubectl -n "$ns" get deploy "$deploy" -o 'jsonpath={.spec.replicas}' 2>/dev/null || true)"
-  if [ -z "$desired" ]; then
+  DESIRED_REPLICAS="$(kubectl -n "$ns" get deploy "$deploy" -o 'jsonpath={.spec.replicas}' 2>/dev/null || true)"
+  if [ -z "$DESIRED_REPLICAS" ]; then
     echo "FAIL: deployment $ns/$deploy not found." >&2
     return 1
   fi
-  if [ "$desired" -lt 1 ]; then
-    echo "FAIL: $ns/$deploy is scaled to $desired replicas, so nothing is serving." >&2
+  if [ "$DESIRED_REPLICAS" -lt 1 ]; then
+    echo "FAIL: $ns/$deploy is scaled to $DESIRED_REPLICAS replicas, so nothing is serving." >&2
     echo "  Scaling to zero silences the symptom without fixing the fault." >&2
     echo "  Restore it: kubectl -n $ns scale deploy $deploy --replicas=1" >&2
     return 1
   fi
+  return 0
+}
+
+# assert_workload_healthy <namespace> <deployment>
+#
+# Returns non-zero unless the workload is serving: scaled up, rolled out, and
+# with every replica ready.
+assert_workload_healthy() {
+  ns="$1"
+  deploy="$2"
+
+  assert_scaled_up "$ns" "$deploy" || return 1
+  desired="$DESIRED_REPLICAS"
 
   # kubectl's own failure here is "error: timed out waiting for the condition",
   # which tells a learner nothing about what it was waiting for. Say what the

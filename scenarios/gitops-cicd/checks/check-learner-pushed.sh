@@ -43,9 +43,9 @@ seed_rev=$(git_repo rev-list --max-parents=0 HEAD | head -1 || echo "")
 }
 
 declared_now=$(git_repo show "HEAD:demo/deployment.yaml" |
-  awk '/^ *image:/ {i=$2} /^ *replicas:/ {r=$2} END {print i, r}' || true)
+  awk '/^ *image:/ {i=$2} /^ *replicas:/ {r=$2} END {if (i != "" || r != "") print i, r}' || true)
 declared_seed=$(git_repo show "${seed_rev}:demo/deployment.yaml" |
-  awk '/^ *image:/ {i=$2} /^ *replicas:/ {r=$2} END {print i, r}' || true)
+  awk '/^ *image:/ {i=$2} /^ *replicas:/ {r=$2} END {if (i != "" || r != "") print i, r}' || true)
 
 if [ -z "$declared_now" ]; then
   echo "PENDING: demo/deployment.yaml is missing at HEAD — the Application has nothing to deploy." >&2

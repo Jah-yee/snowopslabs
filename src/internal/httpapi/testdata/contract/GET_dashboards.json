@@ -1,0 +1,23 @@
+[
+  {
+    "available": true,
+    "category": "monitoring",
+    "label": "Grafana",
+    "name": "grafana",
+    "url": "http://grafana.lab.test"
+  },
+  {
+    "available": true,
+    "category": "monitoring",
+    "label": "Prometheus",
+    "name": "prometheus",
+    "url": "http://prometheus.lab.test"
+  },
+  {
+    "available": true,
+    "category": "ingress",
+    "label": "Traefik Dashboard",
+    "name": "traefik",
+    "url": "http://traefik.lab.test/dashboard/"
+  }
+]

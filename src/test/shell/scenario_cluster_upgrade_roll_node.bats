@@ -1,0 +1,90 @@
+#!/usr/bin/env bats
+# SPDX-License-Identifier: Apache-2.0
+#
+# cluster-upgrade-drill's roll-node.sh replaces a drained k3d agent with one on
+# the target version and repoints the cluster's load balancer at it. The load
+# balancer also fronts the API server, so the script hands back only once the
+# API answers again; otherwise the learner's next kubectl is refused.
+
+load 'helpers/stub'
+
+setup() {
+  stub_setup
+  ROOT="$(project_root)"
+  SCRIPT="$ROOT/scenarios/cluster-upgrade-drill/scripts/roll-node.sh"
+  export CLUSTER_NAME=lab TARGET_K3S_VERSION=v1.33.6-k3s1 STATE="$BATS_TEST_TMPDIR/state"
+  mkdir -p "$STATE"
+  echo 0 >"$STATE/readyz-failures"
+
+  stub_script sleep <<'STUB'
+exit 0
+STUB
+  stub_script k3d <<'STUB'
+case "$*" in "node create"*) touch "$STATE/created" ;; esac
+exit 0
+STUB
+  # The load balancer's upstream list names the node being rolled.
+  stub_script docker <<'STUB'
+case "$*" in
+  "inspect k3d-lab-serverlb") exit 0 ;;
+  "cp k3d-lab-serverlb:/etc/confd/values.yaml "*) printf 'ports:\n  6443.tcp:\n  - k3d-lab-agent-0\n' >"$3" ;;
+  "restart k3d-lab-serverlb") touch "$STATE/lb-restarted" ;;
+esac
+exit 0
+STUB
+  stub_script kubectl <<'STUB'
+case "$*" in
+  *"node-role.kubernetes.io/control-plane"*) echo "v1.33.6+k3s1" ;;
+  "get node k3d-lab-agent-0 -o jsonpath={.status.nodeInfo.kubeletVersion}") echo "v1.33.6+k3s1" ;;
+  "get node k3d-lab-agent-0 -o jsonpath={.spec.unschedulable}") echo true ;;
+  "get node k3d-lab-agent-0") exit 0 ;;
+  *"metadata.uid=='uid-new'"*) echo k3d-lab-agent-0-0 ;;
+  *"jsonpath={range .items[*]}{.metadata.uid}"*)
+    printf 'uid-old\nuid-server\n'
+    [ ! -f "$STATE/created" ] || echo uid-new
+    ;;
+  "get --raw /readyz")
+    # Down while the load balancer restarts, for READYZ_FAILURES polls.
+    n=$(cat "$STATE/readyz-failures")
+    echo $((n + 1)) >"$STATE/readyz-failures"
+    [ "$n" -ge "${READYZ_FAILURES:-0}" ]
+    exit $?
+    ;;
+esac
+exit 0
+STUB
+}
+
+teardown() { stub_teardown; }
+
+@test "after restarting the load balancer it waits until the API server answers" {
+  READYZ_FAILURES=3 run bash "$SCRIPT" k3d-lab-agent-0
+  [ "$status" -eq 0 ] || { echo "$output"; false; }
+  [ -f "$STATE/lb-restarted" ]
+  [ "$(call_count kubectl "get --raw /readyz")" -eq 4 ]
+  [[ "$output" == *"replaced by k3d-lab-agent-0-0"* ]] || false
+  in_log=$(grep -n "restart k3d-lab-serverlb\|get --raw /readyz" "$STUB_LOG" | head -1)
+  [[ "$in_log" == *"restart k3d-lab-serverlb"* ]] || false
+}
+
+@test "it fails, saying where to look, when the API server never comes back" {
+  READYZ_FAILURES=1000 API_WAIT_SECONDS=10 run bash "$SCRIPT" k3d-lab-agent-0
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"API server did not answer within 10s"* ]] || false
+  [[ "$output" == *"docker ps --filter name=k3d-lab-serverlb"* ]] || false
+}
+
+@test "it refuses a node that is not cordoned" {
+  stub_script kubectl <<'STUB'
+case "$*" in
+  *"node-role.kubernetes.io/control-plane"*) echo "v1.33.6+k3s1" ;;
+  *"kubeletVersion"*) echo "v1.33.6+k3s1" ;;
+  *"unschedulable"*) echo "" ;;
+esac
+exit 0
+STUB
+  run bash "$SCRIPT" k3d-lab-agent-0
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"is not cordoned"* ]] || false
+  refute_called k3d "node delete"
+}

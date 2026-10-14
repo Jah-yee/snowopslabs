@@ -82,8 +82,7 @@ func labUpCmd() *cobra.Command {
 		Short: "Bring the cluster up through the durable run engine",
 		Long: `Provisions the cluster for a runtime (default: the configured profile)
 as a recorded, cancellable run. Follow or cancel it later with 'labctl runs'.`,
-		Args:         cobra.MaximumNArgs(1),
-		SilenceUsage: true,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rt := labRuntimeArg(args)
 			return runLabOperation(cmd, "up", func(ctx context.Context, svc *labsvc.Service) (string, error) {
@@ -95,10 +94,9 @@ as a recorded, cancellable run. Follow or cancel it later with 'labctl runs'.`,
 
 func labDownCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:          "down [runtime]",
-		Short:        "Tear the cluster down through the durable run engine",
-		Args:         cobra.MaximumNArgs(1),
-		SilenceUsage: true,
+		Use:   "down [runtime]",
+		Short: "Tear the cluster down through the durable run engine",
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rt := labRuntimeArg(args)
 			return runLabOperation(cmd, "down", func(ctx context.Context, svc *labsvc.Service) (string, error) {
@@ -111,9 +109,8 @@ func labDownCmd() *cobra.Command {
 func labStatusCmd() *cobra.Command {
 	var live bool
 	cmd := &cobra.Command{
-		Use:          "status",
-		Short:        "Show the lab's state from the run history (fast); --live probes the cluster",
-		SilenceUsage: true,
+		Use:   "status",
+		Short: "Show the lab's state from the run history (fast); --live probes the cluster",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 			// Read-only: do not start the engine.

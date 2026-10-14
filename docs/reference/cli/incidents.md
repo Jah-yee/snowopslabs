@@ -56,7 +56,7 @@ labctl incident inject --random --category network
 | `--random` | off | pick a random eligible fault |
 | `--seed` | — | seed for `--random`, for reproducible team exercises |
 | `--category` | — | restrict `--random` to `workload`, `network`, `resources`, `storage` or `config` |
-| `--silent` | off | do not reveal which fault was injected |
+| `--silent` | off | do not reveal which fault was injected: the inject prints neither the fault's name nor its script's output, `incident list` does not mark the active fault, `incident status` shows `(hidden — silent mode)` until the check passes, and the run history records the inject with the target `(hidden)` and withholds its output (`labctl runs logs` and `GET /runs/{id}/logs` refuse it) |
 | `--force` | off | inject even when another incident is active |
 | `--deploy-prereqs` | off | install the platform components the fault needs, and build and deploy the target app, if they are not running |
 
@@ -64,6 +64,9 @@ labctl incident inject --random --category network
 
 - One active incident at a time; `--force` overrides.
 - Injection is gated on the fault's prerequisite apps being present.
+- `inject` first checks that the cluster answers. When it does not, it says so
+  and names `labctl status` and `labctl init`; it never reports the app as "not
+  deployed" because the cluster could not be asked.
 - `resolve.sh` always restores the lab, regardless of partial manual fixes.
 - The first `incident status` call timestamps *time-to-check*, the detection
   proxy. Resolution — the detection check passing, or the escape hatch — closes
@@ -87,8 +90,15 @@ the firing alert to the in-cluster pager (`labctl service up pager`), or to
 the ingress the metrics provider creates.
 
 REST: `GET /api/v2/incidents`,
-`POST /api/v2/incidents/{name}/inject[?silent&force]`,
-`POST /api/v2/incidents/inject-random[?seed&category]`,
+`POST /api/v2/incidents/{name}/inject[?app&silent&force]`,
+`POST /api/v2/incidents/inject-random[?app&seed&category]`,
 `GET /api/v2/incidents/status`, `POST /api/v2/incidents/hint`,
 `GET /api/v2/incidents/history`, `POST /api/v2/incidents/resolve[?name=]`.
-Silent mode hides the fault's identity in API responses until it is resolved.
+Silent mode hides the fault's identity in API responses until it is resolved:
+`GET /incidents` and `GET /incidents/status` answer `"fault": "(hidden)"` for
+the active incident. A silent inject from the UI broadcasts no job label or
+script output, and `GET /runs/{id}/logs` for its run answers
+`403 hidden_run`.
+`inject-random` picks among the faults eligible for the app named in `app`, and
+answers `409 no_eligible_fault` when there are none. `hint` and `resolve` answer
+`409 no_active_incident` when nothing is injected.

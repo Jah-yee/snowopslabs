@@ -1,0 +1,105 @@
+[
+  {
+    "apps": [
+      "go-api",
+      "java-api"
+    ],
+    "id": "20260909-140000-autoscaling-under-load",
+    "measurements": [
+      {
+        "app": "go-api",
+        "values": {
+          "latency_p99": 0.005,
+          "requests_per_second": 30
+        }
+      },
+      {
+        "app": "java-api",
+        "values": {
+          "latency_p99": 0.01,
+          "requests_per_second": 30
+        }
+      }
+    ],
+    "metrics": [
+      {
+        "digits": 1,
+        "key": "requests_per_second",
+        "label": "throughput",
+        "lowerBetter": false,
+        "neutral": false,
+        "scale": 1,
+        "unit": "req/s"
+      },
+      {
+        "digits": 1,
+        "key": "latency_p50",
+        "label": "latency p50",
+        "lowerBetter": true,
+        "neutral": false,
+        "scale": 1000,
+        "unit": "ms"
+      },
+      {
+        "digits": 1,
+        "key": "latency_p99",
+        "label": "latency p99",
+        "lowerBetter": true,
+        "neutral": false,
+        "scale": 1000,
+        "unit": "ms"
+      },
+      {
+        "digits": 2,
+        "key": "tail_amplification",
+        "label": "tail amplification",
+        "lowerBetter": true,
+        "neutral": false,
+        "scale": 1,
+        "unit": "x"
+      },
+      {
+        "digits": 2,
+        "key": "error_ratio",
+        "label": "5xx rate",
+        "lowerBetter": true,
+        "neutral": false,
+        "scale": 100,
+        "unit": "%"
+      },
+      {
+        "digits": 0,
+        "key": "peak_ready_replicas",
+        "label": "peak ready replicas",
+        "lowerBetter": false,
+        "neutral": true,
+        "scale": 1,
+        "unit": ""
+      },
+      {
+        "digits": 3,
+        "key": "cpu_cores",
+        "label": "cpu (total, mean)",
+        "lowerBetter": true,
+        "neutral": false,
+        "scale": 1,
+        "unit": "cores"
+      },
+      {
+        "digits": 1,
+        "key": "memory_working_set",
+        "label": "memory (total, peak)",
+        "lowerBetter": true,
+        "neutral": false,
+        "scale": 9.5367431640625e-7,
+        "unit": "MiB"
+      }
+    ],
+    "profile": "steady",
+    "rps": 30,
+    "scenario": "autoscaling-under-load",
+    "startedAt": "<time>",
+    "warmupSeconds": 60,
+    "windowSeconds": 120
+  }
+]

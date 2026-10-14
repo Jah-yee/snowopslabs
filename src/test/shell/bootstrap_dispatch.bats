@@ -16,26 +16,26 @@ setup() {
 @test "help prints usage and exits 0 without installing anything" {
   run bash "$SCRIPT" help
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Usage:"* ]]
-  [[ "$output" == *"Profiles:"* ]]
+  [[ "$output" == *"Usage:"* ]] || false
+  [[ "$output" == *"Profiles:"* ]] || false
 }
 
 @test "--help is accepted as an alias" {
   run bash "$SCRIPT" --help
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Usage:"* ]]
+  [[ "$output" == *"Usage:"* ]] || false
 }
 
 @test "an unknown profile fails loudly with a non-zero exit" {
   run bash "$SCRIPT" not-a-real-profile
   [ "$status" -ne 0 ]
-  [[ "$output" == *"unknown profile"* ]]
+  [[ "$output" == *"unknown profile"* ]] || false
   # It still shows usage so the user can see the valid choices.
-  [[ "$output" == *"Profiles:"* ]]
+  [[ "$output" == *"Profiles:"* ]] || false
 }
 
 @test "the script reports the detected OS/ARCH in its help banner" {
   run bash "$SCRIPT" help
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Detected:"* ]]
+  [[ "$output" == *"Detected:"* ]] || false
 }

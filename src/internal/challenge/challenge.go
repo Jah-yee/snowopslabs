@@ -19,10 +19,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// ErrNoActive reports that no challenge is running. RecordHint, Attempt and
+// Complete return it, so a caller can tell "nothing to act on" from a failure.
+var ErrNoActive = errors.New("no active challenge")
+
 // SetupSpec says how to prepare the lab before the timer starts.
 type SetupSpec struct {
-	Type string `yaml:"type"` // scenario | incident
-	Ref  string `yaml:"ref"`  // scenario name or fault name
+	Type string `yaml:"type" json:"type"` // scenario | incident
+	Ref  string `yaml:"ref" json:"ref"`   // scenario name or fault name
 }
 
 // GradingSpec describes how to compute the score on submit.
@@ -166,19 +170,32 @@ func (e *Engine) Challenges() ([]*Challenge, error) {
 func (e *Engine) Load(name string) (*Challenge, error) {
 	dir := filepath.Join(e.challengeDir, name)
 	data, err := os.ReadFile(filepath.Join(dir, "challenge.yaml"))
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, &notFoundError{name: name}
+	}
 	if err != nil {
 		return nil, fmt.Errorf("load %s: %w", name, err)
 	}
 	var c Challenge
 	if err := yaml.Unmarshal(data, &c); err != nil {
-		return nil, fmt.Errorf("parse %s: %w", name, err)
+		return nil, fmt.Errorf("challenge %s is malformed (run 'labctl validate'): %w", name, err)
 	}
 	c.dir = dir
 	if errs := c.Validate(); len(errs) > 0 {
-		return nil, fmt.Errorf("validate %s: %s", name, strings.Join(errs, "; "))
+		return nil, fmt.Errorf("challenge %s is malformed (run 'labctl validate'): %s", name, strings.Join(errs, "; "))
 	}
 	return &c, nil
 }
+
+// notFoundError reports a challenge that does not exist. It matches
+// fs.ErrNotExist, and its text names the command that lists the ones that do.
+type notFoundError struct{ name string }
+
+func (e *notFoundError) Error() string {
+	return fmt.Sprintf("challenge %q not found (see 'labctl challenge list')", e.name)
+}
+
+func (e *notFoundError) Is(target error) bool { return target == fs.ErrNotExist }
 
 // Active returns the current active run, or nil if none.
 func (e *Engine) Active() (*ActiveRun, error) {
@@ -226,7 +243,7 @@ func (e *Engine) RecordHint() error {
 		return err
 	}
 	if run == nil {
-		return errors.New("no active challenge")
+		return ErrNoActive
 	}
 	run.HintsUsed++
 	return e.saveActive(run)
@@ -241,7 +258,7 @@ func (e *Engine) Attempt(passed, total int) (*RunRecord, error) {
 		return nil, err
 	}
 	if run == nil {
-		return nil, errors.New("no active challenge")
+		return nil, ErrNoActive
 	}
 	c, err := e.Load(run.ChallengeName)
 	if err != nil {
@@ -270,7 +287,7 @@ func (e *Engine) Complete(passed, total int, outcome, user string) (*RunRecord, 
 		return nil, err
 	}
 	if run == nil {
-		return nil, errors.New("no active challenge")
+		return nil, ErrNoActive
 	}
 	c, err := e.Load(run.ChallengeName)
 	if err != nil {

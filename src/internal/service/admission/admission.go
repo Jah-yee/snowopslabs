@@ -54,6 +54,10 @@ type Gate struct {
 func (g *Gate) Admit(ctx context.Context, out io.Writer, next capacity.Demand) error {
 	res, err := capacity.Probe(ctx, g.Runner)
 	if err != nil {
+		// A caller that stopped is refused: nothing is installed for it.
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return ctxErr
+		}
 		// Without the engine's size there is nothing to judge; the activation
 		// itself reports an unreachable Docker.
 		fmt.Fprintf(out, "Warning: skipping the capacity check: %v\n", err)

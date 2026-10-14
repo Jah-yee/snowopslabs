@@ -438,7 +438,7 @@ the image back by hand, because those are the same operation.
 
 ### Mesh Traffic Management (`mesh-traffic-management`)
 
-**Category:** networking · **Mesh provider:** Istio (default)
+**Category:** networking · **Mesh provider:** Istio
 
 **What labctl stages:**
 - The namespace enrolled into the mesh (`istio-injection=enabled`) and its
@@ -456,7 +456,7 @@ the STRICT `PeerAuthentication`. Until you apply the first one, the Service
 round-robins both subsets at roughly 50% and the split check fails.
 
 **Prerequisites:**
-- Platform: ingress, mesh, monitoring/metrics
+- Platform: ingress, mesh/istio, monitoring/metrics
 - Apps: the bound workload
 
 **Checks (6):** istiod ready · every canary pod carries an `istio-proxy` sidecar

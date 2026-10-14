@@ -181,12 +181,14 @@ After each, sweep for residue:
 kubectl get ns
 kubectl get all -A | grep -i labfault
 kubectl -n <ns> get deploy <workload> -o jsonpath='{.metadata.annotations}'
+kubectl -n kube-system get configmap | grep labfault  # the fault's record removed?
 kubectl get prometheusrule -A | grep -i labfault      # armed alert disarmed?
 labctl incident history                               # MTTR and hints recorded
 ```
 
-Annotations named `labfault-*` are how `resolve.sh` remembers the original
-values; none may survive a resolve.
+A ConfigMap `labfault-<name>` in `kube-system` is how `resolve.sh` remembers
+the original values; it must not survive a resolve. The workload's own objects
+carry no `labfault-*` annotation or label at any point.
 
 ---
 
@@ -202,7 +204,7 @@ Eight dimensions, each scored 0–5, combined by weight.
 | 4 | **Hint ladder & solution** | 0.15 | Each hint adds one rung; the solution names a command that works |
 | 5 | **Production realism** | 0.10 | A failure that really happens, presenting the way it really presents |
 | 6 | **Observability & paging** | 0.10 | The symptom shows on a dashboard or log; an `expectAlert` fault actually pages and disarms on resolve |
-| 7 | **Invariant compliance** | 0.05 | POSIX shell, `make lint-shell` clean, changes recorded via annotations, README table current |
+| 7 | **Invariant compliance** | 0.05 | POSIX shell, `make lint-shell` clean, changes recorded with `incidents/_lib/state.sh`, hermetic tests for the check and the scripts, README table current |
 | 8 | **Self-sufficiency** | 0.05 | Diagnosable and fixable from `info`, hints, references and snippets alone |
 
 **Anchors.** 5 — no finding. 4 — one cosmetic finding. 3 — a finding a learner

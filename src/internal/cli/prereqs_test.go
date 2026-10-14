@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sagar2395/snowopslabs/internal/labtest"
 	"github.com/sagar2395/snowopslabs/internal/platform"
 )
 
@@ -115,4 +116,58 @@ func TestEnsurePlatformPrereqs(t *testing.T) {
 			}
 		})
 	}
+}
+
+// A cluster that does not answer is reported as that. It is never mistaken
+// for a lab with nothing deployed, and nothing is changed or recorded.
+func TestClusterDown_CommandsSayTheClusterIsUnreachable(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{"scenario up", []string{"scenario", "up", labtest.Scenario}},
+		{"incident inject", []string{"incident", "inject", labtest.Fault}},
+		{"incident inject --random", []string{"incident", "inject", "--random"}},
+		{"challenge start", []string{"challenge", "start", labtest.Challenge}},
+		{"lab snapshot", []string{"lab", "snapshot", "before"}},
+		{"lab reset", []string{"lab", "reset", "--yes"}},
+		{"platform status --live", []string{"platform", "status", "--live"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := newTerminal(t)
+			l.clusterDown()
+			r := l.run(tt.args...)
+			if r.exitCode() != 1 {
+				t.Fatalf("exit code = %d, want 1\nstdout:\n%s", r.exitCode(), r.stdout)
+			}
+			for _, want := range []string{"cannot reach the cluster", "was refused", "labctl status"} {
+				if !strings.Contains(r.stderr, want) {
+					t.Errorf("stderr does not say %q:\n%s", want, r.stderr)
+				}
+			}
+			for _, wrong := range []string{"not deployed", "labctl app build", "Saved.", "Lab reset to post-init state"} {
+				if strings.Contains(r.stdout+r.stderr, wrong) {
+					t.Errorf("the output says %q about a cluster that did not answer:\n%s%s", wrong, r.stdout, r.stderr)
+				}
+			}
+			if l.exists(faultMarker) {
+				t.Error("the fault was injected into a cluster that did not answer")
+			}
+			if r := l.run("lab", "snapshots"); !strings.Contains(r.stdout, "No snapshots") {
+				t.Errorf("a snapshot of an unreachable cluster was saved:\n%s", r.stdout)
+			}
+		})
+	}
+}
+
+// `labctl status` tells a stopped cluster from one that was never created.
+func TestStatus_ClusterDown(t *testing.T) {
+	l := newTerminal(t)
+	l.clusterDown()
+	r := l.mustRun("status")
+	if !strings.Contains(r.stdout, "UNREACHABLE") || !strings.Contains(r.stdout, "was refused") {
+		t.Errorf("status does not report the cluster as unreachable with kubectl's reason:\n%s", r.stdout)
+	}
+	l.golden("status_cluster_down", r)
 }

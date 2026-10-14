@@ -3,12 +3,16 @@
 package runtime
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/sagar2395/snowopslabs/internal/executor"
+	"github.com/sagar2395/snowopslabs/internal/labtest"
 )
 
 // newTestManager builds a Manager with injected context functions and a temp
@@ -199,5 +203,103 @@ func TestReadEnvKey(t *testing.T) {
 	}
 	if got := readEnvKey(f.Name(), "MISSING"); got != "" {
 		t.Errorf("got %q, want empty", got)
+	}
+}
+
+// fixtureManager is a Manager over the fixture lab, with the executor that
+// runs its scripts and the buffer their output goes to.
+func fixtureManager(t *testing.T) (*Manager, *executor.Executor, *labtest.Lab, *bytes.Buffer) {
+	t.Helper()
+	l := labtest.New(t)
+	l.Write(t, "runtimes/k3d/up.sh", "#!/usr/bin/env bash\necho \"up $1\"\n")
+	l.Write(t, "runtimes/k3d/down.sh", "#!/usr/bin/env bash\necho \"down $1\"\n")
+	ex := executor.New(l.Root)
+	var out bytes.Buffer
+	ex.Stdout, ex.Stderr = &out, &out
+	return NewManager(l.Root, "lab"), ex, l, &out
+}
+
+func TestNewManager_FindsRuntimesWithAnUpScript(t *testing.T) {
+	m, _, l, _ := fixtureManager(t)
+	l.Write(t, "runtimes/_lib/docker.sh", "#!/usr/bin/env bash\n")
+	l.Write(t, "runtimes/kind/up.sh", "#!/usr/bin/env bash\n")
+	l.Write(t, "runtimes/README.md", "not a runtime\n")
+	m = NewManager(m.ProjectRoot, "lab")
+	if want := []string{"k3d", "kind"}; !slices.Equal(m.Names(), want) {
+		t.Errorf("Names() = %v, want %v", m.Names(), want)
+	}
+	if got := NewManager(t.TempDir(), "lab").Names(); len(got) != 0 {
+		t.Errorf("a project with no runtimes/ lists %v", got)
+	}
+}
+
+// The manager asks the real kubectl for the current context and whether the
+// runtime's context exists.
+func TestList_AsksKubectl(t *testing.T) {
+	tests := []struct {
+		name        string
+		kubectl     string
+		wantCurrent bool
+		wantActive  bool
+	}{
+		{"the runtime's context is current", "echo k3d-lab\n", true, true},
+		{"the context exists but another is current",
+			"case \"$*\" in \"config current-context\") echo kind-other ;; \"config get-contexts k3d-lab --no-headers\") echo 'k3d-lab k3d-lab admin' ;; esac\n", false, true},
+		{"the context does not exist",
+			"case \"$*\" in \"config current-context\") echo kind-other ;; *) exit 1 ;; esac\n", false, false},
+		{"kubectl has no context at all", "exit 1\n", false, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m, _, l, _ := fixtureManager(t)
+			l.Stub(t, "kubectl", "#!/bin/sh\n"+tt.kubectl)
+			got := m.List()
+			if len(got) != 1 || got[0].Name != "k3d" || got[0].Current != tt.wantCurrent || got[0].Active != tt.wantActive {
+				t.Errorf("List() = %+v, want k3d with current=%v active=%v", got, tt.wantCurrent, tt.wantActive)
+			}
+		})
+	}
+}
+
+func TestActivateAndDeactivate(t *testing.T) {
+	steps := []struct {
+		name string
+		run  func(m *Manager, ex *executor.Executor, runtime string) error
+		want string
+	}{
+		{"Activate", func(m *Manager, ex *executor.Executor, rt string) error { return m.Activate(rt, ex) }, "up lab"},
+		{"ActivateWith", func(m *Manager, ex *executor.Executor, rt string) error { return m.ActivateWith("job-1", rt, ex) }, "up lab"},
+		{"Deactivate", func(m *Manager, ex *executor.Executor, rt string) error { return m.Deactivate(rt, ex) }, "down lab"},
+		{"DeactivateWith", func(m *Manager, ex *executor.Executor, rt string) error { return m.DeactivateWith("job-2", rt, ex) }, "down lab"},
+	}
+	for _, step := range steps {
+		t.Run(step.name+" runs the runtime's script with the cluster name", func(t *testing.T) {
+			m, ex, _, out := fixtureManager(t)
+			if err := step.run(m, ex, "k3d"); err != nil {
+				t.Fatalf("%s() error = %v", step.name, err)
+			}
+			if !strings.Contains(out.String(), step.want) {
+				t.Errorf("%s() output = %q, want it to contain %q", step.name, out.String(), step.want)
+			}
+		})
+		t.Run(step.name+" refuses a runtime that does not exist", func(t *testing.T) {
+			m, ex, _, out := fixtureManager(t)
+			err := step.run(m, ex, "ghost")
+			if err == nil || !strings.Contains(err.Error(), `runtime "ghost" not found`) {
+				t.Errorf("%s(ghost) error = %v", step.name, err)
+			}
+			if out.Len() != 0 {
+				t.Errorf("%s(ghost) ran a script: %q", step.name, out.String())
+			}
+		})
+		t.Run(step.name+" reports a script that fails", func(t *testing.T) {
+			m, ex, l, _ := fixtureManager(t)
+			for _, s := range []string{"up.sh", "down.sh"} {
+				l.Write(t, "runtimes/k3d/"+s, "#!/usr/bin/env bash\nexit 4\n")
+			}
+			if err := step.run(m, ex, "k3d"); err == nil {
+				t.Errorf("%s() returned no error for a script that exited 4", step.name)
+			}
+		})
 	}
 }

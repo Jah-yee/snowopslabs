@@ -69,7 +69,7 @@ cd snowopslabs
 make cli-build
 
 # 2. Run the gates. All four test layers are mandatory — see docs/TESTING.md.
-make test          # Go unit + shell (bats), race detector, coverage gate
+make test          # Go unit + shell (bats), race detector, coverage gates, test-check
 make test-ui       # vitest component tests
 make test-e2e      # playwright journeys
 make lint          # gofmt, golangci-lint, gosec, govulncheck, shellcheck,
@@ -178,10 +178,13 @@ is written for AI agents, but it is the fastest orientation for a human too.
 5. **Every operation is cancellable and durable.** Anything that shells out goes
    through `internal/run` with a context, a timeout and a lock key. Never call
    `exec.Command(...).Run()` directly.
-6. **Tests at every applicable layer.** Go unit (table-driven, hermetic, ≥80%,
-   cancellation covered), bats for scripts with logic, contract tests for
-   endpoints and commands, Vitest + Playwright for UI. See
-   [docs/TESTING.md](docs/TESTING.md).
+6. **Every change ships its tests, and a bug fix starts with a failing test.**
+   Go unit (table-driven, hermetic, ≥80%, cancellation covered), bats for
+   scripts with logic, contract tests for endpoints and commands, Vitest and
+   Playwright for UI. [docs/TESTING.md](docs/TESTING.md) says what each kind
+   of change needs. CI blocks a change that brings no test or leaves more than
+   15% of its lines untested; a change that needs none says why in a
+   `Tests-Not-Needed: <reason>` commit trailer.
 7. **Docs and runbook in the same PR.** Update the relevant `docs/`, add or
    update the runbook, and write an ADR if you made a notable decision.
    Documentation is the source of truth here — the code is expected to match it,
@@ -205,10 +208,10 @@ open a PR → CI green → CODEOWNERS review → maintainer merge
 - Use **Conventional Commits** (`feat:`, `fix:`, `docs:`, `ci:`, `chore:`).
 - Fill out the PR template (what/why/how-tested).
 - CI must pass every gate: Go build/vet/test on macOS **and** Linux with the
-  race detector, the per-package coverage gate, golangci-lint, gosec,
-  govulncheck, a fuzz smoke run, bats, shellcheck, the portability gate,
-  TypeScript strict, vitest, Playwright, the license scan, and content
-  validation. None of them are advisory.
+  race detector, the per-package coverage gate, the changed-lines gate,
+  test-check, golangci-lint, gosec, govulncheck, a fuzz smoke run, bats,
+  shellcheck, the portability gate, TypeScript strict, vitest, Playwright, the
+  license scan, and content validation. None of them are advisory.
 - A maintainer or domain code owner reviews; the **lead maintainer** holds final
   merge authority on engine/SDK/schema changes (see [GOVERNANCE.md](GOVERNANCE.md)).
 

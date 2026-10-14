@@ -3,10 +3,13 @@ set -euo pipefail
 
 NS="${TARGET_NAMESPACE:-go-api}"
 DEPLOY="${TARGET_WORKLOAD:-go-api}"
-MARK="labfault-oom-kill"
+FAULT="oom-kill"
+MARK="labfault-$FAULT"
+# shellcheck source=incidents/_lib/state.sh
+. "$(cd "$(dirname "$0")/../_lib" && pwd)/state.sh"
 
-ORIG_LIMIT="$(kubectl -n "$NS" get deploy "$DEPLOY" -o "jsonpath={.metadata.annotations.$MARK-original-limit}" 2>/dev/null || true)"
-ORIG_REQUEST="$(kubectl -n "$NS" get deploy "$DEPLOY" -o "jsonpath={.metadata.annotations.$MARK-original-request}" 2>/dev/null || true)"
+ORIG_LIMIT="$(fault_state_get "$FAULT" original-limit)"
+ORIG_REQUEST="$(fault_state_get "$FAULT" original-request)"
 
 # inject.sh writes the literal "none" when the workload had no memory setting of
 # its own. Restoring that as a number would leave the lab in a state it was never
@@ -30,7 +33,14 @@ drop_memory() {
     >/dev/null 2>&1 || true
 }
 
-if had_none "$ORIG_LIMIT" && had_none "$ORIG_REQUEST"; then
+if [ -z "$ORIG_LIMIT" ] && [ -z "$ORIG_REQUEST" ]; then
+  # inject.sh records "none" for a setting the workload did not have, so an
+  # empty record means this fault was never injected here. Removing the memory
+  # settings then would strip a healthy workload of its own.
+  echo "No record of the original memory settings — leaving them as they are."
+  echo "  If the limit is still the fault's, raise it yourself:"
+  echo "    kubectl -n $NS set resources deploy/$DEPLOY --limits=memory=<value> --requests=memory=<value>"
+elif had_none "$ORIG_LIMIT" && had_none "$ORIG_REQUEST"; then
   echo "Restoring memory settings (the workload had none of its own; removing them)..."
   drop_memory limits
   drop_memory requests
@@ -44,12 +54,14 @@ else
   fi
 fi
 
+fault_state_clear "$FAULT"
+# Drop the annotations a lab may still carry on the Deployment.
 kubectl -n "$NS" annotate deploy "$DEPLOY" \
   "$MARK-" "$MARK-original-limit-" "$MARK-original-request-" \
   --overwrite >/dev/null 2>&1 || true
 
 MON_NS="${MONITORING_NAMESPACE:-monitoring}"
-kubectl delete prometheusrule labfault-oom-kill -n "$MON_NS" --ignore-not-found 2>/dev/null || true
+kubectl delete prometheusrule "$MARK" -n "$MON_NS" --ignore-not-found 2>/dev/null || true
 
 # inject.sh started the load that makes the limit bite, so resolve owns stopping
 # it. This also stops a run the user started themselves — say so rather than

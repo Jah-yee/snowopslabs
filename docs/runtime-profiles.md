@@ -72,11 +72,13 @@ the project root and receive configuration through the environment (golden rule
 
 ### runtime.env keys
 
-Every profile defines the same keys so downstream scripts can rely on them:
+Every profile defines the same keys so downstream scripts can rely on them,
+except `INGRESS_CLASS`, which follows `INGRESS_PROVIDER` unless a profile or
+`.env` sets it:
 
 | Key | k3d | kind | incluster | Meaning |
 |---|---|---|---|---|
-| `INGRESS_CLASS` | `traefik` | `nginx` | `traefik` | Ingress controller the platform installs and routes through. |
+| `INGRESS_CLASS` | the provider's | the provider's | `traefik` | The class every Ingress the lab creates names. Each provider installs a class of its own name (`traefik`, `nginx`), so an Ingress naming another is never routed. |
 | `STORAGE_CLASS` | `local-path` | `standard` | `standard` | Default `StorageClass` for PVCs. |
 | `DOMAIN_SUFFIX` | `<cluster>.localhost` | `<cluster>.localhost` | `cluster.local` | Host suffix for ingress routes; content templates read `{{.DomainSuffix}}` for hostnames and `{{.IngressURLSuffix}}` (suffix plus a non-default port) for URLs. |
 | `REGISTRY_TYPE` | `k3d-import` | `kind-load` | `none` | How locally-built app images reach the cluster. |

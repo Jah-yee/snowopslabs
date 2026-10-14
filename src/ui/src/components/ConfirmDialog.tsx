@@ -40,6 +40,7 @@ export function ConfirmDialog({ request, onClose }: ConfirmDialogProps) {
   return (
     <div
       className="modal-overlay"
+      role="presentation"
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className="modal-card confirm-card" role="alertdialog" aria-modal="true" aria-label={request.title}>

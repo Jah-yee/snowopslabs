@@ -31,6 +31,7 @@ helm_upgrade_install tempo "$NAMESPACE" grafana-community/tempo \
   --create-namespace \
   --version "$TEMPO_CHART_VERSION" \
   -f "$VALUES_FILE" \
+  --set "persistence.storageClassName=${STORAGE_CLASS:-local-path}" \
   --wait --timeout 5m
 
 echo "Waiting for Tempo to be ready..."

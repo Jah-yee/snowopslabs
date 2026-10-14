@@ -1,21 +1,36 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // Scenarios view: activation shows a requirements preview (what it installs +
-// what it needs) before anything runs, so nothing is a surprise. The api
-// boundary is mocked (see Traffic.test.tsx for why).
+// what it needs) before anything runs, so nothing is a surprise. Requests go
+// through the real client to the contract server (test/contract.ts).
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest'
+import { page, serveContract, type ContractServer } from '../test/contract'
 import { Scenarios } from './Scenarios'
 import type { Scenario } from '../types'
 import type { ConfirmRequest } from '../components/ConfirmDialog'
 
-vi.mock('../api/client', () => ({
-  api: { listScenarios: vi.fn(), getScenario: vi.fn(), scenarioUp: vi.fn(), scenarioDown: vi.fn(), scenarioVerify: vi.fn(), listApps: vi.fn() },
-}))
-import { api } from '../api/client'
-const mockApi = api as unknown as { listScenarios: Mock; getScenario: Mock; scenarioUp: Mock; scenarioDown: Mock; scenarioVerify: Mock; listApps: Mock }
+// Each test's contract server: goldens for anything it does not set.
+let server: ContractServer
+beforeEach(() => {
+  server = serveContract()
+})
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+/** Serves list as the scenario catalog, and each scenario's detail. */
+function serveScenarios(list: Scenario[]) {
+  server.override('GET', '/scenarios', 200, page(list))
+  for (const sc of list) server.override('GET', `/scenarios/${sc.name}`, 200, sc)
+}
+
+/** The body of the activation the view sent for name, or undefined if none. */
+function upCall(name: string) {
+  return server.calls.find(c => c.method === 'POST' && c.path === `/scenarios/${name}/up`)
+}
 
 const gitops: Scenario = {
   name: 'gitops-cicd', displayName: 'GitOps & CI/CD', description: 'ArgoCD GitOps',
@@ -43,8 +58,7 @@ function renderScenarios() {
 
 describe('Scenarios view — activation preview', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockApi.listApps.mockResolvedValue([
+    server.override('GET', '/apps', 200, [
       { name: 'go-api', buildStrategy: 'docker', deployStrategy: 'helm', deployed: true, capabilities: ['prometheus-metrics', 'otlp-tracing'] },
       { name: 'java-api', buildStrategy: 'docker', deployStrategy: 'helm', deployed: true, capabilities: ['prometheus-metrics'] },
     ])
@@ -52,15 +66,13 @@ describe('Scenarios view — activation preview', () => {
 
   it('previews what a scenario installs and requires, then activates on confirm', async () => {
     const user = userEvent.setup()
-    mockApi.listScenarios.mockResolvedValue([{ ...gitops }])
-    mockApi.getScenario.mockResolvedValue(gitops)
-    mockApi.scenarioUp.mockResolvedValue({ jobId: 'j1', status: 'accepted' })
+    serveScenarios([{ ...gitops }])
 
     const { getConfirm } = renderScenarios()
     await user.click(await screen.findByRole('button', { name: /^activate$/i }))
 
     // Activation fetches detail and raises a confirm with the requirements.
-    await waitFor(() => expect(mockApi.getScenario).toHaveBeenCalledWith('gitops-cicd'))
+    await waitFor(() => expect(server.requests).toContain('GET /scenarios/gitops-cicd'))
     await waitFor(() => expect(getConfirm()).not.toBeNull())
     const req = getConfirm()!
     render(<div>{req.message as React.ReactNode}</div>)
@@ -70,10 +82,11 @@ describe('Scenarios view — activation preview', () => {
     expect(within(screen.getByText(/Requires/i).parentElement as HTMLElement).getByText('ingress')).toBeInTheDocument()
 
     // scenarioUp only fires once the user confirms.
-    expect(mockApi.scenarioUp).not.toHaveBeenCalled()
+    expect(upCall('gitops-cicd')).toBeUndefined()
     req.onConfirm()
     // A scenario with no parameters activates with an empty override map.
-    await waitFor(() => expect(mockApi.scenarioUp).toHaveBeenCalledWith('gitops-cicd', {}, ''))
+    await waitFor(() => expect(upCall('gitops-cicd')).toBeDefined())
+    expect(upCall('gitops-cicd')?.body).toBeUndefined()
   })
 
   it('previews components declared under stages (v2 scenarios), not just flat components', async () => {
@@ -88,9 +101,7 @@ describe('Scenarios view — activation preview', () => {
         { name: 'dev-env', components: [{ name: 'dev-environment', type: 'manifest', namespace: 'env-dev' }] },
       ],
     }
-    mockApi.listScenarios.mockResolvedValue([{ ...staged }])
-    mockApi.getScenario.mockResolvedValue(staged)
-    mockApi.scenarioUp.mockResolvedValue({ jobId: 'j1', status: 'accepted' })
+    serveScenarios([{ ...staged }])
 
     const { getConfirm } = renderScenarios()
     await user.click(await screen.findByRole('button', { name: /^activate$/i }))
@@ -105,8 +116,7 @@ describe('Scenarios view — activation preview', () => {
 
 describe('Scenarios view — parameters', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockApi.listApps.mockResolvedValue([
+    server.override('GET', '/apps', 200, [
       { name: 'go-api', buildStrategy: 'docker', deployStrategy: 'helm', deployed: true, capabilities: ['prometheus-metrics', 'otlp-tracing'] },
       { name: 'java-api', buildStrategy: 'docker', deployStrategy: 'helm', deployed: true, capabilities: ['prometheus-metrics'] },
     ])
@@ -121,9 +131,7 @@ describe('Scenarios view — parameters', () => {
 
   it('shows tunable parameters seeded to defaults and submits overrides on confirm', async () => {
     const user = userEvent.setup()
-    mockApi.listScenarios.mockResolvedValue([{ ...withParams }])
-    mockApi.getScenario.mockResolvedValue(withParams)
-    mockApi.scenarioUp.mockResolvedValue({ jobId: 'j1', status: 'accepted' })
+    serveScenarios([{ ...withParams }])
 
     const { getConfirm } = renderScenarios()
     await user.click(await screen.findByRole('button', { name: /^activate$/i }))
@@ -138,14 +146,13 @@ describe('Scenarios view — parameters', () => {
     await user.type(input, '15')
 
     req.onConfirm()
-    await waitFor(() => expect(mockApi.scenarioUp).toHaveBeenCalledWith('gitops-cicd', { Threshold: '15' }, ''))
+    await waitFor(() => expect(upCall('gitops-cicd')?.body).toEqual({ params: { Threshold: '15' } }))
   })
 })
 
 describe('Scenarios view — detail modal teaches implementation', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockApi.listApps.mockResolvedValue([
+    server.override('GET', '/apps', 200, [
       { name: 'go-api', buildStrategy: 'docker', deployStrategy: 'helm', deployed: true, capabilities: ['prometheus-metrics', 'otlp-tracing'] },
       { name: 'java-api', buildStrategy: 'docker', deployStrategy: 'helm', deployed: true, capabilities: ['prometheus-metrics'] },
     ])
@@ -160,8 +167,7 @@ describe('Scenarios view — detail modal teaches implementation', () => {
 
   it('groups the sections into tabs and lands on Overview', async () => {
     const user = userEvent.setup()
-    mockApi.listScenarios.mockResolvedValue([{ ...rich }])
-    mockApi.getScenario.mockResolvedValue(rich)
+    serveScenarios([{ ...rich }])
 
     renderScenarios()
     await user.click(await screen.findByRole('button', { name: /details/i }))
@@ -177,8 +183,7 @@ describe('Scenarios view — detail modal teaches implementation', () => {
 
   it('shows the implementation snippet and the success checks on their tabs', async () => {
     const user = userEvent.setup()
-    mockApi.listScenarios.mockResolvedValue([{ ...rich }])
-    mockApi.getScenario.mockResolvedValue(rich)
+    serveScenarios([{ ...rich }])
 
     renderScenarios()
     await user.click(await screen.findByRole('button', { name: /details/i }))
@@ -201,8 +206,7 @@ describe('Scenarios view — detail modal teaches implementation', () => {
       prerequisites: { platform: ['ingress'], apps: ['{{.WorkloadName}}'], capabilities: ['prometheus-metrics', 'otlp-tracing'] },
       workload: { app: 'go-api', namespace: 'go-api', service: 'go-api.go-api.svc.cluster.local', port: '8080', metric: 'http_server_request_duration_seconds' },
     }
-    mockApi.listScenarios.mockResolvedValue([{ ...needsCaps }])
-    mockApi.getScenario.mockResolvedValue(needsCaps)
+    serveScenarios([{ ...needsCaps }])
 
     renderScenarios()
     await user.click(await screen.findByRole('button', { name: /details/i }))
@@ -223,8 +227,7 @@ describe('Scenarios view — detail modal teaches implementation', () => {
       pinnedApps: [],
       workload: { app: 'java-api', namespace: 'java-api', service: 'java-api.java-api.svc.cluster.local', port: '8080', metric: 'http_server_request_duration_seconds' },
     }
-    mockApi.listScenarios.mockResolvedValue([{ ...bound }])
-    mockApi.getScenario.mockResolvedValue(bound)
+    serveScenarios([{ ...bound }])
 
     renderScenarios()
     await user.click(await screen.findByRole('button', { name: /details/i }))
@@ -244,8 +247,7 @@ describe('Scenarios view — detail modal teaches implementation', () => {
       prerequisites: { platform: [], apps: [], capabilities: ['prometheus-metrics', 'otlp-tracing'] },
       workload: { app: 'go-api', namespace: 'go-api', service: 'go-api.go-api.svc.cluster.local', port: '8080', metric: 'm' },
     }
-    mockApi.listScenarios.mockResolvedValue([{ ...needsTracing }])
-    mockApi.getScenario.mockResolvedValue(needsTracing)
+    serveScenarios([{ ...needsTracing }])
 
     const { getConfirm } = renderScenarios()
     await user.click(await screen.findByRole('button', { name: /^activate$/i }))
@@ -268,9 +270,7 @@ describe('Scenarios view — detail modal teaches implementation', () => {
       ...gitops,
       workload: { app: 'go-api', namespace: 'go-api', service: 'go-api.go-api.svc.cluster.local', port: '8080', metric: 'http_server_request_duration_seconds' },
     }
-    mockApi.listScenarios.mockResolvedValue([{ ...bound }])
-    mockApi.getScenario.mockResolvedValue(bound)
-    mockApi.scenarioUp.mockResolvedValue({ jobId: 'j1', status: 'accepted' })
+    serveScenarios([{ ...bound }])
 
     const { getConfirm } = renderScenarios()
     await user.click(await screen.findByRole('button', { name: /^activate$/i }))
@@ -282,13 +282,12 @@ describe('Scenarios view — detail modal teaches implementation', () => {
     await user.selectOptions(picker, 'java-api')
 
     req.onConfirm()
-    await waitFor(() => expect(mockApi.scenarioUp).toHaveBeenCalledWith('gitops-cicd', {}, 'java-api'))
+    await waitFor(() => expect(upCall('gitops-cicd')?.body).toEqual({ app: 'java-api' }))
   })
 
   it('moves between tabs with the arrow keys', async () => {
     const user = userEvent.setup()
-    mockApi.listScenarios.mockResolvedValue([{ ...rich }])
-    mockApi.getScenario.mockResolvedValue(rich)
+    serveScenarios([{ ...rich }])
 
     renderScenarios()
     await user.click(await screen.findByRole('button', { name: /details/i }))
@@ -302,8 +301,7 @@ describe('Scenarios view — detail modal teaches implementation', () => {
 
 describe('Scenarios view — verify', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockApi.listApps.mockResolvedValue([
+    server.override('GET', '/apps', 200, [
       { name: 'go-api', buildStrategy: 'docker', deployStrategy: 'helm', deployed: true, capabilities: ['prometheus-metrics', 'otlp-tracing'] },
       { name: 'java-api', buildStrategy: 'docker', deployStrategy: 'helm', deployed: true, capabilities: ['prometheus-metrics'] },
     ])
@@ -312,7 +310,7 @@ describe('Scenarios view — verify', () => {
   const active: Scenario = { ...gitops, active: true }
 
   it('is disabled while the scenario is inactive', async () => {
-    mockApi.listScenarios.mockResolvedValue([{ ...gitops }]) // inactive
+    serveScenarios([{ ...gitops }]) // inactive
     renderScenarios()
     const verifyBtn = await screen.findByRole('button', { name: /verify/i })
     expect(verifyBtn).toBeDisabled()
@@ -320,8 +318,8 @@ describe('Scenarios view — verify', () => {
 
   it('runs the checks and renders the per-check pass/fail breakdown', async () => {
     const user = userEvent.setup()
-    mockApi.listScenarios.mockResolvedValue([active])
-    mockApi.scenarioVerify.mockResolvedValue({
+    serveScenarios([active])
+    server.override('POST', '/scenarios/gitops-cicd/verify', 200, {
       scenario: 'gitops-cicd',
       passed: false,
       results: [
@@ -333,7 +331,7 @@ describe('Scenarios view — verify', () => {
     renderScenarios()
     await user.click(await screen.findByRole('button', { name: /verify/i }))
 
-    await waitFor(() => expect(mockApi.scenarioVerify).toHaveBeenCalledWith('gitops-cicd'))
+    await waitFor(() => expect(server.requests).toContain('POST /scenarios/gitops-cicd/verify'))
     // Both checks render with their names and PASS/FAIL states.
     expect(await screen.findByText('argocd-ready')).toBeInTheDocument()
     expect(screen.getByText('app-synced')).toBeInTheDocument()

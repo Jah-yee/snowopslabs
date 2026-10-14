@@ -1,0 +1,44 @@
+{
+  "active": null,
+  "faults": [
+    {
+      "category": "workload",
+      "description": "go-api is broken",
+      "detection": {
+        "name": "marker-gone",
+        "script": "checks/resolved.sh",
+        "timeoutSeconds": 5,
+        "type": "script"
+      },
+      "displayName": "Demo fault",
+      "name": "demo-fault",
+      "pinnedApps": [],
+      "prerequisites": {
+        "apps": [
+          "go-api"
+        ]
+      },
+      "requirements": {},
+      "severity": "low",
+      "target": {
+        "namespace": "go-api",
+        "workload": "go-api"
+      },
+      "verified": false,
+      "workload": {
+        "app": "go-api",
+        "metric": "http_server_request_duration_seconds",
+        "namespace": "go-api",
+        "port": "8080",
+        "service": "go-api.go-api.svc.cluster.local"
+      }
+    }
+  ],
+  "workload": {
+    "app": "go-api",
+    "metric": "http_server_request_duration_seconds",
+    "namespace": "go-api",
+    "port": "8080",
+    "service": "go-api.go-api.svc.cluster.local"
+  }
+}

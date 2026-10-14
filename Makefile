@@ -27,11 +27,13 @@ include make/check.mk
 include make/services.mk
 include make/shell.mk
 include make/docs.mk
+include make/test-gates.mk
 
 SRC_TARGETS := cli-build cli-build-all cli-install cli-clean ui-build ui-deps \
                test-go test-api test-coverage coverage-check fuzz \
-               lint-go lint-ui sec vuln golden-update validate-content \
-               test-ui test-e2e test-cluster
+               changed-lines-go changed-lines-ui golden-update time-budget flake-hunt \
+               lint-go lint-ui sec vuln validate-content \
+               test-ui test-e2e
 
 .PHONY: $(SRC_TARGETS)
 $(SRC_TARGETS):
@@ -39,12 +41,18 @@ $(SRC_TARGETS):
 
 .DEFAULT_GOAL := help
 
-.PHONY: help init teardown reset run test lint docs-check
+.PHONY: help init teardown reset run test test-cluster lint docs-check
 
 # ── Aggregate test & lint (Go module + repo-wide shell gates) ─────────────────
 
-## test: Go unit + contract tests (src/ and apps/) and the shell (bats) suites
-test: test-go test-apps test-shell
+## test: Go unit + contract tests (src/ and apps/), the shell (bats) suites,
+## and the check that the change brought tests with it
+test: test-go test-apps test-shell test-check
+
+## test-cluster: run one item end to end on the current cluster (ITEM=incident/oom-kill or scenario/env-promotion)
+test-cluster:
+	@test -n "$(ITEM)" || { echo "usage: make test-cluster ITEM=<scenario|incident>/<name>"; exit 2; }
+	@sh src/test/cluster/run.sh "$(firstword $(subst /, ,$(ITEM)))" "$(lastword $(subst /, ,$(ITEM)))"
 
 ## test-apps: unit tests for the demo applications (each is its own Go module)
 .PHONY: test-apps
@@ -104,17 +112,18 @@ help:
 	@echo "    make teardown            Remove apps, platform and cluster"
 	@echo "    make reset               teardown then init"
 	@echo ""
-	@echo "  Test & quality (all four layers are mandatory — docs/TESTING.md):"
-	@echo "    make test                Go unit + shell tests, race detector, coverage gate"
-	@echo "    make test-go             Go unit + contract tests (>= $(COVERAGE_MIN)% per package)"
+	@echo "  Test & quality (docs/TESTING.md):"
+	@echo "    make test                Go + apps + shell tests, coverage gates, test-check"
+	@echo "    make test-go             Go unit + contract tests (>= $(COVERAGE_MIN)% per package, changed lines gated)"
 	@echo "    make test-apps           unit tests for apps/ (separate Go modules)"
 	@echo "    make test-shell          bats suites with kubectl/helm stubbed"
 	@echo "    make test-api            HTTP contract suite only"
-	@echo "    make test-ui             vitest component tests with coverage"
+	@echo "    make test-ui             vitest component tests with coverage gates"
 	@echo "    make test-e2e            playwright journeys"
-	@echo "    make test-cluster        nightly real-cluster e2e on kind (slow)"
+	@echo "    make test-check          a change to code changed a test with it"
+	@echo "    make golden-update       rewrite the API contract golden files (review the diff)"
 	@echo "    make test-coverage       HTML coverage report -> coverage.html"
-	@echo "    make fuzz                short fuzz run over every parser"
+	@echo "    make fuzz                short fuzz run over every fuzz target"
 	@echo "    make lint                every static-analysis gate"
 	@echo "    make fmt                 gofmt the tree"
 	@echo ""

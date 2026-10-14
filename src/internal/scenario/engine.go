@@ -196,7 +196,7 @@ func catalogLess(catA, dispA, nameA, catB, dispB, nameB string) bool {
 func (e *Engine) Get(name string) (*Scenario, error) {
 	s, ok := e.scenarios[name]
 	if !ok {
-		return nil, fmt.Errorf("scenario %q not found", name)
+		return nil, fmt.Errorf("scenario %q not found (see 'labctl scenario list')", name)
 	}
 	out := *s
 	out.Active = e.isActive(name)
@@ -523,6 +523,39 @@ func (e *Engine) hooks() extension.Hooks {
 	return e.Hooks
 }
 
+// CheckVars returns the variables Verify renders a scenario's checks with:
+// the template context for the app the scenario was activated against, and
+// the parameters it was activated with.
+func (e *Engine) CheckVars(name string) (map[string]string, error) {
+	s, err := e.Get(name)
+	if err != nil {
+		return nil, err
+	}
+	defer e.withActivationWorkload(name)()
+	defer e.withActivationParams(s)()
+	vars := maps.Clone(e.resolvedParams)
+	if vars == nil {
+		vars = map[string]string{}
+	}
+	// A built-in variable wins over a parameter of the same name, as in Expand.
+	maps.Copy(vars, e.templateContext().Vars())
+	return vars, nil
+}
+
+// ChecksWithVars returns a scenario's checks rendered with exactly vars, such
+// as those CheckVars returned when a verify was recorded.
+func (e *Engine) ChecksWithVars(name string, vars map[string]string) ([]checks.Check, error) {
+	s, err := e.Get(name)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]checks.Check, len(s.Checks))
+	for i, c := range s.Checks {
+		out[i] = resolveCheckWith(c, func(in string) string { return tmpl.ExpandVars(in, vars) })
+	}
+	return out, nil
+}
+
 // ResolveCheck returns c with its template variables expanded, as Verify does.
 // Callers outside this package that run a scenario's checks must use it.
 func (e *Engine) ResolveCheck(c checks.Check) checks.Check {
@@ -552,8 +585,25 @@ func resolveCheckWith(c checks.Check, resolve func(string) string) checks.Check 
 	return c
 }
 
-// Down deactivates a scenario by uninstalling all its components in reverse order.
+// Down deactivates a scenario by uninstalling all its components in reverse
+// order. When one will not uninstall, the scenario stays active and the error
+// names it, so the same command can be run again.
 func (e *Engine) Down(name string, exec CommandExecutor) error {
+	return e.down(name, exec, false)
+}
+
+// ForceDown is Down for a component that can never be removed again, such as
+// one whose CRD is already gone: it reports what failed but marks the scenario
+// inactive anyway.
+func (e *Engine) ForceDown(name string, exec CommandExecutor) error {
+	return e.down(name, exec, true)
+}
+
+// down uninstalls every component, in reverse install order, even after one
+// fails. Unless force is set, a failure keeps the scenario active, because
+// every uninstall is safe to repeat and an inactive marker would refuse the
+// retry.
+func (e *Engine) down(name string, exec CommandExecutor, force bool) error {
 	s, err := e.Get(name)
 	if err != nil {
 		return err
@@ -570,13 +620,22 @@ func (e *Engine) Down(name string, exec CommandExecutor) error {
 	defer e.withActivationWorkload(name)()
 	defer e.withActivationParams(s)()
 
-	// Uninstall in reverse install order, across all stages.
+	var failed []string
+	var errs []error
 	all := s.AllComponents()
 	for i, comp := range slices.Backward(all) {
 		fmt.Fprintf(e.output(), "[%d/%d] Uninstalling %s...\n", len(all)-i, len(all), comp.Name)
 		if err := e.uninstallComponent(s, &comp, exec); err != nil {
-			fmt.Fprintf(e.output(), "  Warning: %v\n", err)
+			fmt.Fprintf(e.output(), "  Failed: %v\n", err)
+			failed = append(failed, comp.Name)
+			errs = append(errs, fmt.Errorf("%s: %w", comp.Name, err))
 		}
+	}
+	if len(failed) > 0 && !force {
+		return fmt.Errorf("could not uninstall %s, so %s is still active:\n%w\n"+
+			"Uninstalls are safe to repeat: re-run 'labctl scenario down %s'. "+
+			"If a component can never be removed, 'labctl scenario down %s --force' marks the scenario inactive anyway",
+			strings.Join(failed, ", "), name, errors.Join(errs...), name, name)
 	}
 
 	e.markInactive(name)
@@ -584,6 +643,10 @@ func (e *Engine) Down(name string, exec CommandExecutor) error {
 		if err := e.Release(context.Background(), e.ActiveDemands("")); err != nil {
 			fmt.Fprintf(e.output(), "  Warning: %v\n", err)
 		}
+	}
+	if len(failed) > 0 {
+		fmt.Fprintf(e.output(), "\nScenario marked inactive. Left behind (remove it by hand): %s\n", strings.Join(failed, ", "))
+		return nil
 	}
 	fmt.Fprintln(e.output(), "\nScenario deactivated.")
 	return nil
@@ -856,11 +919,13 @@ func (e *Engine) installHelm(s *Scenario, comp *Component, exec CommandExecutor)
 // helmReleaseExists reports whether a release, in any state, is already
 // installed in ns. It lists releases rather than asking `helm status`, which
 // prints "Error: release: not found" into the learner's output for the usual
-// case of a release that is not there yet.
+// case of a release that is not there yet. Every status is named because Helm
+// 4 rejects --all and Helm 3 lists only deployed and failed releases without it.
 func helmReleaseExists(name, ns string, exec CommandExecutor) bool {
 	out, err := exec.RunCommandStreamed(
-		"Check for existing release "+name, "helm", "list", "--all", "--short",
-		"--filter", "^"+regexp.QuoteMeta(name)+"$", "--namespace", ns)
+		"Check for existing release "+name, "helm", "list",
+		"--deployed", "--failed", "--pending", "--superseded", "--uninstalling", "--uninstalled",
+		"--short", "--filter", "^"+regexp.QuoteMeta(name)+"$", "--namespace", ns)
 	if err != nil {
 		return false
 	}

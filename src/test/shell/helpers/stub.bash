@@ -82,6 +82,25 @@ STUB
   done
 }
 
+# stub_script <name> — a recording shim whose behaviour is the bash read from
+# stdin. Use it when a tool's answer depends on its arguments or on state the
+# test exports: the body sees the call's arguments as "$@".
+#
+#   stub_script kubectl <<'EOF'
+#   case "$*" in
+#     *"get deploy"*jsonpath={.spec.replicas}*) echo "${REPLICAS:-1}" ;;
+#   esac
+#   EOF
+stub_script() {
+  local name="$1"
+  {
+    printf '#!/usr/bin/env bash\n'
+    printf 'printf '"'"'%%s\\t%%s\\n'"'"' %q "$*" >>%q\n' "$name" "$STUB_LOG"
+    cat
+  } >"$STUB_BIN/$name"
+  chmod +x "$STUB_BIN/$name"
+}
+
 # stub_exit <name> <code> — make every call to <name> exit with <code>.
 # Use this to prove a script propagates tool failure (set -euo pipefail).
 stub_exit() {

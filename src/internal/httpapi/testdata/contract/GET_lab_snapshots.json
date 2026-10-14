@@ -1,0 +1,14 @@
+[
+  {
+    "apps": [
+      "demo-app",
+      "go-api"
+    ],
+    "domainSuffix": "lab.test",
+    "name": "before-drill",
+    "platform": [],
+    "profile": "k3d",
+    "scenarios": [],
+    "takenAt": "<time>"
+  }
+]

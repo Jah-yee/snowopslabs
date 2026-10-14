@@ -3,11 +3,14 @@
 package httpapi
 
 import (
+	"context"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/sagar2395/snowopslabs/internal/platform"
 )
@@ -115,5 +118,63 @@ func TestResolveCategory(t *testing.T) {
 	}
 	if got := s.resolveCategory("unknown"); got != "unknown" {
 		t.Errorf("no match: got %q, want unknown (pass-through)", got)
+	}
+}
+
+// Serve answers until its context is cancelled, then stops cleanly and frees
+// the port.
+func TestServer_ServeStopsWhenItsContextEnds(t *testing.T) {
+	s := newContractLab(t)
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr := ln.Addr().String()
+	_ = ln.Close()
+
+	ctx, stop := context.WithCancel(t.Context())
+	done := make(chan error, 1)
+	go func() { done <- s.Serve(ctx, addr) }()
+
+	url := "http://" + addr + "/api/v2/auth/me"
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		req, _ := http.NewRequestWithContext(t.Context(), http.MethodGet, url, nil)
+		resp, err := http.DefaultClient.Do(req)
+		if err == nil {
+			_ = resp.Body.Close()
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("the server never answered: %v", err)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+
+	stop()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("Serve after its context ended = %v, want nil", err)
+		}
+	case <-time.After(15 * time.Second):
+		t.Fatal("Serve did not return after its context ended")
+	}
+	if conn, err := net.Dial("tcp", addr); err == nil {
+		_ = conn.Close()
+		t.Error("the port still accepts connections after Serve returned")
+	}
+}
+
+// A port that is already taken is reported, not waited on.
+func TestServer_ServeReportsATakenPort(t *testing.T) {
+	s := newContractLab(t)
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+	if err := s.Serve(t.Context(), ln.Addr().String()); err == nil {
+		t.Fatal("Serve on a taken port returned no error")
 	}
 }

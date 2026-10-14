@@ -132,11 +132,17 @@ func TestStreamSSE_ResyncWhenCursorTooOld(t *testing.T) {
 	}
 	defer func() { _ = resp.Body.Close() }()
 
+	// The reader stops when the test cancels the request, so it never
+	// outlives the test blocked on a channel nobody reads.
 	lines := make(chan string, 8)
 	go func() {
 		sc := bufio.NewScanner(resp.Body)
 		for sc.Scan() {
-			lines <- sc.Text()
+			select {
+			case lines <- sc.Text():
+			case <-ctx.Done():
+				return
+			}
 		}
 	}()
 

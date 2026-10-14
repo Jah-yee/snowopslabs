@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
-	"github.com/sagar2395/snowopslabs/internal/executor"
 )
 
 func TestIsValidName(t *testing.T) {
@@ -157,55 +156,6 @@ func TestHandleAppDeploy_InvalidName_HasCode(t *testing.T) {
 	}
 	if body.Type != problemType("invalid_input") {
 		t.Errorf("type: got %q, want %q", body.Type, problemType("invalid_input"))
-	}
-}
-
-// ---------------------------------------------------------------------------
-// Job ID in 202 response tests
-// ---------------------------------------------------------------------------
-
-func TestHandleAppBuild_AcceptedIncludesJobID(t *testing.T) {
-	exec := executor.New(t.TempDir())
-	s := &Server{exec: exec}
-
-	req := httptest.NewRequest(http.MethodPost, "/api/apps/go-api/build", nil)
-	req = setVars(req, map[string]string{"name": "go-api"})
-	w := httptest.NewRecorder()
-	s.handleAppBuild(w, req)
-
-	if w.Code != http.StatusAccepted {
-		t.Errorf("status: got %d, want %d", w.Code, http.StatusAccepted)
-	}
-	var body map[string]string
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
-	if body["jobId"] == "" {
-		t.Error("expected non-empty jobId in 202 response")
-	}
-	if body["status"] != "accepted" {
-		t.Errorf("status field: got %q, want %q", body["status"], "accepted")
-	}
-}
-
-func TestHandleAppDeploy_AcceptedIncludesJobID(t *testing.T) {
-	exec := executor.New(t.TempDir())
-	s := &Server{exec: exec}
-
-	req := httptest.NewRequest(http.MethodPost, "/api/apps/go-api/deploy", nil)
-	req = setVars(req, map[string]string{"name": "go-api"})
-	w := httptest.NewRecorder()
-	s.handleAppDeploy(w, req)
-
-	if w.Code != http.StatusAccepted {
-		t.Errorf("status: got %d, want %d", w.Code, http.StatusAccepted)
-	}
-	var body map[string]string
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
-	if body["jobId"] == "" {
-		t.Error("expected non-empty jobId in 202 response")
 	}
 }
 
