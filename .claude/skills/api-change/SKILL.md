@@ -37,9 +37,12 @@ unmeasured. A new route is measured because it is a route, not because someone
 remembered.
 
 Middleware order, outermost first: request ID → API version → access log →
-CORS → JSON → auth → metrics. Request ID and version are set before anything can
-reject the request, so even a CORS or auth failure gets a correlation ID and the
-right error envelope. Metrics sit innermost so they time the handler itself.
+CORS → JSON → body limit → auth → metrics. Request ID and version are set before
+anything can reject the request, so even a CORS or auth failure gets a
+correlation ID and the right error envelope. The body limit sits before auth so
+the open auth endpoints are bounded too; a handler reads its body through
+`decodeBody`, which answers `413` or `400` itself. Metrics sit innermost so they
+time the handler itself.
 
 ## Adding a route
 

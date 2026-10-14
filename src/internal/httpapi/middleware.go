@@ -147,7 +147,7 @@ func limitBodyMiddleware(next http.Handler) http.Handler {
 
 func respondTooLarge(w http.ResponseWriter, r *http.Request) {
 	respondError(w, r, http.StatusRequestEntityTooLarge, "request_too_large",
-		fmt.Sprintf("the request body is over the %d-byte limit", maxRequestBody))
+		fmt.Sprintf("the request body is larger than the %d MiB limit", maxRequestBody>>20))
 }
 
 // decodeBody reads the request's JSON body into v. It answers the request

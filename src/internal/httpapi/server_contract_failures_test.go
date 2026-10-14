@@ -216,6 +216,13 @@ func TestRequestBody_IsBounded(t *testing.T) {
 		})
 	}
 
+	// Login is open without a session, so its body is bounded for anyone.
+	t.Run("login with auth on: a declared size over the limit", func(t *testing.T) {
+		s, _, _ := newAuthedLab(t)
+		w := do(s, http.MethodPost, "/auth/login", big, nil)
+		assertProblem(t, w, http.StatusRequestEntityTooLarge, "request_too_large", apiPrefix+"/auth/login")
+	})
+
 	t.Run("a streamed body over the limit", func(t *testing.T) {
 		s := newContractLab(t)
 		req := httptest.NewRequest(http.MethodPost, apiPrefix+"/traffic/start", io.NopCloser(strings.NewReader(big)))
