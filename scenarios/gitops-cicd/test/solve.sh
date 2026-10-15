@@ -33,6 +33,9 @@ git commit -am 'promote nginx 1.27.4, scale to 3'
 git push origin main
 sync gitops-demo
 wait_until 180 "gitops-demo running 3 ready replicas" replicas_are status.readyReplicas 3
+# A scale during the rollout is split across both ReplicaSets, and the
+# self-heal check grades a single ReplicaSet returning to the declared count.
+kubectl -n gitops-demo rollout status deployment/gitops-demo --timeout=180s
 
 kubectl -n gitops-demo scale deployment/gitops-demo --replicas=7
 wait_until 180 "ArgoCD reverting gitops-demo to 3 replicas" replicas_are spec.replicas 3

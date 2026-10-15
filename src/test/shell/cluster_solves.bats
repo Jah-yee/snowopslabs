@@ -355,8 +355,8 @@ STUB
   [ ! -f "$STUB_DIR/commit-1/demo/service.yaml" ]
   grep -qx "image: nginx:1.27.3-alpine" "$STUB_DIR/commit-2/broken/deployment.yaml"
   [ "$(call_count git "push origin main")" -eq 3 ]
-  in_order kubectl "patch application gitops-demo" "scale deployment/gitops-demo --replicas=7" \
-    "patch application gitops-demo" "patch application gitops-broken"
+  in_order kubectl "patch application gitops-demo" "rollout status deployment/gitops-demo" \
+    "scale deployment/gitops-demo --replicas=7" "patch application gitops-demo" "patch application gitops-broken"
 }
 
 @test "gitops: fails when ArgoCD never reverts a hand-scaled Deployment" {
