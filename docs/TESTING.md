@@ -315,7 +315,8 @@ stops it before `down`. The runner has hermetic tests in
 solve fails them.
 
 **Recorded check fixtures.** With `RECORD=1`, the runner verifies the
-untouched and the solved lab with `labctl scenario verify --record`, which
+untouched and the solved lab with `labctl scenario verify --record` (the
+solved one is the `--watch` verify that grades the solve), which
 writes `scenarios/<name>/test/fixtures/untouched.json` and `solved.json`: the
 variables the declared `kubectl`, `promql` and `http` checks were rendered
 with, every answer the lab gave them, and each result.

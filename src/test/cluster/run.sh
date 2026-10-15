@@ -95,14 +95,12 @@ case "$kind" in
     fi
     pass "verify fails on the untouched lab"
     solve
-    "$labctl" scenario verify "$name" --watch --interval 10s --timeout "${wait_seconds}s" ||
+    # The solved fixture is what the lab answered on the pass that graded it.
+    # shellcheck disable=SC2046
+    "$labctl" scenario verify "$name" --watch --interval 10s --timeout "${wait_seconds}s" $(record solved) ||
       fail "verify does not pass on the solved lab"
     pass "verify passes on the solved lab"
-    if [ "${RECORD:-0}" = 1 ]; then
-      # shellcheck disable=SC2046
-      "$labctl" scenario verify "$name" $(record solved) || fail "verify does not pass when recording the solved lab"
-      pass "recorded the untouched and solved check fixtures"
-    fi
+    [ "${RECORD:-0}" != 1 ] || pass "recorded the untouched and solved check fixtures"
     # Traffic a solve started is the learner's to stop; down leaves it running.
     "$labctl" traffic stop >/dev/null 2>&1 || true
     "$labctl" scenario down "$name" || fail "scenario down $name"
