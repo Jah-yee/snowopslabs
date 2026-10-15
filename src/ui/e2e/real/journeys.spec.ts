@@ -115,7 +115,12 @@ test.describe('journeys', () => {
     await dialog.getByRole('button', { name: 'Check', exact: true }).click()
     await expect(dialog.getByText('Path complete').first()).toBeVisible({ timeout: 15_000 })
     await dialog.getByRole('button', { name: 'Close', exact: true }).last().click()
-    await expect(page.getByText('1/1 completed')).toBeVisible()
+    await expect(card).toContainText('1/1 completed')
+
+    // Starting over leaves the path as the next journey expects to find it.
+    await card.getByRole('button', { name: 'Reset progress' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Reset progress' }).click()
+    await expect(card).toContainText('0/1 completed', { timeout: 15_000 })
     expect(failed).toEqual([])
   })
 
