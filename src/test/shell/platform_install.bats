@@ -131,3 +131,13 @@ teardown() {
   run grep -rln "local-path" "$ROOT/platform" --include=values.yaml
   [ "$status" -ne 0 ] || { echo "hardcoded storage class in: $output"; false; }
 }
+
+# The external-secrets chart's ServiceMonitor template brings its own
+# external-secrets-metrics Service; metrics.service makes a second one, and on
+# a lab with Prometheus the install fails with "already exists".
+@test "external-secrets turns on the ServiceMonitor without a second metrics Service" {
+  values="$ROOT/platform/secrets/external-secrets/values.yaml"
+  awk '/^serviceMonitor:/ { on = 1; next } on && /^[^ ]/ { exit } on && /enabled: true/ { found = 1 } END { exit !found }' "$values"
+  run awk '/^metrics:/ { m = 1; next } m && /^[^ ]/ { m = 0 } m && /^  service:/ { s = 1; next } s && /^  [^ ]/ { s = 0 } s && /enabled: true/ { print; found = 1 } END { exit !found }' "$values"
+  [ "$status" -ne 0 ] || { echo "metrics.service.enabled is true in ${values#"$ROOT"/}"; false; }
+}
