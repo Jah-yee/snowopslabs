@@ -58,7 +58,7 @@ labctl incident inject --random --category network
 | `--category` | — | restrict `--random` to `workload`, `network`, `resources`, `storage` or `config` |
 | `--silent` | off | do not reveal which fault was injected: the inject prints neither the fault's name nor its script's output, `incident list` does not mark the active fault, `incident status` shows `(hidden — silent mode)` until the check passes, and the run history records the inject with the target `(hidden)` and withholds its output (`labctl runs logs` and `GET /runs/{id}/logs` refuse it) |
 | `--force` | off | inject even when another incident is active |
-| `--deploy-prereqs` | off | install the platform components the fault needs, and build and deploy the target app, if they are not running |
+| `--deploy-prereqs` | off | install the platform components the fault needs, and build and deploy the apps it lists under `prerequisites.apps` (and its target, when that is an app), if they are not running. Without it, a missing app stops the inject with the command that deploys it. |
 
 ## Rules and timing
 

@@ -71,8 +71,8 @@ type Target struct {
 }
 
 // Prerequisites name what must already be installed for the fault to work,
-// such as "ingress" when the detection check calls the app through it. They
-// are not installed automatically; the UI lists them for the user.
+// such as "ingress" when the detection check calls the app through it.
+// `incident inject --deploy-prereqs` installs them; the UI lists them.
 type Prerequisites struct {
 	Platform []string `yaml:"platform,omitempty" json:"platform,omitempty"`
 	Apps     []string `yaml:"apps" json:"apps"`
