@@ -141,7 +141,8 @@ scratch_scenario() {
   RECORD=1 run "$RUN" scenario drill
   [ "$status" -eq 0 ]
   assert_called labctl "scenario verify drill --record $ITEMS_ROOT/scenarios/drill/test/fixtures/untouched.json"
-  assert_called labctl "scenario verify drill --record $ITEMS_ROOT/scenarios/drill/test/fixtures/solved.json"
+  assert_called labctl "scenario verify drill --watch --interval 10s --timeout 0s --record $ITEMS_ROOT/scenarios/drill/test/fixtures/solved.json"
+  [ "$(call_count labctl "scenario verify drill")" -eq 2 ]
   [[ "$output" == *"PASS  recorded the untouched and solved check fixtures"* ]] || false
 }
 

@@ -236,14 +236,19 @@ case needs; a test fails any view test that stubs the `api/client` module.
 The real journeys cover: the dashboard, a deep link surviving a reload, the
 API's 404 problem beside the SPA fallback, activating, verifying and
 deactivating a scenario, injecting, checking and resolving an incident,
-checking a learning module, the results and leaderboard showing what was
-done, a running inject's output resuming after its log requests are dropped,
+checking a learning module and resetting its progress, the results and
+leaderboard showing what was done, a running inject's output resuming after its log requests are dropped,
 and cancelling a running inject from the Runs view. The last two start the run
 from the CLI against the same lab (`$E2E_HOLD.labctl`, written by
 `start-lab.sh`) and hold the fixture fault's inject open while the file
 `E2E_HOLD` names exists, so the cancel crosses processes as it does for a
 user. Every route is then scanned with `axe` in a real browser, which sees
 what jsdom cannot, such as focus order and computed colours.
+
+The server keeps its state between tests, so the `real` and `real-auth`
+projects run on one worker each, repeats included, and every journey leaves
+the lab as it found it: the nightly `--repeat-each=3` run starts each repeat
+on the same lab.
 
 Each route is scanned in both the light and the dark theme, colour contrast
 included.
@@ -315,7 +320,8 @@ stops it before `down`. The runner has hermetic tests in
 solve fails them.
 
 **Recorded check fixtures.** With `RECORD=1`, the runner verifies the
-untouched and the solved lab with `labctl scenario verify --record`, which
+untouched and the solved lab with `labctl scenario verify --record` (the
+solved one is the `--watch` verify that grades the solve), which
 writes `scenarios/<name>/test/fixtures/untouched.json` and `solved.json`: the
 variables the declared `kubectl`, `promql` and `http` checks were rendered
 with, every answer the lab gave them, and each result.

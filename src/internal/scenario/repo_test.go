@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -84,6 +85,73 @@ func TestRepoScenarios_PreflightPassesStatically(t *testing.T) {
 	for _, s := range engine.List() {
 		if err := engine.Preflight(s); err != nil {
 			t.Errorf("scenario %q fails static preflight:\n%v", s.Name, err)
+		}
+	}
+}
+
+// TestRepoScenarios_DeclareWhatTheyUse checks that a scenario lists the
+// platform components its own parts need, so `scenario up --deploy-prereqs`
+// on a bare cluster installs them: a promql or http check reads through the
+// ingress, a promql check needs Prometheus, and a dashboard is a ConfigMap in
+// the monitoring namespace.
+func TestRepoScenarios_DeclareWhatTheyUse(t *testing.T) {
+	root := repoRoot(t)
+	engine := NewEngine(root, "k3d.local", "")
+
+	for _, s := range engine.List() {
+		declared := func(prefix string) bool {
+			return slices.ContainsFunc(s.Prerequisites.Platform, func(p string) bool {
+				return p == prefix || strings.HasPrefix(p, prefix+"/")
+			})
+		}
+		need := map[string]string{}
+		for _, c := range s.Checks {
+			switch c.Type {
+			case "promql":
+				need["ingress"] = "promql check " + c.Name
+				need["monitoring/metrics"] = "promql check " + c.Name
+			case "http":
+				need["ingress"] = "http check " + c.Name
+			}
+		}
+		for _, comp := range s.AllComponents() {
+			if comp.Type == "grafana-dashboard" {
+				need["monitoring"] = "grafana-dashboard component " + comp.Name
+			}
+		}
+		for prereq, why := range need {
+			if !declared(prereq) {
+				t.Errorf("scenario %q has a %s but does not list %s under prerequisites.platform", s.Name, why, prereq)
+			}
+		}
+	}
+}
+
+// serviceMonitorOn matches a values file that turns on its chart's
+// ServiceMonitor.
+var serviceMonitorOn = regexp.MustCompile(`(?m)^serviceMonitor:\s*\n\s+enabled:\s*true`)
+
+// TestRepoScenarios_MetricsBeforeWhatTheyScrape checks that monitoring/metrics
+// comes before any prerequisite whose chart ships a ServiceMonitor. Such a
+// chart renders it only when the Prometheus CRDs already exist, so a component
+// installed first is never scraped.
+func TestRepoScenarios_MetricsBeforeWhatTheyScrape(t *testing.T) {
+	root := repoRoot(t)
+	engine := NewEngine(root, "k3d.local", "")
+
+	for _, s := range engine.List() {
+		metrics := slices.Index(s.Prerequisites.Platform, "monitoring/metrics")
+		if metrics < 0 {
+			continue
+		}
+		for _, pre := range s.Prerequisites.Platform[:metrics] {
+			values, err := os.ReadFile(filepath.Join(root, "platform", pre, "values.yaml"))
+			if err != nil {
+				continue // a bare category, or a component with no values of its own
+			}
+			if serviceMonitorOn.Match(values) {
+				t.Errorf("scenario %q lists %s before monitoring/metrics, so its ServiceMonitor is never created", s.Name, pre)
+			}
 		}
 	}
 }

@@ -225,6 +225,51 @@ func TestIncident_Failures(t *testing.T) {
 	}
 }
 
+// A fault that breaks something beside the app, such as a noisy neighbour in
+// its own namespace, still needs the app it lists under prerequisites.apps.
+func TestIncident_InjectNeedsThePrerequisiteApps(t *testing.T) {
+	tests := []struct {
+		name       string
+		args       []string
+		wantErr    string
+		wantDeploy bool
+	}{
+		{name: "without --deploy-prereqs it stops and says how to deploy the app",
+			args: []string{"incident", "inject", "neighbour-fault"}, wantErr: "labctl app build demo-app && labctl app deploy demo-app"},
+		{name: "with --deploy-prereqs it builds and deploys the app first",
+			args: []string{"incident", "inject", "neighbour-fault", "--deploy-prereqs"}, wantDeploy: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := newTerminal(t)
+			fault := strings.ReplaceAll(readFixture(t, l, "incidents/"+labtest.Fault+"/fault.yaml"), "demo-fault", "neighbour-fault")
+			fault = strings.Replace(fault, `namespace: "{{.WorkloadNamespace}}"`, "namespace: labfault-batch", 1)
+			l.Write(t, "incidents/neighbour-fault/fault.yaml", fault)
+			for _, f := range []string{"inject.sh", "resolve.sh", "checks/resolved.sh", "hints.md", "solution.md"} {
+				l.Write(t, "incidents/neighbour-fault/"+f, readFixture(t, l, "incidents/"+labtest.Fault+"/"+f))
+			}
+			l.undeploy(labtest.App)
+
+			r := l.run(tt.args...)
+			if tt.wantErr != "" {
+				if r.exitCode() != 1 || !strings.Contains(r.stderr, tt.wantErr) {
+					t.Fatalf("exit %d, stderr %q; want exit 1 saying %q", r.exitCode(), r.stderr, tt.wantErr)
+				}
+				if l.exists("incidents/neighbour-fault/BROKEN") {
+					t.Error("the fault was injected although the app it needs is not deployed")
+				}
+				return
+			}
+			if r.err != nil {
+				t.Fatalf("inject failed: %v\nstderr:\n%s", r.err, r.stderr)
+			}
+			if got := strings.Contains(r.stdout, "deploy deploy "+labtest.App); got != tt.wantDeploy {
+				t.Errorf("deployed %s = %v, want %v\nstdout:\n%s", labtest.App, got, tt.wantDeploy, r.stdout)
+			}
+		})
+	}
+}
+
 // A failed inject leaves nothing recorded as active, so the learner is not
 // told to resolve an incident that never started.
 func TestIncident_FailedInjectIsNotRecorded(t *testing.T) {

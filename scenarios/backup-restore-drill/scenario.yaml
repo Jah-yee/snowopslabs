@@ -5,6 +5,10 @@ displayName: "Day-2 Drill: Namespace Backup & Restore"
 description: "Rehearse the loop every operator needs before they need it. Capture a namespace to a manifest archive with 'kubectl get -o json | jq', delete something that matters, and put it back with 'kubectl apply --server-side'. Then find the edge of what that buys you: a data-writer holds a boot-id on a PersistentVolume, and restoring its claim gives you back the object bound to a brand-new empty disk. The objects round-trip; the bytes do not. A dependency-light way to learn where a manifest backup stops and a volume snapshot has to start."
 category: operations
 prerequisites:
+  platform:
+    - ingress
+    - monitoring/metrics
+    - monitoring/grafana
   apps:
     - "{{.WorkloadName}}"
 runtimes:

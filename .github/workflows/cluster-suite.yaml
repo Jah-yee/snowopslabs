@@ -110,10 +110,12 @@ jobs:
           kubectl get pods -A || true
           labctl runs list --limit 10 || true
 
+  # Only a run of main publishes: a run of another branch tests that branch's
+  # content, and its results say nothing about main's.
   publish:
     name: verified flags and check fixtures
     needs: run
-    if: always() && needs.run.result != 'skipped'
+    if: always() && needs.run.result != 'skipped' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write

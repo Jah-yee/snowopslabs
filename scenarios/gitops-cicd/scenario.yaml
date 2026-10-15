@@ -139,7 +139,7 @@ checks:
     script: checks/self-heal-observed.sh
     timeoutSeconds: 60
     pending: true
-    remediation: "Change the cluster by hand and watch ArgoCD undo you: kubectl -n gitops-demo scale deployment/gitops-demo --replicas=7, then kubectl -n gitops-demo get deployment gitops-demo -w until it returns to what Git declares. You do not need to be quick — the revert is graded from the Deployment's event trail."
+    remediation: "Once any rollout has finished (kubectl -n gitops-demo rollout status deployment/gitops-demo), change the cluster by hand and watch ArgoCD undo you: kubectl -n gitops-demo scale deployment/gitops-demo --replicas=7, then kubectl -n gitops-demo get deployment gitops-demo -w until it returns to what Git declares. You do not need to be quick — the revert is graded from the Deployment's event trail."
 
   - name: prune-removed-a-resource
     type: script

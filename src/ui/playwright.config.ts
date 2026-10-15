@@ -42,10 +42,12 @@ export default defineConfig({
   projects: [
     {
       // The real binary over the fixture lab, with nothing stubbed in the
-      // browser. Its server keeps state, so its journeys run one at a time.
+      // browser. Its server keeps state, so its tests run one at a time, and
+      // so do the repeats of --repeat-each.
       name: 'real',
       testDir: './e2e/real',
       fullyParallel: false,
+      workers: 1,
       use: {
         ...devices['Desktop Chrome'],
         baseURL: `http://127.0.0.1:${REAL_PORT}`,
@@ -58,6 +60,7 @@ export default defineConfig({
       name: 'real-auth',
       testDir: './e2e/real-auth',
       fullyParallel: false,
+      workers: 1,
       use: {
         ...devices['Desktop Chrome'],
         baseURL: `http://127.0.0.1:${AUTH_PORT}`,

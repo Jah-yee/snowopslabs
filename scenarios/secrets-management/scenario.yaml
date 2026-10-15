@@ -6,9 +6,12 @@ description: "A workload mounts a Vault-backed secret that External Secrets keep
 category: security
 prerequisites:
   platform:
+    - ingress
+    # Before external-secrets: its chart creates the ServiceMonitor that
+    # eso-reports-synced reads only when Prometheus is already installed.
+    - monitoring/metrics
     - secrets/vault
     - secrets/external-secrets
-    - monitoring/metrics
   apps:
     - "{{.WorkloadName}}"
 # Memory for this scenario's own workloads; shared releases, platform

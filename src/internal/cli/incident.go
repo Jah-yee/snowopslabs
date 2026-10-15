@@ -10,6 +10,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"slices"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -110,12 +111,10 @@ a reproducible pick across a team.`,
 		if err := ensurePlatformPrereqs(cmd.Context(), os.Stdout, f.Prerequisites.Platform, injectDeployPrereqs); err != nil {
 			return err
 		}
-		// If the fault's target is a repo app, check it is deployed first (or
-		// deploy it with --deploy-prereqs).
-		if appExists(f.Target.Namespace) {
-			if err := ensureAppsDeployed(cmd.Context(), []string{incEng.ResolvedTarget(f).Namespace}, injectDeployPrereqs); err != nil {
-				return err
-			}
+		// The apps the fault needs, and its target when that is a repo app,
+		// must be running first (or deployed with --deploy-prereqs).
+		if err := ensureAppsDeployed(cmd.Context(), faultApps(f), injectDeployPrereqs); err != nil {
+			return err
 		}
 
 		// Check preconditions, run inject.sh through the run engine, and on
@@ -394,7 +393,7 @@ var incidentInfoCmd = &cobra.Command{
 
 func init() {
 	incidentSolutionCmd.Flags().BoolVar(&solutionYes, "yes", false, "skip the spoiler confirmation")
-	incidentInjectCmd.Flags().BoolVar(&injectDeployPrereqs, "deploy-prereqs", false, "install the platform components the fault needs and build and deploy the target app, if they are not already running")
+	incidentInjectCmd.Flags().BoolVar(&injectDeployPrereqs, "deploy-prereqs", false, "install the platform components the fault needs and build and deploy its apps, if they are not already running")
 	incidentInjectCmd.Flags().BoolVar(&injectRandom, "random", false, "pick a random eligible fault")
 	incidentInjectCmd.Flags().BoolVar(&injectSilent, "silent", false, "don't reveal which fault was injected")
 	incidentInjectCmd.Flags().BoolVar(&injectForce, "force", false, "inject even if another incident is active")
@@ -426,4 +425,14 @@ func rebindToActiveIncident() error {
 		return nil
 	}
 	return rebindTo(a.App)
+}
+
+// faultApps returns the apps a fault needs running: its prerequisite apps,
+// and its target when that is a repo app, each once.
+func faultApps(f *incident.Fault) []string {
+	apps := append([]string{}, f.Prerequisites.Apps...)
+	if target := incEng.ResolvedTarget(f).Namespace; appExists(target) && !slices.Contains(apps, target) {
+		apps = append(apps, target)
+	}
+	return apps
 }
