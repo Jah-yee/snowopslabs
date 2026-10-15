@@ -211,7 +211,9 @@ checks:
   # open one would count a previous run's alerts.
   - name: an-sre-alert-fired
     type: promql
-    query: 'max_over_time((count(ALERTS{scenario="observability-sre",alertstate="firing"}) or vector(0))[{{.SinceActivation}}:1m])'
+    # Every ALERTS sample since activation, not a 1m grid that an alert firing
+    # for one 30s evaluation can fall between.
+    query: 'count(max_over_time(ALERTS{scenario="observability-sre",alertstate="firing"}[{{.SinceActivation}}])) or vector(0)'
     operator: ">="
     value: "1"
     pending: true
