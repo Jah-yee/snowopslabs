@@ -45,6 +45,13 @@ explore:
     - "Generate traffic first, or the dashboards stay empty"
 ```
 
+`prerequisites.platform` lists everything the scenario's own parts need, so
+`scenario up --deploy-prereqs` works on a bare cluster: `ingress` for a
+`promql` or `http` check (both read through the ingress), `monitoring/metrics`
+for a `promql` check, and a `monitoring/...` component for a
+`grafana-dashboard` component (its ConfigMap goes in the monitoring
+namespace). `TestRepoScenarios_DeclareWhatTheyUse` enforces it.
+
 ## Components
 
 A component is one installable thing. Use **either** a top-level `components:`

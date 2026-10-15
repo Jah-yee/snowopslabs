@@ -6,6 +6,7 @@ description: "A workload mounts a Vault-backed secret that External Secrets keep
 category: security
 prerequisites:
   platform:
+    - ingress
     - secrets/vault
     - secrets/external-secrets
     - monitoring/metrics

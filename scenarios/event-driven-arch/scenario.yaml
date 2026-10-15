@@ -6,6 +6,8 @@ description: "An 'orders' topic on Kafka (Strimzi) with a producer/consumer flow
 category: data
 prerequisites:
   platform:
+    # Its checks and dashboards read Prometheus through the ingress.
+    - ingress
     - data/kafka
     # The scenario ships PodMonitors and Grafana dashboards; without the
     # monitoring stack they apply cleanly and then show nothing.

@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -84,6 +85,44 @@ func TestRepoScenarios_PreflightPassesStatically(t *testing.T) {
 	for _, s := range engine.List() {
 		if err := engine.Preflight(s); err != nil {
 			t.Errorf("scenario %q fails static preflight:\n%v", s.Name, err)
+		}
+	}
+}
+
+// TestRepoScenarios_DeclareWhatTheyUse checks that a scenario lists the
+// platform components its own parts need, so `scenario up --deploy-prereqs`
+// on a bare cluster installs them: a promql or http check reads through the
+// ingress, a promql check needs Prometheus, and a dashboard is a ConfigMap in
+// the monitoring namespace.
+func TestRepoScenarios_DeclareWhatTheyUse(t *testing.T) {
+	root := repoRoot(t)
+	engine := NewEngine(root, "k3d.local", "")
+
+	for _, s := range engine.List() {
+		declared := func(prefix string) bool {
+			return slices.ContainsFunc(s.Prerequisites.Platform, func(p string) bool {
+				return p == prefix || strings.HasPrefix(p, prefix+"/")
+			})
+		}
+		need := map[string]string{}
+		for _, c := range s.Checks {
+			switch c.Type {
+			case "promql":
+				need["ingress"] = "promql check " + c.Name
+				need["monitoring/metrics"] = "promql check " + c.Name
+			case "http":
+				need["ingress"] = "http check " + c.Name
+			}
+		}
+		for _, comp := range s.AllComponents() {
+			if comp.Type == "grafana-dashboard" {
+				need["monitoring"] = "grafana-dashboard component " + comp.Name
+			}
+		}
+		for prereq, why := range need {
+			if !declared(prereq) {
+				t.Errorf("scenario %q has a %s but does not list %s under prerequisites.platform", s.Name, why, prereq)
+			}
 		}
 	}
 }
