@@ -52,6 +52,11 @@ for a `promql` check, and a `monitoring/...` component for a
 `grafana-dashboard` component (its ConfigMap goes in the monitoring
 namespace). `TestRepoScenarios_DeclareWhatTheyUse` enforces it.
 
+They install in the order listed. `monitoring/metrics` comes before any
+component whose values turn on a `serviceMonitor`: the chart creates it only
+when the Prometheus CRDs already exist
+(`TestRepoScenarios_MetricsBeforeWhatTheyScrape`).
+
 ## Components
 
 A component is one installable thing. Use **either** a top-level `components:`

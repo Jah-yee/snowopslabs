@@ -127,6 +127,35 @@ func TestRepoScenarios_DeclareWhatTheyUse(t *testing.T) {
 	}
 }
 
+// serviceMonitorOn matches a values file that turns on its chart's
+// ServiceMonitor.
+var serviceMonitorOn = regexp.MustCompile(`(?m)^serviceMonitor:\s*\n\s+enabled:\s*true`)
+
+// TestRepoScenarios_MetricsBeforeWhatTheyScrape checks that monitoring/metrics
+// comes before any prerequisite whose chart ships a ServiceMonitor. Such a
+// chart renders it only when the Prometheus CRDs already exist, so a component
+// installed first is never scraped.
+func TestRepoScenarios_MetricsBeforeWhatTheyScrape(t *testing.T) {
+	root := repoRoot(t)
+	engine := NewEngine(root, "k3d.local", "")
+
+	for _, s := range engine.List() {
+		metrics := slices.Index(s.Prerequisites.Platform, "monitoring/metrics")
+		if metrics < 0 {
+			continue
+		}
+		for _, pre := range s.Prerequisites.Platform[:metrics] {
+			values, err := os.ReadFile(filepath.Join(root, "platform", pre, "values.yaml"))
+			if err != nil {
+				continue // a bare category, or a component with no values of its own
+			}
+			if serviceMonitorOn.Match(values) {
+				t.Errorf("scenario %q lists %s before monitoring/metrics, so its ServiceMonitor is never created", s.Name, pre)
+			}
+		}
+	}
+}
+
 // TestRepoScenarios_ObservabilityIsV2 checks that observability-sre, the
 // reference v2 scenario, keeps its stages, objectives and checks.
 func TestRepoScenarios_ObservabilityIsV2(t *testing.T) {
