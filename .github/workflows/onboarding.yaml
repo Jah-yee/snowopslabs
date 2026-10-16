@@ -6,6 +6,10 @@
 # outside the clone, so labctl must find the lab install.sh recorded: doctor,
 # init (tools, Docker preflight, cluster, platform, health gate), a scenario
 # with --deploy-prereqs, status and teardown.
+#
+# The codespaces job builds .devcontainer/ with the devcontainer CLI and lets
+# its own setup run install.sh and labctl init, as a new codespace does, then
+# runs a scenario from inside the container.
 name: onboarding
 
 on:
@@ -24,6 +28,7 @@ on:
       - src/internal/cli/init_cmd.go
       - src/internal/cli/doctor.go
       - src/internal/cli/prereqs.go
+      - .devcontainer/**
       - .github/workflows/onboarding.yaml
   schedule:
     - cron: '43 3 * * *' # nightly at 03:43 UTC
@@ -105,3 +110,63 @@ jobs:
         if: always()
         working-directory: /home/runner
         run: labctl teardown || true
+
+  codespaces:
+    name: the Codespaces devcontainer builds the lab
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # goreleaser reads tags for the version
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: src/go.mod
+          cache-dependency-path: src/go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: src/ui/package-lock.json
+
+      - name: Build a release snapshot
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --snapshot --clean --skip=publish
+          workdir: src
+
+      - name: Serve the snapshot as a local release
+        id: release
+        run: |
+          archive="$(ls src/dist/labctl_*_linux_amd64.tar.gz)"
+          version="$(basename "$archive" | sed 's/^labctl_\(.*\)_linux_amd64\.tar\.gz$/\1/')"
+          mkdir -p "rel/download/v${version}"
+          cp "$archive" src/dist/checksums.txt "rel/download/v${version}/"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Install the devcontainer CLI
+        run: npm install -g @devcontainers/cli@0.88.0
+
+      # The container's postCreateCommand runs install.sh and labctl init.
+      # SNOWOPS_* point install.sh at the snapshot, mounted with the workspace.
+      - name: Create the codespace container and run its setup
+        run: |
+          rel="/workspaces/$(basename "$GITHUB_WORKSPACE")/rel"
+          devcontainer up --workspace-folder . \
+            --remote-env "SNOWOPS_VERSION=${{ steps.release.outputs.version }}" \
+            --remote-env "SNOWOPS_RELEASE_URL=file://${rel}"
+
+      - name: Run a scenario from a codespace terminal
+        run: |
+          devcontainer exec --workspace-folder . sh -c \
+            'labctl doctor && labctl scenario up env-promotion --deploy-prereqs && labctl status'
+
+      - name: Dump cluster state on failure
+        if: failure()
+        run: |
+          devcontainer exec --workspace-folder . sh -c \
+            'kubectl get nodes -o wide; kubectl get pods -A -o wide; docker stats --no-stream' || true

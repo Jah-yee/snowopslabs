@@ -50,6 +50,12 @@ launching, DNS resolution (`*.localhost` vs `DOMAIN_SUFFIX=127.0.0.1.nip.io`),
 integration, line endings, and idle cluster recovery) see the
 [WSL2 Troubleshooting guide](getting-started/wsl.md#troubleshooting).
 
+## GitHub Codespaces
+
+A codespace on the wrong branch, Docker still starting during setup, and
+`*.localhost` links that do not open in your browser are covered in
+[Running the lab in GitHub Codespaces](getting-started/codespaces.md#when-something-goes-wrong).
+
 ## Still stuck
 
 `labctl runs list` shows every operation labctl ran and `labctl runs logs <id>`
