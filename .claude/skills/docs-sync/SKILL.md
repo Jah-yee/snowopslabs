@@ -47,10 +47,9 @@ files a decision deleted.
 ## When the website picks it up
 
 labs.snowops.net publishes these docs and the catalog from the `stable`
-branch. When a release is published and `stable` moves, a workflow here
-(`notify-website.yaml`) tells the website to sync, and it rebuilds within
-minutes. A doc fix merged to `main` therefore reaches the site with the next
-release, not before.
+branch. The website checks `stable` every 30 minutes and rebuilds when it has
+moved, so a release reaches the site within about half an hour. A doc fix
+merged to `main` reaches the site with the next release, not before.
 
 ## If you added, renamed, split or deleted a doc
 

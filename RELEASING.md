@@ -113,9 +113,8 @@ squash merge removes the release commit, so the workflow fails and says to run
    [`Stable` workflow](.github/workflows/stable.yaml) then fast-forwards the
    `stable` branch to the tag, which is what learners clone and merge. A
    pre-release does not move `stable`.
-6. The same workflow asks snowopslabs-web to sync, so labs.snowops.net shows
-   the new release's docs, catalog and notes within minutes (see
-   [The website](#the-website)).
+6. labs.snowops.net picks up the new release's docs, catalog and notes
+   within about 30 minutes (see [The website](#the-website)).
 7. Announce the release.
 
 ## Verifying a download
@@ -132,16 +131,10 @@ labs.snowops.net is built from the private snowopslabs-web repository. It
 publishes the docs, the catalog and the release notes from `stable`, so what
 the site says always matches the release people install.
 
-When `stable` moves, [`notify-website.yaml`](.github/workflows/notify-website.yaml)
-runs `scripts/notify-website.sh`, which sends a `repository_dispatch` to the
-website. The website's sync workflow then pulls `stable`, builds, and deploys.
-It also runs once a day, so a missed dispatch only delays the update.
-
-The dispatch needs the `WEBSITE_DISPATCH_TOKEN` repository secret here: a
-fine-grained personal access token with **Contents: read and write** on
-`snowopscloud/snowopslabs-web` only. Without it the workflow passes with a
-notice. When the token expires, the workflow fails with HTTP 401 or 403;
-create a new one and update the secret.
+Nothing in this repository drives it. The website's own sync workflow checks
+the `stable` commit every 30 minutes and, when it has moved, pulls the docs
+and catalog, builds the site and deploys it. To update the site sooner, run
+that workflow by hand from the snowopslabs-web Actions tab.
 
 ## Not yet automated
 
