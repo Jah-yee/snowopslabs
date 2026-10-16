@@ -2,7 +2,6 @@
 
 **Status:** Proposed | Accepted | Superseded by ADR-NNNN
 **Date:** YYYY-MM-DD
-**Wave:** WN
 
 ## Context
 

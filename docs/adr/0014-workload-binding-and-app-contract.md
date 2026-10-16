@@ -1,6 +1,6 @@
 # ADR 0014 — Workload binding and the app contract
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-08
 
 ## Context

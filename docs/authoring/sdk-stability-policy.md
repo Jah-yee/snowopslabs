@@ -6,7 +6,7 @@ lets **content and engine evolve on independent clocks**.
 
 ## What is covered (the public surface)
 
-- **The content schemas** — `scenario.yaml` and, from W2-T01, `fault.yaml`,
+- **The content schemas** — `scenario.yaml`, `fault.yaml`,
   `path.yaml` and `challenge.yaml`, each identified by `apiVersion`
   (e.g. `scenario.snowops.net/v2`) and published as a JSON Schema under
   [`sdk/schemas/`](../../src/sdk/schemas/).

@@ -295,7 +295,7 @@ jobs:
 
       # Schema + cross-reference integrity + template resolution over every
       # scenario, incident, learning path and challenge. Fails the build on any
-      # problem, naming the file, line and reference (W2-T07). The binary is
+      # problem, naming the file, line and reference. The binary is
       # built under src/bin/ but discovers content from the repo root (CWD).
       - name: Validate content
         run: ./bin/labctl validate

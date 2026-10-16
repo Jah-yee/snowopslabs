@@ -7,8 +7,7 @@
 Instead, use one of:
 
 - **GitHub Private Vulnerability Reporting** — the "Report a vulnerability" button
-  under this repository's **Security** tab (preferred). _Maintainer: enable this
-  in repo settings — manual action E2._
+  under this repository's **Security** tab (preferred).
 - Email **admin@snowops.net** with details.
 
 Please include: a description, reproduction steps, affected version/commit, and

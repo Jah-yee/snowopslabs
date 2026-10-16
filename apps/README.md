@@ -27,7 +27,6 @@ apps/<name>/
       values.yaml          # Default chart values
       values-dev.yaml      # Local k3d profile
       values-prod-like.yaml # Production simulation profile
-      values-cloud.yaml    # Cloud runtime profile (AKS/EKS)
       values-test.yaml     # CI testing profile
       templates/
         deployment.yaml
@@ -266,7 +265,6 @@ helm test go-api -n go-api
 |---------|---------|----------|-----|--------|----------|
 | `values-dev.yaml` | traefik, `*.snowops.localhost` | 1 | No | Default | Local development |
 | `values-prod-like.yaml` | traefik, `*.snowops.localhost` | 3 | Yes (3-10) | Tuned | Production testing |
-| `values-cloud.yaml` | nginx, `*.cloud.local` | 2 | Yes (2-10) | Tuned | AKS/EKS deployment |
 | `values-test.yaml` | traefik, `*.snowops.localhost` | 1 | No | Fast | CI/CD testing |
 
 Switch profiles by changing `HELM_VALUES` in `app.env`.

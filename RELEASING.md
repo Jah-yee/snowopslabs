@@ -38,11 +38,11 @@ working directory accordingly.
   (`scenario.snowops.net/v2`) and evolves independently; the CLI supports the
   current and previous schema versions.
 
-### Pre-1.0
+### Breaking changes
 
-While pre-1.0, minor versions may include breaking changes, each called out in
-the release notes. The public SDK (`pkg/`) stability policy applies from the
-first 1.0 release.
+Releases are past 1.0, so the [stability policy](docs/authoring/sdk-stability-policy.md)
+applies to the CLI, the content schemas and the public SDK (`pkg/`). Any
+breaking change is called out in the release notes.
 
 ## TL;DR — cut and publish a release
 

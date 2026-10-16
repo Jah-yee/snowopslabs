@@ -1,8 +1,8 @@
-# Repository labels for SnowOps Labs (task 072). Apply with a label-sync action
+# Repository labels for SnowOps Labs. Apply with a label-sync action
 # (e.g. micnncim/action-label-syncer) or create them by hand in the GitHub UI.
 # The contributor-onboarding labels (good first issue / help wanted) are what
 # `docs/authoring/` points newcomers at; a maintainer seeds a few
-# starter issues under them (manual action).
+# starter issues under them.
 
 - name: "good first issue"
   color: "7057ff"

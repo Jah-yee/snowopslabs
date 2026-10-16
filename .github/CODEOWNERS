@@ -1,21 +1,22 @@
-# SnowOps Labs code owners — see GOVERNANCE.md
+# SnowOps Labs code owners. See GOVERNANCE.md.
 #
-# This file makes architectural & release authority MECHANICAL: the lead
-# maintainer is a required reviewer on the engine, CLI, public SDK, CI, and
-# licensing. Combined with branch protection (require review from code owners),
-# nothing in those paths merges without the lead maintainer.
+# This makes architectural and release authority mechanical: the lead
+# maintainer is a required reviewer on the engine, CLI, public SDK, CI and
+# licensing. With branch protection requiring code-owner review, nothing in
+# those paths merges without the lead maintainer.
 #
-# NOTE: area teams (@snowops/scenario-maintainers, etc.) are listed in comments
-# until the GitHub org + teams exist (manual action C3). Until then the lead
-# maintainer owns everything. Replace the comments with the teams once created.
+# Area teams (@snowops/scenario-maintainers and so on) are listed in comments
+# until the GitHub org and its teams exist. Until then the lead maintainer owns
+# everything.
 
 # Default owner for everything
 *                           @sagar2395
 
-# --- LOCKED: lead maintainer required (architecture, SDK, schema, CI, legal) ---
-/cmd/                       @sagar2395
-/pkg/                       @sagar2395
-/engine/                    @sagar2395
+# --- Lead maintainer required: architecture, SDK, schema, CI, legal ---
+/src/cmd/                   @sagar2395
+/src/pkg/                   @sagar2395
+/src/sdk/                   @sagar2395
+/src/engine/                @sagar2395
 /.github/                   @sagar2395
 /LICENSE                    @sagar2395
 /NOTICE                     @sagar2395
@@ -25,25 +26,24 @@
 /RELEASING.md               @sagar2395
 /TRADEMARKS.md              @sagar2395
 /DCO.md                     @sagar2395
-/versions.env               @sagar2395
-/docs/strategy/             @sagar2395
+/config/versions.env        @sagar2395
 /docs/rfcs/                 @sagar2395
+/docs/adr/                  @sagar2395
 
-# Anti-lock-in extension seams (task 070): the entitlement + extension interfaces
-# and their open defaults must stay lead-maintainer-owned even if /pkg/ subpaths
-# are later opened to area teams — premium/business logic must never land here.
-/cmd/labctl/pkg/entitlement/ @sagar2395
-/cmd/labctl/pkg/extension/   @sagar2395
+# The extension seam stays lead-maintainer-owned even if /src/pkg/ subpaths are
+# later opened to area teams, so third-party content keeps an open interface.
+/src/pkg/extension/         @sagar2395
 
-# --- CONTENT surfaces: open to area maintainers once teams exist (C3) ---
-# /packs/                   @sagar2395 @snowops/scenario-maintainers
+# --- Content: open to area maintainers once teams exist ---
 # /scenarios/               @sagar2395 @snowops/scenario-maintainers
 # /incidents/               @sagar2395 @snowops/scenario-maintainers
 # /learn/                   @sagar2395 @snowops/scenario-maintainers
 # /challenges/              @sagar2395 @snowops/scenario-maintainers
 # /platform/                @sagar2395 @snowops/platform-maintainers
 # /docs/                    @sagar2395 @snowops/docs-maintainers
-/packs/                     @sagar2395
 /scenarios/                 @sagar2395
+/incidents/                 @sagar2395
+/learn/                     @sagar2395
+/challenges/                @sagar2395
 /platform/                  @sagar2395
 /docs/                      @sagar2395
