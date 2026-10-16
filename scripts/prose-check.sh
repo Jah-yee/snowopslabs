@@ -61,21 +61,32 @@ else
   files=$(git ls-files '*.md' '*.yaml' '*.yml')
 fi
 
-patterns=$(mktemp "${TMPDIR:-/tmp}/prose-check.XXXXXX")
-trap 'rm -f "$patterns"' EXIT
-printf '%s\n' "$phrases" >"$patterns"
+work=$(mktemp -d "${TMPDIR:-/tmp}/prose-check.XXXXXX")
+trap 'rm -rf "$work"' EXIT
+printf '%s\n' "$phrases" >"$work/phrases"
 
-found=$(printf '%s\n' "$files" | while IFS= read -r f; do
-  [ -n "$f" ] && [ -f "$f" ] || continue
-  case "$f" in
-    # The guide quotes the phrases it forbids.
-    docs/WRITING.md) continue ;;
-  esac
-  grep -n -i -F -f "$patterns" -- "$f" 2>/dev/null | sed "s|^|$f:|" || true
-done)
+# The guide quotes the phrases it forbids, so it is not checked.
+printf '%s\n' "$files" | while IFS= read -r f; do
+  if [ -n "$f" ] && [ -f "$f" ] && [ "$f" != docs/WRITING.md ]; then
+    printf '%s\n' "$f"
+  fi
+done >"$work/files"
 
-if [ -n "$found" ]; then
-  printf '%s\n' "$found"
+# One awk pass, lowercasing each line and looking for each phrase as plain
+# text. POSIX awk only, so it behaves the same on macOS and Linux.
+: >"$work/found"
+if [ -s "$work/files" ]; then
+  # shellcheck disable=SC2016 # $0 and the rest are awk's, not the shell's
+  xargs awk -v list="$work/phrases" '
+    BEGIN { while ((getline p < list) > 0) if (p != "") phrase[++n] = tolower(p) }
+    {
+      line = tolower($0)
+      for (i = 1; i <= n; i++) if (index(line, phrase[i])) { print FILENAME ":" FNR ":" $0; break }
+    }' <"$work/files" >"$work/found"
+fi
+
+if [ -s "$work/found" ]; then
+  cat "$work/found"
   echo
   echo "prose: reword these lines; docs/WRITING.md says what to write instead."
   exit 1
