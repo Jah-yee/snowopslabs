@@ -12,7 +12,8 @@ runs on. v2 ships three, and only three (cloud runtimes were cut — see
 
 Select a profile with `PROFILE=<name>` (env or `.env`), e.g.
 `make init PROFILE=kind` or `labctl --project-dir . runtime up` after setting
-`PROFILE`.
+`PROFILE`. For labctl, the environment wins over `.env`, and `.env` over the
+profile's `runtime.env`: see [Configuration](reference/cli/index.md#configuration).
 
 ---
 

@@ -300,9 +300,13 @@ INGRESS_PROVIDER=traefik
 METRICS_PROVIDER=prometheus
 ```
 
-Every key is described in `config/.env.example`. Bring your own app by adding
-`apps/<name>/` with an `app.env`; it then shows up in `labctl app list` and can
-be bound to scenarios with `--app <name>`
+Every key is described in `config/.env.example`. An environment variable wins
+over `.env`, and `.env` over the profile's `runtime.env`; the full order, and
+how labctl finds the lab, are in
+[Configuration](docs/reference/cli/index.md#configuration).
+
+Bring your own app by adding `apps/<name>/` with an `app.env`; it then shows up
+in `labctl app list` and can be bound to scenarios with `--app <name>`
 ([apps](docs/reference/cli/apps.md)).
 
 ## Documentation

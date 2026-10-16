@@ -16,7 +16,8 @@ Re-run it after upgrading the clone (`git merge origin/stable`). The per-OS
 guides are under [Getting started](../../getting-started/macos.md).
 
 `labctl` finds the lab in this order: `--project-dir`; the clone around the
-working directory; `SNOWOPS_LAB_DIR`; the recorded clone. Lab state (active
+working directory; `SNOWOPS_LAB_DIR`; the recorded clone
+([details](#which-lab-labctl-uses)). Lab state (active
 scenarios and faults, history, progress, snapshots, users) is kept per cluster
 in `~/.snowops/state/<cluster>/` (`SNOWOPS_HOME` moves `~/.snowops`). State an
 older labctl kept in the clone's `.labctl/` is moved there on first use.
@@ -36,6 +37,94 @@ make cli-build        # builds bin/labctl with the UI embedded
 | `-v, --verbose` | `false` | Debug logging: config load, script exec, API calls |
 | `--app` | `APP_NAME` | The application scenarios and faults act on for this command. Challenges and learning paths refuse it: they are graded against the default app |
 | `--version` | — | Print the build version |
+
+## Configuration
+
+`labctl` reads its settings each time a command starts. This section says
+where they come from and which one wins; `config/.env.example` describes every
+key. `labctl -v <command>` logs a `config loaded` line with the lab, profile
+and cluster it resolved.
+
+### Which lab labctl uses
+
+Without `--project-dir`, the first of these:
+
+1. The nearest clone at or above the working directory: a directory with
+   `scenarios/` and `runtimes/`.
+2. `SNOWOPS_LAB_DIR`.
+3. The clone `install.sh` recorded in `~/.snowops/lab-dir`.
+
+`--project-dir` overrides all three, and is used as given, without checking
+that it is a clone: a wrong directory fails later, typically with
+`runtime profile "k3d" not found in runtimes/`. A `SNOWOPS_LAB_DIR` that is not
+a clone is an error, not a reason to try the recorded clone. Inside a clone,
+that clone is used whatever `SNOWOPS_LAB_DIR` says.
+
+### Which value wins
+
+For every key, the first value that is not empty:
+
+1. The environment variable.
+2. `.env` in the lab.
+3. `runtimes/<PROFILE>/runtime.env`.
+4. The built-in default.
+
+`PROFILE` comes from the environment or `.env` (default `k3d`), since it picks
+the `runtime.env`. Some defaults follow another key: `CLUSTER_NAME` is
+`snowops` (kind's `runtime.env` makes it `snowops-kind`), `DOMAIN_SUFFIX` is
+`<CLUSTER_NAME>.localhost` and `INGRESS_CLASS` takes the value of
+`INGRESS_PROVIDER`.
+
+An empty environment variable is skipped. An empty line in `.env`, such as
+`STORAGE_CLASS=`, also hides the profile's value, so the built-in default
+applies (`local-path`, even on kind). Delete or comment out the line to get the
+profile's value.
+
+The scripts and Make targets `labctl` runs receive every key from `.env` and
+`runtime.env`, resolved the same way.
+
+### Values the cluster recorded
+
+A local runtime records the ingress ports it bound and the domain suffix in
+`~/.snowops/clusters/<CLUSTER_NAME>.env`
+([runtime profiles](../../runtime-profiles.md)).
+For `HTTP_PORT`, `HTTPS_PORT` and `DOMAIN_SUFFIX`, the record wins over `.env`
+and `runtime.env`; only an environment variable wins over the record. A new
+value in `.env` therefore does not move a cluster that already exists. The
+record lasts as long as the cluster: the profile's `down.sh` removes it.
+
+`SNOWOPS_HOME` moves `~/.snowops`, and with it `lab-dir`, `clusters/` and
+`state/`.
+
+### Examples
+
+Use kind for one command, without editing `.env`:
+
+```bash
+PROFILE=kind labctl -v status
+```
+
+The cluster is `snowops-kind` and the URLs end in `snowops-kind.localhost`,
+unless `.env` sets `CLUSTER_NAME`, which wins over kind's `runtime.env`.
+
+Use a clone from another directory:
+
+```bash
+cd ~
+labctl --project-dir ~/src/snowopslabs scenario list
+SNOWOPS_LAB_DIR=~/src/snowopslabs labctl scenario list
+```
+
+Both use that clone. From inside another clone, only `--project-dir` does.
+
+Find out why a value in `.env` is ignored, for example `HTTP_PORT=80` while
+URLs end in `:8080`: an environment variable of the same name, or the
+cluster's record, wins over `.env`.
+
+```bash
+env | grep '^HTTP_PORT='
+cat ~/.snowops/clusters/snowops.env   # the record of the default cluster
+```
 
 ## Exit status and errors
 
