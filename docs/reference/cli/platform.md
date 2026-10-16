@@ -40,7 +40,9 @@ instead of printing an empty table.
 Which components install is driven by the provider variables in `.env` —
 `INGRESS_PROVIDER`, `METRICS_PROVIDER`, `LOGGING_PROVIDER`, `TRACING_PROVIDER`,
 `MESH_PROVIDER` and so on. When a category has several providers and none is
-selected, the command lists the choices and names the variable to set.
+selected, the command lists the choices and names the variable to set. An
+environment variable of the same name wins over `.env`
+([which value wins](index.md#which-value-wins)).
 
 ## `labctl platform teardown`
 
