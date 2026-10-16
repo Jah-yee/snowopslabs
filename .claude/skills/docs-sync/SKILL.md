@@ -47,8 +47,9 @@ files a decision deleted.
 ## When the website picks it up
 
 labs.snowops.net publishes these docs and the catalog from the `stable`
-branch. The website checks `stable` every 30 minutes and rebuilds when it has
-moved, so a release reaches the site within about half an hour. A doc fix
+branch. The website checks `stable` once a day and rebuilds when it has moved,
+so a release reaches the site by the next day, or straight away if the
+maintainer runs the website's sync by hand. A doc fix
 merged to `main` reaches the site with the next release, not before.
 
 ## If you added, renamed, split or deleted a doc
