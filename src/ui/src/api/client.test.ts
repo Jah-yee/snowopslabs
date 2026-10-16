@@ -11,7 +11,7 @@
 // Node's fetch rejects with a TypeError - which would mask every assertion here
 // behind a spurious "cannot reach the server". See src/test/setup.ts.
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { api, ApiError } from './client'
 import { API, jsonError, page, server } from '../test/server'
@@ -72,6 +72,21 @@ describe('api client', () => {
 
     server.use(http.get(`${API}/scenarios`, () => HttpResponse.error()))
     await expect(api.listScenarios()).rejects.not.toBeInstanceOf(ApiError)
+  })
+
+  it('names the timeout when the server does not answer in time', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('fetch', (_url: string, init: RequestInit) => new Promise((_resolve, reject) => {
+      init.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')))
+    }))
+    try {
+      const call = expect(api.listScenarios()).rejects.toThrow('Request timed out after 15s - the server may be busy or stuck')
+      await vi.advanceTimersByTimeAsync(15_000)
+      await call
+    } finally {
+      vi.useRealTimers()
+      vi.unstubAllGlobals()
+    }
   })
 
   it('does not swallow a 404 as an empty list', async () => {

@@ -10,7 +10,8 @@ import { axe, toHaveNoViolations } from 'jest-axe'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Learn } from './Learn'
 import { golden, serveContract } from '../test/contract'
-import type { LearnProgress } from '../types'
+import type { LearnPathSummary, LearnProgress } from '../types'
+import type { ConfirmRequest } from '../components/ConfirmDialog'
 
 expect.extend(toHaveNoViolations)
 
@@ -38,6 +39,27 @@ async function openDetails() {
 const startedProgress = () => golden<LearnProgress>('POST', '/learn/paths/{name}/start')
 
 describe('Learn view', () => {
+  it('resets a started path after confirmation and says where to start again', async () => {
+    const server = serveContract()
+    const listed = golden<{ items: LearnPathSummary[] } | LearnPathSummary[]>('GET', '/learn/paths')
+    const items = Array.isArray(listed) ? listed : listed.items
+    const started = items.map(p => ({ ...p, completedCount: 1 }))
+    server.override('GET', '/learn/paths', 200, Array.isArray(listed) ? started : { ...listed, items: started })
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const notify = vi.fn()
+    const confirm = (req: ConfirmRequest) => { void req.onConfirm() }
+    render(
+      <QueryClientProvider client={client}>
+        <Learn notify={notify} requestConfirm={confirm} />
+      </QueryClientProvider>,
+    )
+
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Reset progress' }))
+    await waitFor(() => expect(notify).toHaveBeenCalledWith(
+      'success', `Reset "${started[0].name}"`, 'Progress cleared - start again from the first module.',
+    ))
+  })
+
   it('lists the paths with their progress', async () => {
     const server = serveContract()
     renderLearn()

@@ -338,4 +338,21 @@ describe('Scenarios view - verify', () => {
     expect(screen.getByText('PASS')).toBeInTheDocument()
     expect(screen.getByText('FAIL')).toBeInTheDocument()
   })
+
+  it('says the scenario is in its expected state when every check passes', async () => {
+    const user = userEvent.setup()
+    serveScenarios([active])
+    server.override('POST', '/scenarios/gitops-cicd/verify', 200, {
+      scenario: 'gitops-cicd',
+      passed: true,
+      results: [
+        { name: 'argocd-ready', type: 'kubectl', pass: true, got: '1', want: '>= 1' },
+        { name: 'app-synced', type: 'kubectl', pass: true, got: '1', want: '>= 1' },
+      ],
+    })
+
+    renderScenarios()
+    await user.click(await screen.findByRole('button', { name: /verify/i }))
+    expect(await screen.findByText('All 2 checks passed - the scenario is in its expected state.')).toBeInTheDocument()
+  })
 })

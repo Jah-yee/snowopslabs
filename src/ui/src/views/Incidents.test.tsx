@@ -133,6 +133,33 @@ describe('Incidents view', () => {
     expect(await screen.findByRole('button', { name: /no more hints/i })).toBeDisabled()
   })
 
+  it.each([
+    {
+      state: 'passes',
+      status: { resolved: true, check: { name: 'rollout-healthy', pass: true } },
+      banner: /Detection check rollout-healthy passes - resolved\./,
+      toast: ['success', 'Detection check passes', 'The fault is resolved - nice work.'],
+    },
+    {
+      state: 'still fails',
+      status: { resolved: false, check: { name: 'rollout-healthy', pass: false, explanation: '0 of 1 replicas ready.' } },
+      banner: /Not resolved yet - rollout-healthy fails: 0 of 1 replicas ready\./,
+      toast: ['info', 'Still broken', '0 of 1 replicas ready.'],
+    },
+  ])('says whether the detection check $state when the learner checks', async ({ status, banner, toast }) => {
+    const user = userEvent.setup()
+    const active = { fault: 'oom-kill', injectedAt: new Date().toISOString(), silent: false, hintsRevealed: 0 }
+    const server = serveIncidents({ ...twoFaults, active })
+    server.override('GET', '/incidents/status', 200, { active, fault: twoFaults.faults[0], ...status })
+
+    const { notify } = renderIncidents()
+    await screen.findByText(/Active: oom-kill/)
+    await user.click(screen.getByRole('button', { name: /check if resolved/i }))
+    const shown = await screen.findByRole('status')
+    expect(shown.textContent).toMatch(banner)
+    expect(notify).toHaveBeenCalledWith(...toast)
+  })
+
   it('resolves the active incident after confirmation', async () => {
     const user = userEvent.setup()
     const server = serveIncidents({

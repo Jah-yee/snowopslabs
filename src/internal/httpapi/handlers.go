@@ -567,7 +567,7 @@ func describeInstallVar(name string, inline map[string]string) InstallVar {
 	case "MONITORING_NAMESPACE":
 		return InstallVar{name, "monitoring", "Namespace of the monitoring stack (Prometheus/Grafana), used for cross-references."}
 	case "PROFILE":
-		return InstallVar{name, "", "Active runtime profile (k3d | kind | aks | eks), selected by the lab."}
+		return InstallVar{name, "", "Active runtime profile (k3d | kind | incluster), selected by the lab."}
 	}
 	if strings.HasSuffix(name, "_PASSWORD") || strings.HasSuffix(name, "_TOKEN") || strings.HasSuffix(name, "_KEY") {
 		return InstallVar{name, "", "Secret - export this environment variable before installing (a built-in default is used otherwise)."}

@@ -322,3 +322,17 @@ func TestRunsCommandsWiring(t *testing.T) {
 		}
 	})
 }
+
+// Cancelling a run that does not exist names the ID and the command that
+// lists the real ones.
+func TestRunsCancel_UnknownID(t *testing.T) {
+	l := newTerminal(t)
+	r := l.run("runs", "cancel", "run_missing")
+	if r.exitCode() != 1 {
+		t.Fatalf("exit code = %d, want 1\nstdout:\n%s", r.exitCode(), r.stdout)
+	}
+	want := `no run with ID "run_missing" - list them with: labctl runs list`
+	if !strings.Contains(r.stderr, want) {
+		t.Errorf("stderr = %q, want it to say %q", r.stderr, want)
+	}
+}
