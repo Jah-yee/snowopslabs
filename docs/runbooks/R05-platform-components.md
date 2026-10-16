@@ -1,10 +1,10 @@
-# R05 — Platform components
+# R05: Platform components
 
 **Wave:** W3 · **Time:** ~15 minutes · **Cluster needed:** yes (k3d), for §2–4
 
 Platform components (ingress, monitoring, mesh, …) are the layers a scenario
 builds on. This runbook proves that installing, uninstalling, and checking a
-component is reliable and — with the durable-engine migration (W3-T03) — that
+component is reliable and, with the durable-engine migration (W3-T03), that
 each operation is a recorded, cancellable run scoped to *that* component, so two
 components never race and a component's state is answerable from history.
 
@@ -39,7 +39,7 @@ update to an immutable field.
 
 **`helm upgrade` never updates CRDs.** The `crds/` directory is install-only, so
 an operator chart's major bump leaves stale CRDs and a crash-looping operator.
-Apply the pinned chart's CRDs with `kubectl apply --server-side` first — but
+Apply the pinned chart's CRDs with `kubectl apply --server-side` first, but
 only when the release already exists, or Helm's own CRD install conflicts on
 `.spec.versions`.
 
@@ -52,7 +52,7 @@ Job (`crds.migration.enabled`, default `true`) walks each Kyverno CRD to bump it
 stored version, but its ServiceAccount is not authorised for
 `policyexceptions.policies.kyverno.io`. The Job exits `Error: Unauthorized`, the
 hook never becomes ready, and Helm fails the whole upgrade with
-`context deadline exceeded` — so `labctl scenario up security-compliance --force`
+`context deadline exceeded`: so `labctl scenario up security-compliance --force`
 cannot converge. It is disabled in
 `platform/security/policy/kyverno/values.yaml`; the lab pins one version, so
 there is no stored version to migrate. Re-enable it only for an upgrade that
@@ -67,7 +67,7 @@ another scenario first.
 
 **Most of a StatefulSet spec is immutable.** Use `helm_upgrade_install` from
 `platform/_lib/helm.sh` for any StatefulSet-backed chart. It recovers by
-deleting the controller with `--cascade=orphan` — pods and PVCs survive — and
+deleting the controller with `--cascade=orphan`, pods and PVCs survive, and
 retrying.
 
 **A helm process that dies mid-operation leaves the release pending.** When the
@@ -120,8 +120,8 @@ version.
 
 ## 1. Durable platform service (W3-T03)
 
-The per-component guarantees are enforced hermetically — no cluster, no network,
-no real helm/kubectl — with `toolchain.Fake`:
+The per-component guarantees are enforced hermetically (no cluster, no network,
+no real helm/kubectl) with `toolchain.Fake`:
 
 ```bash
 $ cd src && go test -race ./internal/service/platform/
@@ -135,12 +135,12 @@ $ cd src && go test -race ./internal/service/platform/
 - **The exclusive lock is per component.** Installing and uninstalling the *same*
   provider at once is refused with a lock conflict; two *different* components
   install concurrently.
-- **A status probe takes no lock** and never changes the derived install state —
+- **A status probe takes no lock** and never changes the derived install state,
   so you can always check a component, even mid-install.
 - **A cancelled install terminates and frees the component lock**, so a retry is
   accepted immediately (the engine cancels the whole process group, ADR-0003).
 - **State is answered from the store**, per component: `unknown` → `installing` →
-  `installed` → `removing` → `removed`, or `error` on a failed op — derived from
+  `installed` → `removing` → `removed`, or `error` on a failed op - derived from
   that component's own run history, never leaking across components.
 
 ---
@@ -155,7 +155,7 @@ $ labctl platform up data/kafka
 ```
 
 **Expect:** the install streams to completion, exit 0. Re-running it converges
-(helm `upgrade --install`), not errors — the idempotency property scenarios rely
+(helm `upgrade --install`), not errors - the idempotency property scenarios rely
 on.
 
 **Reviewer check:** `kubectl get ns kafka` (or the provider's namespace) exists
@@ -178,7 +178,7 @@ not installed reports absent, not an error.
 
 ```bash
 $ labctl platform down data/kafka
-$ labctl platform down data/kafka   # again — must be safe
+$ labctl platform down data/kafka   # again - must be safe
 ```
 
 **Expect:** the first uninstall removes the component; the second is a no-op that
@@ -200,7 +200,7 @@ $ labctl platform teardown        # uninstall exactly that, reporting failures
 
 **Expect:** `teardown` uninstalls each recorded component (reverse order) as a
 streamed run, then prints `Removed N of M`. If a component's `uninstall.sh` fails
-it is named under **Could not remove** and teardown exits non-zero — the whole
+it is named under **Could not remove** and teardown exits non-zero - the whole
 point of W3-T04: no silent `exit 0` that leaves residue behind. Components
 installed outside labctl are not in the inventory and are left untouched.
 

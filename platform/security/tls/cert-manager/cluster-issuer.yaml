@@ -8,7 +8,7 @@ metadata:
 spec:
   selfSigned: {}
 ---
-# CA issuer — generates a root CA from the self-signed issuer,
+# CA issuer - generates a root CA from the self-signed issuer,
 # then uses it to issue certificates (more realistic chain)
 apiVersion: cert-manager.io/v1
 kind: Certificate

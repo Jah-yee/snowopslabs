@@ -224,7 +224,7 @@ func (e *Engine) Start(name string, force bool) (*ActiveRun, error) {
 		return nil, err
 	}
 	if existing != nil && !force {
-		return nil, fmt.Errorf("challenge %q is already active — use --force to override", existing.ChallengeName)
+		return nil, fmt.Errorf("challenge %q is already active - use --force to override", existing.ChallengeName)
 	}
 	if err := os.MkdirAll(e.stateDir, 0o755); err != nil {
 		return nil, err

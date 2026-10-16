@@ -9,8 +9,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 . "${SCRIPT_DIR}/_drill.sh"
 
 # "Survived the roll" is only a claim once a roll has happened. Before that this
-# grades the staging script's own work — three replicas spread across nodes,
-# which activation arranged — and says nothing about the drill.
+# grades the staging script's own work - three replicas spread across nodes,
+# which activation arranged - and says nothing about the drill.
 RECORDED="$(checkpoint worker-uids)"
 REMAINING="$(unrolled_workers)"
 recorded_n="$(printf '%s\n' $RECORDED | grep -c . || true)"
@@ -38,7 +38,7 @@ if [ -z "$PODS" ]; then
   exit 1
 fi
 
-# Surface image-pull failures explicitly — the generic "not Running" message
+# Surface image-pull failures explicitly - the generic "not Running" message
 # sends a learner looking in the wrong place.
 STUCK="$(kubectl -n "$APP_NAMESPACE" get pods -l app=${WORKLOAD_NAME} \
   -o jsonpath='{range .items[*]}{.metadata.name}{" "}{range .status.containerStatuses[*]}{.state.waiting.reason}{end}{"\n"}{end}' \

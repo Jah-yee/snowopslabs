@@ -1,4 +1,4 @@
-# DCO — verify every commit in a pull request is signed off.
+# DCO - verify every commit in a pull request is signed off.
 #
 # SnowOps Labs uses the Developer Certificate of Origin instead of a CLA
 # (see DCO.md). Contributors sign off with `git commit -s`; this check fails the
@@ -39,7 +39,7 @@ jobs:
             missing=1
           done
           if [ "$missing" -ne 0 ]; then
-            echo "DCO check failed — see DCO.md."
+            echo "DCO check failed - see DCO.md."
             exit 1
           fi
           echo "All commits are signed off."

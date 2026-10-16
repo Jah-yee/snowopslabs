@@ -53,7 +53,7 @@ setup() {
 }
 
 @test "version_ge with an empty 'want' accepts anything" {
-  # No minimum stated means any version is fine — matches Requirement's
+  # No minimum stated means any version is fine - matches Requirement's
   # MinVersion="" semantic in internal/toolchain/preflight.go.
   version_ge "0.0.1" ""
 }

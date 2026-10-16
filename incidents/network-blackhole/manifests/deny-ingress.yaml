@@ -1,5 +1,5 @@
 # Deny-all-ingress policy: selects every pod in the namespace and allows
-# no ingress peers — the kube-router netpol controller in k3s enforces it.
+# no ingress peers - the kube-router netpol controller in k3s enforces it.
 #
 # It carries the name the Kubernetes documentation gives this policy and no
 # label of the lab's, so nothing about it says who applied it.

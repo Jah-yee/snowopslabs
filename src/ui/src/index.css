@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════════════════
- * SnowOps Labs — design system
+ * SnowOps Labs - design system
  *
  * Dark-first developer-console identity (slate / Grafana-Linear adjacent). The
  * dark palette lives on :root and is the default; `:root[data-theme="light"]`
@@ -7,7 +7,7 @@
  * data-theme before first paint (see lib/theme.ts) so there is no theme flash.
  *
  * Rules of the road:
- *   - Every colour a component paints comes from a token here — no raw hex in
+ *   - Every colour a component paints comes from a token here - no raw hex in
  *     components, no ad-hoc inline colours. Both themes stay consistent and
  *     contrast is tuned in one place.
  *   - Spacing uses the --space-* scale (4px rhythm). Radii, type and elevation
@@ -32,7 +32,7 @@
   --text:        #e2e8f0;
   --text-strong: #f8fafc;
   --muted:       #a8b5c8;
-  --fg:          var(--text);           /* alias — some views reference --fg */
+  --fg:          var(--text);           /* alias - some views reference --fg */
 
   /* ── Brand + semantic ── */
   --accent:    #38bdf8;
@@ -46,7 +46,7 @@
   --warning: var(--yellow);
   --on-accent: #0f172a;                 /* text/glyph on an accent fill */
 
-  /* Semantic soft fills (badges, banners) — derived so they track the theme. */
+  /* Semantic soft fills (badges, banners) - derived so they track the theme. */
   --success-soft: color-mix(in srgb, var(--success) 16%, transparent);
   --danger-soft:  color-mix(in srgb, var(--danger) 16%, transparent);
   --warning-soft: color-mix(in srgb, var(--warning) 16%, transparent);
@@ -92,7 +92,7 @@
   --log-h: 40px;                        /* live: LogPanel writes its height here */
 }
 
-/* Light palette — overrides colours only; radii/type/spacing are shared.
+/* Light palette - overrides colours only; radii/type/spacing are shared.
  * Accents are darkened so they clear WCAG AA on light surfaces. */
 :root[data-theme="light"] {
   color-scheme: light;
@@ -156,7 +156,7 @@ code, pre, .mono { font-family: var(--font-mono); }
   border-radius: var(--radius-sm);
 }
 
-/* Skip link — first tab stop, jumps keyboard users past the nav to content. */
+/* Skip link - first tab stop, jumps keyboard users past the nav to content. */
 .skip-link {
   position: fixed;
   top: var(--space-2);
@@ -175,7 +175,7 @@ code, pre, .mono { font-family: var(--font-mono); }
 @media (prefers-reduced-motion: reduce) { .skip-link { transition: none; } }
 
 /* ══════════════════════════════════════════════════════════════════════════
- * App shell — sidebar + main column
+ * App shell - sidebar + main column
  * ════════════════════════════════════════════════════════════════════════ */
 .app-shell {
   display: grid;
@@ -238,7 +238,7 @@ code, pre, .mono { font-family: var(--font-mono); }
 }
 /* The nav carries 12 items across three groups. At a 720px viewport the old
  * rhythm overflowed the sidebar and hid the last item behind the pinned runtime
- * footer — reachable by scrolling, but a primary nav item nobody can see is
+ * footer - reachable by scrolling, but a primary nav item nobody can see is
  * not navigation. Tightened to fit; 34px is still far above the 24px pointer
  * target floor. */
 .nav-group { margin-top: var(--space-3); }
@@ -380,7 +380,7 @@ code, pre, .mono { font-family: var(--font-mono); }
 .trend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-4); }
 .trend-grid.is-single { grid-template-columns: 1fr; }
 
-/* Results table — name cell + scenario check breakdown */
+/* Results table - name cell + scenario check breakdown */
 .td-name { max-width: 260px; }
 .result-detail-body { padding: var(--space-2) 0 var(--space-1); font-size: var(--text-sm); }
 .result-list { padding-left: 18px; margin: 2px 0 var(--space-2); color: var(--muted); }
@@ -554,12 +554,12 @@ code, pre, .mono { font-family: var(--font-mono); }
 .cred-hint { margin-top: var(--space-3); }
 .cred-hint code { background: var(--surface-2); padding: 1px 5px; border-radius: var(--radius-sm); }
 
-/* Scenario snippets ("How it's implemented") — the manifest a learner applies. */
+/* Scenario snippets ("How it's implemented") - the manifest a learner applies. */
 .snippet { border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-3); background: var(--surface-2); }
 .snippet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); }
 .snippet-label { font-weight: 500; color: var(--text-strong); font-size: var(--text-sm); }
 /* The copy control is absolutely positioned inside .cmd-block, but here it is a
- * flex child of the header row — pin it back to static so it sits at the end. */
+ * flex child of the header row - pin it back to static so it sits at the end. */
 .snippet-head .cmd-copy { position: static; flex-shrink: 0; }
 .snippet-desc { color: var(--text); font-size: var(--text-sm); margin: 3px 0 var(--space-2); }
 .snippet-binding { margin: 0 0 var(--space-2); }
@@ -705,7 +705,7 @@ code, pre, .mono { font-family: var(--font-mono); }
 .field-help { font-size: var(--text-xs); color: var(--muted); line-height: 1.5; }
 .workload-line { margin: 0 0 var(--space-2); }
 /* A help line that is reporting a problem. Colour alone would not carry it, so
-   both are prefixed with a glyph — the muted default and the error read the same
+   both are prefixed with a glyph - the muted default and the error read the same
    to anyone who cannot tell the two hues apart. */
 .field-error { color: var(--danger); }
 .field-warn  { color: var(--warning); }
@@ -1331,12 +1331,12 @@ code, pre, .mono { font-family: var(--font-mono); }
  * Responsive
  * ════════════════════════════════════════════════════════════════════════ */
 
-/* Tablet — narrow the sidebar slightly. */
+/* Tablet - narrow the sidebar slightly. */
 @media (max-width: 1080px) {
   :root { --sidebar-w: 216px; }
 }
 
-/* Mobile — sidebar becomes an off-canvas drawer; single column. */
+/* Mobile - sidebar becomes an off-canvas drawer; single column. */
 @media (max-width: 860px) {
   .app-shell { grid-template-columns: 1fr; }
   .sidebar {
@@ -1370,7 +1370,7 @@ code, pre, .mono { font-family: var(--font-mono); }
   .modal-tabbed .tablist-wrap { padding: 0 var(--space-4); }
   .modal-tabbed .tabpanel { padding: var(--space-4); }
   .modal-tabbed > .card-footer { padding: var(--space-3) var(--space-4); }
-  /* The source path can't share a line with the label at this width — stack it
+  /* The source path can't share a line with the label at this width - stack it
      under the title rather than squeezing the title to one word per line. */
   .collapse > summary { flex-wrap: wrap; }
   .collapse-aside { flex: 1 0 100%; padding-left: 23px; text-align: left; }
@@ -1382,7 +1382,7 @@ code, pre, .mono { font-family: var(--font-mono); }
  *
  * A comparison is a table first: the numbers have different units per row, so
  * one chart cannot hold them and precise values are the point. The bar behind
- * each figure gives magnitude WITHIN its row only, and is decorative — every
+ * each figure gives magnitude WITHIN its row only, and is decorative - every
  * value is also written out.
  */
 
@@ -1459,7 +1459,7 @@ code, pre, .mono { font-family: var(--font-mono); }
 }
 .compare-figure { display: block; }
 
-/* The verdict carries an icon and a word. Colour only reinforces it — on its
+/* The verdict carries an icon and a word. Colour only reinforces it - on its
  * own it would fail anyone who cannot separate the hues, and "+20%" on a
  * latency row reads as an improvement without the word. */
 .compare-delta {

@@ -1,4 +1,4 @@
-# ADR 0007 — UI stack: React Router, TanStack Query, Tailwind, Radix
+# ADR 0007: UI stack: React Router, TanStack Query, Tailwind, Radix
 
 **Status:** Accepted
 **Date:** 2026-07-26
@@ -8,11 +8,11 @@
 
 The v1 UI was 2,640 lines of hand-rolled React with:
 
-- **no router** — the active tab lived in `useState`, so there were no deep
+- **no router**: the active tab lived in `useState`, so there were no deep
   links, browser back did nothing, and a refresh dumped you on the dashboard,
-- **no data layer** — every view hand-wrote fetch, loading and error handling,
+- **no data layer**: every view hand-wrote fetch, loading and error handling,
   with a `refreshTick` counter threaded through props to force refetches,
-- **no design system** — a single hand-written stylesheet, one theme,
+- **no design system**: a single hand-written stylesheet, one theme,
 - **no tests at all.**
 
 The product requirement is a UI that is engaging, descriptive and easy to use.
@@ -26,7 +26,7 @@ styling, and **Radix primitives** for accessible dialogs, menus, tabs and
 tooltips. Tested with **Vitest + Testing Library + MSW** at the component layer
 and **Playwright** for journeys.
 
-The built SPA continues to be embedded into the Go binary — one artifact.
+The built SPA continues to be embedded into the Go binary - one artifact.
 
 ## Alternatives considered
 

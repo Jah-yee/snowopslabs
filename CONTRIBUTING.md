@@ -1,11 +1,11 @@
 # Contributing to SnowOps Labs
 
-Thanks for your interest in **SnowOps Labs** — the flight simulator for platform
+Thanks for your interest in **SnowOps Labs** - the flight simulator for platform
 engineers. This project thrives on community-contributed **scenarios, platform
 modules, documentation, and code**. This guide explains how to contribute and
 what to expect.
 
-> New here? The highest-leverage place to start is **content** — a new scenario
+> New here? The highest-leverage place to start is **content** - a new scenario
 > or incident. Start with
 > [Your First Scenario](docs/authoring/first-scenario.md) and look for issues
 > labelled **good first issue**.
@@ -16,7 +16,7 @@ By participating you agree to our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Sign-off (DCO)
 
-SnowOps Labs uses the [Developer Certificate of Origin](DCO.md) — a lightweight,
+SnowOps Labs uses the [Developer Certificate of Origin](DCO.md) - a lightweight,
 no-paperwork way to certify you wrote (or have the right to submit) your
 contribution. Just add a `Signed-off-by` line to each commit by committing with
 `-s`:
@@ -26,7 +26,7 @@ git commit -s -m "your message"
 ```
 
 The DCO check in CI verifies every commit in a PR is signed off. That's the only
-agreement required — no CLA, no bot account, no click-through.
+agreement required, no CLA, no bot account, no click-through.
 
 ## What you can contribute
 
@@ -39,16 +39,16 @@ agreement required — no CLA, no bot account, no click-through.
 | **Engine / CLI / SDK** | `src/cmd/`, `src/internal/`, `src/pkg/`, `src/engine/` | **lead maintainer** (see GOVERNANCE.md) |
 
 Changes to the engine, the public SDK (`pkg/`), or the scenario schema require an
-**RFC** first — a short markdown PR under `docs/rfcs/` that a maintainer approves
+**RFC** first - a short markdown PR under `docs/rfcs/` that a maintainer approves
 before implementation. This keeps architectural direction coherent.
 
 ## Development setup
 
 End users clone the latest release (`--branch stable`) and download a matching
-`labctl` with `./install.sh` — see the [README](README.md#install).
+`labctl` with `./install.sh` - see the [README](README.md#install).
 Contributors clone `main` and **build `labctl` from source** so they can test
 their changes. You need **Go 1.25+** and **Node 22+**. The steps are identical
-on macOS, Linux, and Windows/WSL2 — on Windows run them inside your WSL2
+on macOS, Linux, and Windows/WSL2: on Windows run them inside your WSL2
 distro, in your Linux home, never native PowerShell.
 
 Distro packages are often older than that (Ubuntu 24.04 ships Go 1.22 and an
@@ -68,7 +68,7 @@ cd snowopslabs
 #    src/; the root make targets delegate there and the binary lands at bin/labctl.
 make cli-build
 
-# 2. Run the gates. All four test layers are mandatory — see docs/TESTING.md.
+# 2. Run the gates. All four test layers are mandatory - see docs/TESTING.md.
 make test          # Go unit + shell (bats), race detector, coverage gates, test-check
 make test-ui       # vitest component tests
 make test-e2e      # playwright journeys
@@ -76,7 +76,7 @@ make lint          # gofmt, golangci-lint, gosec, govulncheck, shellcheck,
                    # shfmt, the portability gate, and TypeScript strict
 
 # 3. Bring up a local cluster + platform to test changes end to end. Use the CLI
-#    you just built — it drives the same loop end users run:
+#    you just built - it drives the same loop end users run:
 bin/labctl init                    # setup-tools + create cluster + install platform
 bin/labctl scenario up observability-sre
 ```
@@ -102,7 +102,7 @@ warns when pointed at it.
 ### Repository layout
 
 ```
-# User-facing content at the root — what a learner's clone runs
+# User-facing content at the root - what a learner's clone runs
 scenarios/ incidents/     declarative content
 learn/ challenges/
 platform/<cat>/<prov>/    install.sh / uninstall.sh / status.sh / values.yaml
@@ -115,7 +115,7 @@ install.sh                installs the labctl release that matches LAB_VERSION
 LAB_VERSION               the release this checkout belongs to (-dev on main)
 scripts/                  footprint measurement, docs checks, release
 
-# The labctl Go module — self-contained under src/
+# The labctl Go module - self-contained under src/
 src/cmd/labctl/           entrypoint
 src/internal/             implementation (cli, httpapi, service, run, store, …)
 src/pkg/                  public SDK: checks, scenario types, extension seam
@@ -143,7 +143,7 @@ A release ships the binary and the content together; see
 [RELEASING.md](RELEASING.md).
 
 New to the repo? Work through
-[R00 — Environment & Build](docs/runbooks/R00-environment-and-build.md) once; it
+[R00 - Environment & Build](docs/runbooks/R00-environment-and-build.md) once; it
 verifies your setup and shows you each gate biting.
 
 ## Before you start: the traps
@@ -151,12 +151,12 @@ verifies your setup and shows you each gate biting.
 Every one of these was learned by something failing silently on a real cluster,
 and each is an afternoon you do not have to lose:
 
-- **Helm** — `upgrade` and `uninstall` both ignore CRDs; most of a StatefulSet
+- **Helm**: `upgrade` and `uninstall` both ignore CRDs; most of a StatefulSet
   spec is immutable: [R05](docs/runbooks/R05-platform-components.md).
-- **Metrics, logs and traces** — empty-selector fallbacks, Tempo's real port,
+- **Metrics, logs and traces**: empty-selector fallbacks, Tempo's real port,
   Promtail relabelling, k6's units:
   [R13](docs/runbooks/R13-observability-pipeline.md).
-- **Writing a scenario** — values ownership, chart pinning, checks that teach:
+- **Writing a scenario**: values ownership, chart pinning, checks that teach:
   [scenario schema](docs/reference/scenario-schema.md).
 
 [docs/AGENT-CONTEXT.md](docs/AGENT-CONTEXT.md) is the index: it says which
@@ -167,12 +167,12 @@ is written for AI agents, but it is the fastest orientation for a human too.
 
 1. **Cross-platform.** Must run on macOS (Apple Silicon + Intel) and modern
    Linux. No GNU-only shell flags (`grep -P`, `sed -i` without a backup suffix,
-   `readlink -f`, `date -d`), and **no cgo** — it breaks cross-compilation.
+   `readlink -f`, `date -d`), and **no cgo** - it breaks cross-compilation.
    `make lint-shell` enforces this automatically.
 2. **Go orchestrates, scripts do the work.** Don't move shell/helm/kubectl logic
    into Go.
 3. **Declarative content.** Scenarios, faults, learning paths and checks are
-   YAML + scripts — never hardcoded in Go.
+   YAML + scripts, never hardcoded in Go.
 4. **Idempotent everything.** `helm upgrade --install`, `kubectl apply`, safe
    re-activation. Interrupting an operation and re-running it must converge.
 5. **Every operation is cancellable and durable.** Anything that shells out goes
@@ -187,7 +187,7 @@ is written for AI agents, but it is the fastest orientation for a human too.
    `Tests-Not-Needed: <reason>` commit trailer.
 7. **Docs and runbook in the same PR.** Update the relevant `docs/`, add or
    update the runbook, and write an ADR if you made a notable decision.
-   Documentation is the source of truth here — the code is expected to match it,
+   Documentation is the source of truth here - the code is expected to match it,
    and `make docs-check` gates the links and the pages the website publishes.
 8. **Comments follow the comment rule in [CLAUDE.md](CLAUDE.md#hard-rules)**:
    what the code does and why it is needed, never the story behind a change.
@@ -218,7 +218,7 @@ open a PR → CI green → CODEOWNERS review → maintainer merge
 ## Reporting bugs / requesting features
 
 Use the issue templates. For **security vulnerabilities, do not open a public
-issue** — follow [SECURITY.md](SECURITY.md).
+issue** - follow [SECURITY.md](SECURITY.md).
 
 ## Licensing of contributions
 

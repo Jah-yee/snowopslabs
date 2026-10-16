@@ -2,7 +2,7 @@
 //
 // A single, consistent SVG icon set (Lucide-style, MIT). Every icon shares a
 // 24×24 grid, 2px stroke and `currentColor`, so they inherit text colour and
-// scale cleanly — no emoji anywhere in the UI (emoji render inconsistently
+// scale cleanly - no emoji anywhere in the UI (emoji render inconsistently
 // across platforms and can't be themed via tokens). Decorative by default:
 // icons are `aria-hidden` unless given a `title`, in which case they expose an
 // accessible label instead.
@@ -40,7 +40,7 @@ const PATHS: Record<IconName, JSX.Element> = {
   // chart already used for results.
   compare: <><path d="M9 3 5 7l4 4" /><path d="M5 7h9a4 4 0 0 1 4 4v1" /><path d="m15 21 4-4-4-4" /><path d="M19 17h-9a4 4 0 0 1-4-4v-1" /></>,
 
-  // A six-fold crystal built from one arm rotated 60° at a time — the same
+  // A six-fold crystal built from one arm rotated 60° at a time - the same
   // glyph as the brand mark, favicon and logo lockups (docs/assets/brand).
   snowflake: <>{[0, 60, 120, 180, 240, 300].map((d) => (
     <g key={d} transform={`rotate(${d} 12 12)`}>

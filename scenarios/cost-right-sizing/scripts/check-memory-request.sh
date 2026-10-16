@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# check-memory-request.sh — the memory request must sit ABOVE observed peak
+# check-memory-request.sh - the memory request must sit ABOVE observed peak
 # usage and BELOW the waste ceiling. See check-cpu-request.sh for why both
 # bounds exist; for memory the downside is worse, because there is no
-# throttling — the kernel OOM-kills the container.
+# throttling - the kernel OOM-kills the container.
 set -euo pipefail
 . "$(dirname "$0")/../../_lib/workload.sh"
 
@@ -16,7 +16,7 @@ CONTAINER="${CONTAINER:-$APP}"
 MAX_MEMORY_MIB="${MAX_MEMORY_MIB:-256}"
 
 if ! kubectl get deployment "$APP" -n "$NAMESPACE" >/dev/null 2>&1; then
-  echo "FAIL: deployment ${NAMESPACE}/${APP} not found — deploy it first (labctl app deploy ${APP})." >&2
+  echo "FAIL: deployment ${NAMESPACE}/${APP} not found - deploy it first (labctl app deploy ${APP})." >&2
   exit 1
 fi
 
@@ -30,7 +30,7 @@ fi
 
 if [ -z "$raw" ]; then
   echo "FAIL: no memory request set on ${NAMESPACE}/${APP} (container '${CONTAINER}')." >&2
-  echo "Set one — a pod with no memory request has no reservation to protect it:" >&2
+  echo "Set one - a pod with no memory request has no reservation to protect it:" >&2
   echo "  kubectl -n ${NAMESPACE} set resources deployment ${APP} --requests=memory=64Mi" >&2
   exit 1
 fi
@@ -67,7 +67,7 @@ fi
 
 if [ "$actual_mib" -lt "$peak_mib" ]; then
   echo "FAIL: memory request ${raw} (${actual_mib}Mi) is BELOW the observed peak over ${USAGE_WINDOW} (${peak_mib}Mi)." >&2
-  echo "A memory request under real usage is not throttled the way CPU is — the kernel" >&2
+  echo "A memory request under real usage is not throttled the way CPU is - the kernel" >&2
   echo "OOM-kills the container. Size above the peak:" >&2
   echo "  kubectl -n ${NAMESPACE} set resources deployment ${APP} --requests=memory=$((peak_mib + 16))Mi" >&2
   exit 1

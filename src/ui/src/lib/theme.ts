@@ -19,7 +19,7 @@ export function readStoredTheme(): Theme {
   try {
     const v = localStorage.getItem(THEME_STORAGE_KEY)
     if (isTheme(v)) return v
-  } catch { /* storage unavailable — fall through to default */ }
+  } catch { /* storage unavailable - fall through to default */ }
   return 'system'
 }
 

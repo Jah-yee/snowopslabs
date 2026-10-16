@@ -44,6 +44,6 @@ echo "Topics:"
 kubectl get kafkatopic -n "$NAMESPACE" --no-headers 2>/dev/null | awk '{print "  "$1}' || echo "  (none)"
 echo ""
 
-echo "Smoke test (produce/consume) — run from inside the cluster:"
+echo "Smoke test (produce/consume) - run from inside the cluster:"
 echo "  kubectl -n $NAMESPACE run kcat --rm -it --image=edenhill/kcat:1.7.1 --restart=Never -- \\"
 echo "    -b ${CLUSTER}-kafka-bootstrap:9092 -t demo -P   # producer (Ctrl-D to send)"

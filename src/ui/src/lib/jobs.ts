@@ -28,13 +28,13 @@ export function trackJob(jobId: string, cb: JobEndCallback): void {
   }
   const timer = window.setTimeout(() => {
     if (tracked.delete(jobId)) {
-      cb(false, 'No completion event received — check the command output panel or refresh')
+      cb(false, 'No completion event received - check the command output panel or refresh')
     }
   }, JOB_TIMEOUT_MS)
   tracked.set(jobId, { cb, timer })
 }
 
-/** Resolve a tracked job (idempotent — later calls for the same id no-op). */
+/** Resolve a tracked job (idempotent - later calls for the same id no-op). */
 export function completeJob(jobId: string | undefined, ok: boolean, error?: string): void {
   if (!jobId) return
   const t = tracked.get(jobId)

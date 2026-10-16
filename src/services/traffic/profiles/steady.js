@@ -1,4 +1,4 @@
-// Steady profile — constant request rate for the whole duration.
+// Steady profile - constant request rate for the whole duration.
 // Tuned via env: TRAFFIC_TARGET, TRAFFIC_RPS, TRAFFIC_DURATION.
 import http from 'k6/http';
 import { check } from 'k6';

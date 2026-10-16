@@ -3,7 +3,7 @@
 #
 # Two things outlive a plain manifest teardown here: the securityContext the
 # learner patched onto the shared Deployment, and the Certificate and Ingress TLS
-# they applied from the snippets — snippets belong to no component, so nothing
+# they applied from the snippets - snippets belong to no component, so nothing
 # has ever removed them.
 set -euo pipefail
 . "$(dirname "$0")/../../_lib/workload.sh"

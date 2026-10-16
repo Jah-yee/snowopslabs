@@ -24,7 +24,7 @@ body:
     id: runtime
     attributes:
       label: Runtime
-      options: [k3d, aks, eks, kind, other]
+      options: [k3d, kind, incluster, other]
     validations:
       required: true
   - type: input

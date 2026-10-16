@@ -1,4 +1,4 @@
-# R14 — Fresh-machine onboarding
+# R14: Fresh-machine onboarding
 
 **Wave:** W8 · **Time:** ~45 minutes per OS · **Cluster needed:** created by the runbook
 
@@ -98,7 +98,7 @@ $ time labctl init
   and Prometheus URLs.
 - Under 15 minutes on a first run.
 
-**Failure signatures:** `TLS handshake timeout` (Docker too small — `init` should
+**Failure signatures:** `TLS handshake timeout` (Docker too small - `init` should
 have refused first; that is a finding); a silent pause longer than 10 minutes (a
 stalled download that was not reported).
 

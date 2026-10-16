@@ -2,7 +2,7 @@
 set -euo pipefail
 . "$(dirname "$0")/../../_lib/workload.sh"
 
-# unstage-ha.sh — undo stage-ha.sh and remove the PodDisruptionBudget the
+# unstage-ha.sh - undo stage-ha.sh and remove the PodDisruptionBudget the
 # learner applied, so 'scenario down' leaves nothing behind. The workload itself is an
 # app prerequisite and stays running.
 

@@ -152,8 +152,8 @@ func NewResolver(roots ...string) (*Resolver, error) {
 }
 
 // Resolve returns the absolute path of script, which may be given relative to
-// any root. It fails if the script does not exist, or if the resolved path —
-// after following symlinks — lies outside every root.
+// any root. It fails if the script does not exist, or if the resolved path -
+// after following symlinks - lies outside every root.
 func (r *Resolver) Resolve(script string) (string, error) {
 	if script == "" {
 		return "", fmt.Errorf("%w: empty path", ErrScriptNotFound)

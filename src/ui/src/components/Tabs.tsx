@@ -12,7 +12,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 export interface TabItem {
   id: string
   label: string
-  /** Optional count rendered as a pill — how much is behind the tab. */
+  /** Optional count rendered as a pill - how much is behind the tab. */
   count?: number
   content: React.ReactNode
 }

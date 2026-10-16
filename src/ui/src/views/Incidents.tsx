@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //
-// Incidents view — browse the fault library, inject one, work it, reveal hints
+// Incidents view - browse the fault library, inject one, work it, reveal hints
 // progressively, and resolve, all from the UI. The inject/resolve/hint endpoints
 // are synchronous (not durable jobs), so we drive them directly and manage our
 // own busy state.
@@ -101,7 +101,7 @@ export function Incidents({ notify, requestConfirm }: IncidentsProps) {
   /** Asks which application to break before injecting.
    *
    *  A fault names its workload rather than an app (ADR-0014), so "inject
-   *  oom-kill" is only half a decision — the other half was reachable solely
+   *  oom-kill" is only half a decision - the other half was reachable solely
    *  from the CLI's --app flag. The dialog carries it, defaulting to the lab's
    *  current binding so the one-click path is unchanged. */
   function confirmInject(f: Fault) {
@@ -130,7 +130,7 @@ export function Incidents({ notify, requestConfirm }: IncidentsProps) {
     setBusy(`inject:${name}`)
     try {
       const res = await api.injectIncident(name, app)
-      notify('success', `Injected ${label}${app ? ` into ${app}` : ''}`, res.silent ? 'Silent mode — the fault is hidden until you diagnose it.' : 'Diagnose it, then resolve.')
+      notify('success', `Injected ${label}${app ? ` into ${app}` : ''}`, res.silent ? 'Silent mode - the fault is hidden until you diagnose it.' : 'Diagnose it, then resolve.')
       await load()
     } catch (e) {
       notify('error', 'Inject failed', e instanceof Error ? e.message : String(e))
@@ -142,7 +142,7 @@ export function Incidents({ notify, requestConfirm }: IncidentsProps) {
     setBusy('inject:random')
     try {
       const res = await api.injectRandomIncident()
-      notify('success', 'Injected a random incident', res.silent ? 'Silent mode — diagnose it from the symptoms.' : `Now solve: ${res.fault?.displayName ?? res.fault?.name ?? 'it'}.`)
+      notify('success', 'Injected a random incident', res.silent ? 'Silent mode - diagnose it from the symptoms.' : `Now solve: ${res.fault?.displayName ?? res.fault?.name ?? 'it'}.`)
       await load()
     } catch (e) {
       notify('error', 'Random inject failed', e instanceof Error ? e.message : String(e))
@@ -175,7 +175,7 @@ export function Incidents({ notify, requestConfirm }: IncidentsProps) {
       const st = await api.getIncidentStatus()
       setStatus(st)
       if (st.resolved) {
-        notify('success', 'Detection check passes', 'The fault is resolved — nice work.')
+        notify('success', 'Detection check passes', 'The fault is resolved - nice work.')
         load()
       } else if (st.active) {
         notify('info', 'Still broken', st.check?.explanation || st.check?.error || 'The detection check does not pass yet.')
@@ -219,7 +219,7 @@ export function Incidents({ notify, requestConfirm }: IncidentsProps) {
       {loadError && (
         <div className="banner banner-warn" role="alert">
           <Icon name="alert-triangle" size={16} className="banner-icon" />
-          <span className="banner-body">Refresh failed ({loadError}) — showing last known data.</span>
+          <span className="banner-body">Refresh failed ({loadError}) - showing last known data.</span>
           <span className="banner-actions">
             <button className="btn btn-sm" onClick={load} disabled={refreshing}>Retry</button>
           </span>
@@ -231,7 +231,7 @@ export function Incidents({ notify, requestConfirm }: IncidentsProps) {
         <div className="card card-accent">
           <div className="card-header">
             <span className="card-title card-title-accent">
-              {hideIdentity ? 'Active incident — hidden (silent mode)' : `Active: ${activeFault?.displayName || active.fault}`}
+              {hideIdentity ? 'Active incident - hidden (silent mode)' : `Active: ${activeFault?.displayName || active.fault}`}
             </span>
             <span className="hint-text">injected {relTime(active.injectedAt)}</span>
           </div>
@@ -255,8 +255,8 @@ export function Incidents({ notify, requestConfirm }: IncidentsProps) {
                 <Icon name={resolved ? 'check-circle' : 'alert-triangle'} size={16} className="banner-icon" />
                 <span className="banner-body">
                   {resolved
-                    ? <>Detection check <code>{status.check.name}</code> passes — resolved.</>
-                    : <>Not resolved yet — <code>{status.check.name}</code> fails{checkDetail(status.check) ? `: ${checkDetail(status.check)}` : ''}.</>}
+                    ? <>Detection check <code>{status.check.name}</code> passes - resolved.</>
+                    : <>Not resolved yet - <code>{status.check.name}</code> fails{checkDetail(status.check) ? `: ${checkDetail(status.check)}` : ''}.</>}
                 </span>
               </div>
             )}
@@ -291,7 +291,7 @@ export function Incidents({ notify, requestConfirm }: IncidentsProps) {
       ) : (
         <div className="banner banner-info" role="note">
           <Icon name="info" size={16} className="banner-icon" />
-          <span className="banner-body">No active incident. Inject one below to start diagnosing — or let the lab surprise you.</span>
+          <span className="banner-body">No active incident. Inject one below to start diagnosing - or let the lab surprise you.</span>
           <span className="banner-actions">
             <button className="btn btn-sm" onClick={injectRandom} disabled={busy === 'inject:random'}>
               {busy === 'inject:random' ? 'Injecting…' : (<><Icon name="zap" size={14} />Inject random</>)}
@@ -415,7 +415,7 @@ export function Incidents({ notify, requestConfirm }: IncidentsProps) {
                   ))}
                 </div>
                 <div className="field-help mt-2">
-                  Prerequisites aren&rsquo;t installed automatically — add missing ones in the Platform tab before injecting.
+                  Prerequisites aren&rsquo;t installed automatically - add missing ones in the Platform tab before injecting.
                 </div>
               </div>
             )}
@@ -426,7 +426,7 @@ export function Incidents({ notify, requestConfirm }: IncidentsProps) {
                   {detail.references.map((r, i) => (
                     <li key={i}>
                       <a href={r.url} target="_blank" rel="noopener noreferrer">{r.label}</a>
-                      {r.note && <span className="hint-text"> — {r.note}</span>}
+                      {r.note && <span className="hint-text"> - {r.note}</span>}
                     </li>
                   ))}
                 </ul>

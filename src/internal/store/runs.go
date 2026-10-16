@@ -67,7 +67,7 @@ type Run struct {
 	Status   Status
 	Actor    string
 	Script   string
-	Argv     []string // argv-only — never a shell string (ADR-0003)
+	Argv     []string // argv-only - never a shell string (ADR-0003)
 	Timeout  time.Duration
 	QueuedAt time.Time
 

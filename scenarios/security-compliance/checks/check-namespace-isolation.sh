@@ -9,7 +9,7 @@ set -euo pipefail
 # can sit there untouched while a second policy re-opens the namespace to
 # everything. An existence check stays green through that; this one does not.
 #
-# Everything here is kubectl and POSIX shell — no jq, no python.
+# Everything here is kubectl and POSIX shell - no jq, no python.
 
 NS="${WORKLOAD_NAMESPACE}"
 MON="${MONITORING_NAMESPACE:-monitoring}"
@@ -21,7 +21,7 @@ note() {
 }
 
 if [ "$(kubectl -n "$NS" get networkpolicies -o name 2>/dev/null | wc -l | tr -d ' ')" = "0" ]; then
-  echo "FAIL: no NetworkPolicies in namespace $NS — the namespace is wide open." >&2
+  echo "FAIL: no NetworkPolicies in namespace $NS - the namespace is wide open." >&2
   echo "      Re-run: labctl scenario up security-compliance" >&2
   exit 1
 fi
@@ -29,7 +29,7 @@ fi
 # 1. The deny baseline: selects every pod, both directions, and carries no
 #    allow rules of its own.
 if ! kubectl -n "$NS" get networkpolicy default-deny-all >/dev/null 2>&1; then
-  note "default-deny-all is missing — nothing establishes the deny baseline."
+  note "default-deny-all is missing - nothing establishes the deny baseline."
 else
   selector=$(kubectl -n "$NS" get networkpolicy default-deny-all -o jsonpath='{.spec.podSelector}')
   types=$(kubectl -n "$NS" get networkpolicy default-deny-all -o jsonpath='{.spec.policyTypes}')
@@ -66,7 +66,7 @@ open=$(kubectl -n "$NS" get networkpolicies -o go-template='
 {{- end -}}')
 if [ -n "$open" ]; then
   while IFS= read -r line; do
-    [ -z "$line" ] || note "$line — it cancels default-deny-all."
+    [ -z "$line" ] || note "$line - it cancels default-deny-all."
   done <<EOF
 $open
 EOF
@@ -131,7 +131,7 @@ case "$code" in
     ;;
   *)
     echo "FAIL: a pod in namespace $PROBE_NS reached $NS and got HTTP $code." >&2
-    echo "  The policy set reads correctly, so the rules are not being ENFORCED —" >&2
+    echo "  The policy set reads correctly, so the rules are not being ENFORCED -" >&2
     echo "  which makes every other result on this scenario meaningless. Either the" >&2
     echo "  CNI does not implement NetworkPolicy, or a rule elsewhere admits that" >&2
     echo "  namespace. Check what the cluster thinks is in force:" >&2

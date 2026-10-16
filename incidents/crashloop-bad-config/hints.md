@@ -1,4 +1,4 @@
-# Hints — crashloop-bad-config
+# Hints: crashloop-bad-config
 
 ## Hint 1
 Users get errors on every request, so start from what should be answering them:

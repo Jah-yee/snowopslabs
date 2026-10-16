@@ -4,7 +4,7 @@
 #
 # It also removes the routing the learner applied by hand. The engine only
 # tracks what it staged, so without this the VirtualService and the STRICT
-# PeerAuthentication survive teardown — and the next run starts with the split
+# PeerAuthentication survive teardown - and the next run starts with the split
 # already in place and its checks green before the learner has done anything.
 set -euo pipefail
 . "$(dirname "$0")/../../_lib/workload.sh"

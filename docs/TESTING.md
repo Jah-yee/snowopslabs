@@ -186,10 +186,10 @@ Content is graded code, so it is tested as code:
 
 A script test asserts at least:
 
-- **Idempotency** — a second run makes no destructive call.
-- **Failure propagation** — a stubbed tool failing makes the script exit
+- **Idempotency**: a second run makes no destructive call.
+- **Failure propagation**: a stubbed tool failing makes the script exit
   non-zero.
-- **Environment contract** — the script reads `${VAR:-default}` from the
+- **Environment contract**: the script reads `${VAR:-default}` from the
   executor's environment and does not source `.env` itself.
 
 Not yet: scenario stage scripts (seeding, staging, teardown) and the declared

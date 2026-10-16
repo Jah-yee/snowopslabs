@@ -931,7 +931,7 @@ func TestSubscribe(t *testing.T) {
 			t.Fatalf("ReadLogs: %v", err)
 		}
 		if len(got) != len(lines) {
-			t.Errorf("persisted %d lines, want %d — a slow subscriber cost us data", len(got), len(lines))
+			t.Errorf("persisted %d lines, want %d - a slow subscriber cost us data", len(got), len(lines))
 		}
 	})
 }

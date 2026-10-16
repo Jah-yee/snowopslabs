@@ -20,7 +20,7 @@ func TestChallengeRoutes_LiteralsNotShadowedByWildcard(t *testing.T) {
 		w := httptest.NewRecorder()
 		s.router.ServeHTTP(w, req)
 		if w.Code == http.StatusNotFound {
-			t.Errorf("GET %s returned 404 — the /{name} wildcard is shadowing the literal route", path)
+			t.Errorf("GET %s returned 404 - the /{name} wildcard is shadowing the literal route", path)
 			continue
 		}
 		if w.Code != http.StatusOK {

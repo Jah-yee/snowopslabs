@@ -1,4 +1,4 @@
-{{/* The app's name, required — every resource and the metric selector key off it. */}}
+{{/* The app's name, required - every resource and the metric selector key off it. */}}
 {{- define "workload.name" -}}
 {{- required "appName is required" .Values.appName -}}
 {{- end -}}

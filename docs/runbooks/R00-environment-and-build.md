@@ -1,9 +1,9 @@
-# R00 — Environment & Build
+# R00: Environment & Build
 
 **Wave:** W0 · **Time:** ~20 minutes · **Cluster needed:** no
 
 Proves that a person who has never seen this repository can clone it, build it,
-and run every quality gate — on their own machine, not just in CI. If this
+and run every quality gate - on their own machine, not just in CI. If this
 runbook fails, no other wave's work can be trusted, because the thing that
 verifies it does not run.
 
@@ -28,7 +28,7 @@ library CVEs `make vuln` checks for. Go downloads it on demand; only
 `GOTOOLCHAIN=local` on an older install will refuse. CI installs Go 1.26
 directly (`GO_VERSION` in the workflows) rather than from the `go` line, because
 a downloaded toolchain leaves `GOROOT` pointing at the installed Go and tools
-that load packages — `go-licenses` in the license scan — then see no standard
+that load packages, `go-licenses` in the license scan, then see no standard
 library. Each `setup-go` step sets `check-latest: true`, so it installs the
 newest 1.26 patch instead of the older one cached on the runner; without it the
 runner's Go is behind the pin and every job downloads the toolchain after all.
@@ -37,7 +37,7 @@ When `make vuln` reports a standard library CVE, raise the `toolchain` line to
 the Go patch release named in its `Fixed in:` line.
 
 **Disk:** ~1.5 GB (Go module cache, node_modules, Playwright browser).
-**Network:** required — this step downloads dependencies.
+**Network:** required - this step downloads dependencies.
 
 Run everything from a **fresh clone**. Reusing your working copy can pass on
 stale artifacts and hide a missing file.
@@ -77,7 +77,7 @@ $ cd src && go build ./... && go vet ./... && cd ..
 **Expect:** both silent, exit 0. First run takes a minute or two while modules
 download.
 
-**Failure signature — `no required module provides package`:** a leftover
+**Failure signature - `no required module provides package`:** a leftover
 import of something W0 deleted. Report the package name; it is a real bug.
 
 ---
@@ -106,7 +106,7 @@ $ git checkout src/pkg/checks/runner_test.go
 ```
 
 **Expect:** `FAIL` and a **non-zero** exit. A green result here means the gate
-is not wired up — a blocking finding.
+is not wired up - a blocking finding.
 
 ---
 
@@ -139,7 +139,7 @@ until removed, and a stale entry fails.
 $ make test-shell
 ```
 
-**Expect:** every test `ok` — currently `1..64` across the files under
+**Expect:** every test `ok`: currently `1..64` across the files under
 `test/shell/` (`harness.bats`, `coverage_gate.bats`, `portability_gate.bats`,
 `runtime_lifecycle.bats`, `platform_install.bats`, `platform_uninstall.bats`,
 `setup_tools_versions.bats`). The exact total grows as suites are added; what
@@ -172,7 +172,7 @@ $ make lint-shell
 ```
 
 **Expect:** shellcheck silent, then the portability gate passing. If `shfmt`
-is not installed you will see a skip notice — that is acceptable locally, but
+is not installed you will see a skip notice - that is acceptable locally, but
 CI installs it.
 
 ---
@@ -224,7 +224,7 @@ Chromium.
 > `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/path/to/chromium` instead of downloading a
 > second copy.
 
-**Failure signature — `Executable doesn't exist`:** the browser is not
+**Failure signature - `Executable doesn't exist`:** the browser is not
 installed. Run the install command above, or set the variable.
 
 ---
@@ -244,7 +244,7 @@ result is one self-contained artifact.
 $ ./bin/labctl --help
 ```
 
-**Expect:** the command list. 🔍 **Confirm the removed commands are gone** —
+**Expect:** the command list. 🔍 **Confirm the removed commands are gone** -
 these must each report an unknown command:
 
 ```bash
@@ -264,12 +264,12 @@ $ make cli-build-all
 $ ls -la src/dist/
 ```
 
-**Expect:** four binaries — `labctl-darwin-arm64`, `labctl-darwin-amd64`,
+**Expect:** four binaries: `labctl-darwin-arm64`, `labctl-darwin-amd64`,
 `labctl-linux-amd64`, `labctl-linux-arm64`.
 
 This is the practical proof of the no-cgo rule (ADR-0002): cross-compilation is
-a plain `GOOS`/`GOARCH` change. **A failure here means something pulled in cgo**
-— report it, it blocks the wave.
+a plain `GOOS`/`GOARCH` change. **A failure here means something pulled in cgo** -
+ report it, it blocks the wave.
 
 ---
 

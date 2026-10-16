@@ -2,7 +2,7 @@
 set -euo pipefail
 . "$(dirname "$0")/../../_lib/workload.sh"
 
-# remove-autoscaler.sh — delete the ScaledObject the learner applied, and the
+# remove-autoscaler.sh - delete the ScaledObject the learner applied, and the
 # HPA KEDA made for it, then return the workload to one replica. The engine
 # only tracks what it staged, so without this a `down` leaves KEDA scaling the
 # shared workload in every later scenario, and the next activation starts with

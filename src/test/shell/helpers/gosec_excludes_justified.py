@@ -2,7 +2,7 @@
 """Fail when a gosec rule exclusion has no comment explaining it.
 
 An exclusion with no reason is a silenced finding nobody triaged. One comment
-may cover several entries — G301/G302/G306 share a reason — so an entry counts
+may cover several entries - G301/G302/G306 share a reason - so an entry counts
 as justified when the comment block above its group names that rule id.
 """
 

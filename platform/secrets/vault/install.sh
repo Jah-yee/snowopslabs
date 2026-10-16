@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# HashiCorp Vault in dev mode — fine for simulation (in-memory, auto-unsealed).
+# HashiCorp Vault in dev mode - fine for simulation (in-memory, auto-unsealed).
 # Seeds a demo KV secret for the bound workload and exposes the UI via ingress.
 # Portable + idempotent.
 #
 # SECURITY: the dev root token is read from the environment and never committed.
-# Dev mode stores everything in memory and is wiped on pod restart — do NOT use
+# Dev mode stores everything in memory and is wiped on pod restart - do NOT use
 # this profile for anything real. See values.yaml for a non-dev profile sketch.
 #
-# Config (env, with defaults — scripts never source .env themselves):
+# Config (env, with defaults - scripts never source .env themselves):
 #   VAULT_CHART_VERSION   pinned hashicorp/vault chart version (config/versions.env)
-#   VAULT_DEV_ROOT_TOKEN  dev root token (default: root — the well-known dev default)
+#   VAULT_DEV_ROOT_TOKEN  dev root token (default: root - the well-known dev default)
 #   VAULT_DEMO_SECRET     demo KV value seeded at secret/<workload> (default: demo value)
 #   INGRESS_CLASS         ingress class for the UI route (default: traefik)
 #   DOMAIN_SUFFIX         host suffix for the UI route (default: <cluster>.localhost)
@@ -71,7 +71,7 @@ EOF
 
 echo ""
 echo "Vault installed successfully (dev mode)."
-echo "    UI:   http://vault.${INGRESS_URL_SUFFIX:-${DOMAIN_SUFFIX:-${CLUSTER_NAME:-snowops}.localhost}}  (token auth — use your dev root token)"
+echo "    UI:   http://vault.${INGRESS_URL_SUFFIX:-${DOMAIN_SUFFIX:-${CLUSTER_NAME:-snowops}.localhost}}  (token auth - use your dev root token)"
 echo "    Addr (in-cluster): http://vault.${NAMESPACE}.svc:8200"
 echo "    Demo secret: secret/${WORKLOAD_NAME:-go-api} (key: api-key)"
 echo "    Next: install external-secrets to sync it into the go-api namespace."

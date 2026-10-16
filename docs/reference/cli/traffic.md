@@ -4,7 +4,7 @@
 autoscaling play out under realistic load. The generator lives in its own
 `traffic` namespace; the scripts are in `src/services/traffic/`.
 
-Never use a `curl` loop in scenario or incident content — use this.
+Never use a `curl` loop in scenario or incident content - use this.
 
 ## `labctl traffic start`
 
@@ -53,14 +53,14 @@ labctl traffic stop        # stop and remove the job, configmap and namespace
 
 The app root is access-logged and metered, so a run is visible in
 `kubectl logs` and in Grafana. Probe endpoints (`/health`, `/ready`,
-`/metrics`) are deliberately excluded from the access log and from tracing —
+`/metrics`) are deliberately excluded from the access log and from tracing -
 they run on a timer forever and would bury real traffic.
 
 ## k6's own metrics
 
 `start.sh` looks for the Prometheus service and, when it finds one,
-remote-writes k6's client-side metrics — `k6_http_reqs_total`,
-`k6_http_req_duration_p95`, `k6_http_req_failed_rate` — into it. These are the
+remote-writes k6's client-side metrics (`k6_http_reqs_total`,
+`k6_http_req_duration_p95`, `k6_http_req_failed_rate`) into it. These are the
 other half of evaluating load: the app's `/metrics` only counts requests that
 *arrived*, so a gap between "k6 sent" and "app handled" on the **Application
 Request Metrics** dashboard means requests are being lost before the app sees

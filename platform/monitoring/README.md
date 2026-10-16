@@ -308,8 +308,8 @@ Go-API exposes metrics in Prometheus format at `GET /metrics` (port 8080 by defa
 
 Metrics include:
 - `http_server_request_duration_seconds`: request latency distribution (histogram),
-  OpenTelemetry semantic conventions. `_count` is the request count — semconv
-  defines no separate counter — and `http_response_status_code` carries the
+  OpenTelemetry semantic conventions. `_count` is the request count, semconv
+  defines no separate counter, and `http_response_status_code` carries the
   status, so error rates derive from the same series.
 - Standard Go runtime metrics
 

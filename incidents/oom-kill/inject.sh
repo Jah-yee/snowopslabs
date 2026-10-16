@@ -9,8 +9,8 @@ LIB="$(cd "$(dirname "$0")/../_lib" && pwd)"
 . "$LIB/state.sh"
 
 # The limit must sit between what the app uses at rest and what it needs under
-# load, so the failure is the one that actually happens in production — healthy
-# at rest, OOMKilled once real traffic arrives — rather than a pod that never
+# load, so the failure is the one that actually happens in production - healthy
+# at rest, OOMKilled once real traffic arrives - rather than a pod that never
 # starts. The traffic below is what makes it bite.
 #
 # Derive it from the workload's own memory request rather than hardcoding a
@@ -32,15 +32,15 @@ mem_to_mib() {
 
 # Derive the limit from what the container ACTUALLY uses, not from what it
 # declares. A fraction of the request is the obvious rule and it is wrong: a
-# request is a guess someone made once, and workloads routinely over-declare —
+# request is a guess someone made once, and workloads routinely over-declare -
 # this repo's own Go service asks for 32Mi and uses under 3Mi, so a quarter of
 # the request is 8Mi, which is below what it needs to START. The pod then never
 # becomes Ready, which is a different and much less interesting failure than the
 # one this fault is for: healthy at rest, killed once traffic arrives.
 #
 # Measured on that workload: ~2.8Mi at rest, ~5.7Mi serving 60 rps. A limit at
-# 8Mi is killed during startup; 16Mi survives load comfortably; 12Mi — about
-# four times the resting working set — starts cleanly and is OOMKilled under
+# 8Mi is killed during startup; 16Mi survives load comfortably; 12Mi - about
+# four times the resting working set - starts cleanly and is OOMKilled under
 # load, which is exactly the shape wanted. Hence the multiplier.
 # Pod-level, not --containers: with --containers the columns shift (POD NAME CPU
 # MEM) and reading the third field silently returns CPU, which parses as zero
@@ -49,8 +49,8 @@ mem_to_mib() {
 # non-zero because metrics-server has no sample for a just-rolled pod fails the
 # whole assignment and aborts the script.
 # Sample a few times, FAULT_SAMPLE_SECONDS apart, and keep the largest. A reading taken in the first seconds
-# after a rollout is cold — the same pod reported 1Mi and then 3Mi a minute
-# later — and sizing the limit from the cold number produces one so tight the
+# after a rollout is cold - the same pod reported 1Mi and then 3Mi a minute
+# later - and sizing the limit from the cold number produces one so tight the
 # container cannot start, which is the failure this rule exists to avoid.
 USED_MIB=0
 for _ in 1 2 3; do
@@ -86,11 +86,11 @@ echo "Sizing the change from ${BASIS}."
 
 # Trust the cluster, not just the record. A record left behind by a partial
 # resolve, or a limit someone restored by hand, makes the record alone claim the
-# fault is live when it is not — and the detection check then grades a healthy
+# fault is live when it is not - and the detection check then grades a healthy
 # lab as already fixed.
 CURRENT_LIMIT="$(kubectl -n "$NS" get deploy "$DEPLOY" -o 'jsonpath={.spec.template.spec.containers[0].resources.limits.memory}' 2>/dev/null || true)"
 if [ -n "$(fault_state_get "$FAULT" original-limit)" ] && [ "$CURRENT_LIMIT" = "$FAULT_LIMIT" ]; then
-  echo "Fault already injected — nothing to do."
+  echo "Fault already injected - nothing to do."
   exit 0
 fi
 
@@ -98,12 +98,12 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Arm the paging rule first so the on-call drill measures real detection.
-# Tolerate a missing prometheus operator — the fault still works unpaged.
+# Tolerate a missing prometheus operator - the fault still works unpaged.
 MON_NS="${MONITORING_NAMESPACE:-monitoring}"
 # shellcheck source=incidents/_lib/render.sh
 . "$LIB/render.sh"
 render_targeted "$SCRIPT_DIR/alerts/rule.yaml" | kubectl apply -n "$MON_NS" -f - 2>/dev/null ||
-  echo "Note: alert rule not installed (monitoring stack missing?) — continuing without paging."
+  echo "Note: alert rule not installed (monitoring stack missing?) - continuing without paging."
 
 # A literal "0" means the same as unset here, and it is a state an older resolve
 # could leave behind. Recording it verbatim would tell the next resolve to put
@@ -132,7 +132,7 @@ apply_limit() {
   # Let the new pod come up BEFORE judging it. Without this the rollout and the
   # traffic race: a container that would have served happily at this limit is
   # killed while it is still starting, and the fault becomes "a pod that never
-  # becomes Ready" — a duller failure than the one being taught, and one that
+  # becomes Ready" - a duller failure than the one being taught, and one that
   # appears only on some runs. Both outcomes were observed at the same limit.
   kubectl -n "$NS" rollout status "deploy/$DEPLOY" --timeout=90s >/dev/null 2>&1 || true
 }
@@ -155,7 +155,7 @@ TRAFFIC_PROFILE=steady \
 # limit change and the first kill, passed, and closed the incident.
 #
 # The budget is an env knob because the wait needs a real cluster to ever end.
-# Set FAULT_WAIT_SECONDS=0 to stage the fault without blocking on it — that is
+# Set FAULT_WAIT_SECONDS=0 to stage the fault without blocking on it - that is
 # what the repo's script-contract test does, since it runs every fault script
 # against a stub kubectl with no cluster behind it.
 WAIT_SECONDS="${FAULT_WAIT_SECONDS:-300}"
@@ -195,8 +195,8 @@ new_oomkill() {
 #
 # The usable window is narrow and workload-specific: it has to be above what the
 # container needs to START and below what it reaches under load. For this repo's
-# Go service those are about 9Mi and 15Mi, and a single `kubectl top` reading —
-# 1Mi cold, 5Mi warm — multiplied by anything lands outside that window as often
+# Go service those are about 9Mi and 15Mi, and a single `kubectl top` reading -
+# 1Mi cold, 5Mi warm - multiplied by anything lands outside that window as often
 # as inside it. So make the first attempt an estimate, then tighten and watch,
 # which is what a person would do and is the only approach that survives being
 # pointed at a workload nobody calibrated for.
@@ -219,10 +219,10 @@ while [ "$waited" -lt "$WAIT_SECONDS" ]; do
   if [ "$round_spent" -ge "$round_budget" ] && [ "$LIMIT_MIB" -gt 6 ]; then
     # Halve rather than shave. Each round costs a rollout as well as its poll
     # budget, so a 25% step spends the whole budget crawling towards the window
-    # instead of landing in it — measured: 24 -> 18 -> 13 -> 9Mi and out of time.
+    # instead of landing in it - measured: 24 -> 18 -> 13 -> 9Mi and out of time.
     LIMIT_MIB=$((LIMIT_MIB / 2))
     [ "$LIMIT_MIB" -ge 6 ] || LIMIT_MIB=6
-    echo "Still healthy — tightening to ${LIMIT_MIB}Mi."
+    echo "Still healthy - tightening to ${LIMIT_MIB}Mi."
     apply_limit "$LIMIT_MIB"
     FAULT_LIMIT="${LIMIT_MIB}Mi"
     round_spent=0
@@ -230,7 +230,7 @@ while [ "$waited" -lt "$WAIT_SECONDS" ]; do
 done
 
 echo "The change is applied and traffic is running, but nothing happened in ${WAIT_SECONDS}s." >&2
-echo "The fault is not live — the limit chosen (${FAULT_LIMIT}) may be too generous" >&2
+echo "The fault is not live - the limit chosen (${FAULT_LIMIT}) may be too generous" >&2
 echo "for this workload. Check that the traffic generator is running:" >&2
 echo "  labctl traffic status" >&2
 exit 1

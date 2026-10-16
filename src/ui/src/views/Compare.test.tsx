@@ -73,7 +73,7 @@ describe('Compare view', () => {
   })
 
   // A comparison cannot be started here, so the view has to say what one is and
-  // how to run it — otherwise it is a results table for a feature the reader has
+  // how to run it - otherwise it is a results table for a feature the reader has
   // no way to reach.
   it('explains what a comparison is and how to start one, with results or without', async () => {
     serveComparisons([comparison()])
@@ -126,7 +126,7 @@ describe('Compare view', () => {
     c.measurements[1].values = { requests_per_second: 30 }
     serveComparisons([c])
     renderCompare()
-    expect(await screen.findAllByText('—')).not.toHaveLength(0)
+    expect(await screen.findAllByText('-')).not.toHaveLength(0)
   })
 
   // Replica count has no better direction, so no verdict is claimed.

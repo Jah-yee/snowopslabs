@@ -1,4 +1,4 @@
-# Provider variables — override in .env or on the command line.
+# Provider variables - override in .env or on the command line.
 # These must match a subdirectory under platform/<category>/<provider>/.
 INGRESS_PROVIDER  ?= traefik
 METRICS_PROVIDER  ?= prometheus
@@ -80,7 +80,7 @@ platform-monitoring-status:
 	@echo "=== Grafana Status ==="
 	@bash platform/monitoring/grafana/status.sh
 
-# Logging (LOGGING_PROVIDER=loki|...) — only when LOGGING_PROVIDER is set
+# Logging (LOGGING_PROVIDER=loki|...) - only when LOGGING_PROVIDER is set
 platform-logging-up:
 	@echo "[platform] logging provider: $(LOGGING_PROVIDER)"
 	bash platform/logging/$(LOGGING_PROVIDER)/install.sh
@@ -93,7 +93,7 @@ platform-logging-status:
 	@echo "=== Logging ($(LOGGING_PROVIDER)) Status ==="
 	@bash platform/logging/$(LOGGING_PROVIDER)/status.sh
 
-# Tracing (TRACING_PROVIDER=tempo|...) — only when TRACING_PROVIDER is set
+# Tracing (TRACING_PROVIDER=tempo|...) - only when TRACING_PROVIDER is set
 platform-tracing-up:
 	@echo "[platform] tracing provider: $(TRACING_PROVIDER)"
 	bash platform/tracing/$(TRACING_PROVIDER)/install.sh
@@ -106,7 +106,7 @@ platform-tracing-status:
 	@echo "=== Tracing ($(TRACING_PROVIDER)) Status ==="
 	@bash platform/tracing/$(TRACING_PROVIDER)/status.sh
 
-# Service mesh (MESH_PROVIDER=istio|linkerd) — only when MESH_PROVIDER is set
+# Service mesh (MESH_PROVIDER=istio|linkerd) - only when MESH_PROVIDER is set
 platform-mesh-up:
 	@echo "[platform] mesh provider: $(MESH_PROVIDER)"
 	bash platform/mesh/$(MESH_PROVIDER)/install.sh
@@ -120,7 +120,7 @@ platform-mesh-status:
 	@bash platform/mesh/$(MESH_PROVIDER)/status.sh
 
 # Data infrastructure (additive sub-components: kafka, postgres).
-# Address each independently — they coexist like the monitoring/* components.
+# Address each independently - they coexist like the monitoring/* components.
 platform-data-kafka-up:
 	@echo "[platform] data: kafka (Strimzi)"
 	bash platform/data/kafka/install.sh
@@ -150,7 +150,7 @@ platform-data-up: platform-data-kafka-up platform-data-postgres-up
 platform-data-down: platform-data-postgres-down platform-data-kafka-down
 platform-data-status: platform-data-kafka-status platform-data-postgres-status
 
-# Autoscaling (AUTOSCALING_PROVIDER=keda) — only when AUTOSCALING_PROVIDER is set
+# Autoscaling (AUTOSCALING_PROVIDER=keda) - only when AUTOSCALING_PROVIDER is set
 platform-autoscaling-up:
 	@echo "[platform] autoscaling provider: $(AUTOSCALING_PROVIDER)"
 	bash platform/autoscaling/$(AUTOSCALING_PROVIDER)/install.sh
@@ -164,7 +164,7 @@ platform-autoscaling-status:
 	@bash platform/autoscaling/$(AUTOSCALING_PROVIDER)/status.sh
 
 # Secrets management (vault backend + external-secrets sync operator).
-# ESO depends on Vault — install vault first.
+# ESO depends on Vault - install vault first.
 platform-secrets-vault-up:
 	@echo "[platform] secrets: vault (dev mode)"
 	bash platform/secrets/vault/install.sh

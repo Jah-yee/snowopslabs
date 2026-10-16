@@ -39,7 +39,7 @@ else
 fi
 echo ""
 
-# Per-pod roles (primary vs replica) — useful for watching a failover
+# Per-pod roles (primary vs replica) - useful for watching a failover
 echo "Instances (role):"
 for pod in $(kubectl get pods -n "$NAMESPACE" -l cnpg.io/cluster="$CLUSTER" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null); do
   role=$(kubectl get pod "$pod" -n "$NAMESPACE" -o jsonpath='{.metadata.labels.cnpg\.io/instanceRole}' 2>/dev/null || echo "")

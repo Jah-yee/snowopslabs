@@ -9,8 +9,8 @@ It is the third harness alongside [scenario review](scenario-review.md) and
 against a live lab, evidence only, a weighted rubric out of 5. Content ships at
 **4.8 or above**, or at 4.7 when the review has no remaining recommendation.
 
-Paths and challenges are reviewed differently — a path is a curriculum, a
-challenge is an exam — so this document carries two phase lists and two rubrics.
+Paths and challenges are reviewed differently (a path is a curriculum, a
+challenge is an exam), so this document carries two phase lists and two rubrics.
 Run it with the `learning-review` skill.
 
 ---
@@ -29,24 +29,24 @@ minute the learner spends is spent inside that fault.
 
 What the wrapper adds is its own to get right:
 
-- A path adds **sequence and explanation** — the order modules come in, and the
+- A path adds **sequence and explanation** - the order modules come in, and the
   intro that says why this module exists. Both are the path's own work.
 - A challenge adds **a clock and a score**. Both are the challenge's own work,
   and both are easy to get wrong in ways that make every grade meaningless.
 
 ---
 
-## Reviewing a path — phases L0–L7
+## Reviewing a path: phases L0–L7
 
-### L0 — Read the promise
+### L0: Read the promise
 
 Read `path.yaml`'s `description`, `tags`, `estimatedMinutes` and the module
 titles, plus the entry in [learn/README.md](../../learn/README.md). Write down
-the arc it promises — "by the end you will have used kubectl, Helm, Prometheus
-and the incident engine" — and the time it claims. L3 tests the time; L7 tests
+the arc it promises ("by the end you will have used kubectl, Helm, Prometheus
+and the incident engine") and the time it claims. L3 tests the time; L7 tests
 the arc.
 
-### L1 — Static validation
+### L1: Static validation
 
 ```bash
 labctl validate
@@ -57,7 +57,7 @@ Confirm: every `action.ref` names a scenario, incident or command that exists;
 every `intro` and `script` path resolves and stays inside the path directory;
 module names are unique; the path is listed in the README.
 
-### L2 — The premature-green sweep
+### L2: The premature-green sweep
 
 **The headline phase, and the defect this content class fails on most often.**
 
@@ -73,13 +73,13 @@ The failure mode is a check that asserts something the platform already
 provides. A module whose action is "activate the observability scenario" and
 whose check is `GET http://prometheus/-/ready` is green before the learner lifts
 a finger, because Prometheus is part of the platform. The check has to assert
-what *this module's work* produced — the dashboard the scenario installs, the
-metric it starts collecting — not that the lab is up.
+what *this module's work* produced (the dashboard the scenario installs, the
+metric it starts collecting) not that the lab is up.
 
 Work through every module this way. A path where any check is green early does
 not teach; it advances.
 
-### L3 — The cold walk
+### L3: The cold walk
 
 On a lab in the path's declared starting state, do the whole path in order, using
 **only the intro and the action ref**. Time each module.
@@ -94,7 +94,7 @@ Record every moment you had to look outside the path to proceed, and compare the
 total elapsed time to `estimatedMinutes`. A path claiming 45 minutes that takes
 two hours has misled someone into starting it on a lunch break.
 
-### L4 — State handoff
+### L4: State handoff
 
 Modules run in declaration order, and each inherits whatever the last one left.
 Confirm that inheritance is real:
@@ -104,10 +104,10 @@ Confirm that inheritance is real:
 - A module that tears something down must not strand a later module that needs
   it.
 
-### L5 — Teaching quality
+### L5: Teaching quality
 
 Read every intro as someone who has not done this before. An intro earns its
-place by explaining **why this module exists and what to look at** — not by
+place by explaining **why this module exists and what to look at**, not by
 restating the command that is already in `action.ref`. A module with no intro,
 or an intro that is a paraphrase of its command, leaves the learner pasting
 commands they cannot explain afterwards.
@@ -115,7 +115,7 @@ commands they cannot explain afterwards.
 Check the ramp too: difficulty should climb. A path whose last module is as easy
 as its first has not taken the learner anywhere.
 
-### L6 — Resumability
+### L6: Resumability
 
 Learners do not finish in one sitting.
 
@@ -126,7 +126,7 @@ labctl learn progress <path>    # progress survived
 labctl learn next <path>        # re-running a completed module is safe
 ```
 
-### L7 — The arc
+### L7: The arc
 
 Re-read what you wrote in L0. Does someone who finished this path have the skill
 the description promised? A path that installs four things and verifies four
@@ -135,16 +135,16 @@ lab rather than taught it.
 
 ---
 
-## Reviewing a challenge — phases C0–C6
+## Reviewing a challenge: phases C0–C6
 
-### C0 — Read the promise, and the content underneath
+### C0: Read the promise, and the content underneath
 
 Read `challenge.yaml` and the README table row. Then establish the quality of
 what it wraps: has the incident or scenario in `setup.ref` passed its own
-review? If not, run that review first — a challenge over a fault nobody can
+review? If not, run that review first - a challenge over a fault nobody can
 diagnose is an unfair exam, and no amount of grading polish fixes it.
 
-### C1 — Static validation
+### C1: Static validation
 
 ```bash
 labctl validate
@@ -152,13 +152,13 @@ labctl challenge info <name>
 ```
 
 Confirm: `setup.ref` resolves; `grading.useDetectionCheck: true` is used for an
-incident challenge unless there is a stated reason not to — hand-written checks
+incident challenge unless there is a stated reason not to - hand-written checks
 drift from the fault's own detection check, and then `challenge submit` and
 `incident status` disagree; `parTime` is present and is a Go duration;
 `hintPenalty` is set or deliberately defaulted; the README table row matches the
 YAML.
 
-### C2 — The zero-work submit
+### C2: The zero-work submit
 
 The challenge's answer to the tamper test. Start it and submit immediately,
 having fixed nothing:
@@ -173,9 +173,9 @@ A challenge that awards a passing score for doing nothing is not an assessment.
 This is scored as harshly here as a false-green detection check is in an
 incident review.
 
-### C3 — The honest timed run
+### C3: The honest timed run
 
-Start the clock and actually do it — diagnose, fix, submit:
+Start the clock and actually do it: diagnose, fix, submit:
 
 ```bash
 labctl challenge start <name>
@@ -186,19 +186,19 @@ labctl challenge submit
 Two outputs matter: the score (which must be high for a genuine fix) and **your
 elapsed time, which is the evidence for C4**. Record both.
 
-### C4 — Par-time calibration
+### C4: Par-time calibration
 
 `parTime` drives the time deduction, so a wrong par makes every score wrong.
 Compare the declared par to your C3 run:
 
 - Par far below a competent run punishes everyone, including the author.
 - Par far above it means the clock never bites and speed is not rewarded.
-- Par should be reachable **with one or two lookups** — the README's own rule.
+- Par should be reachable **with one or two lookups** - the README's own rule.
 
 A `parTime` that cannot be traced to a real timed run is a finding, whatever the
 number is.
 
-### C5 — Score arithmetic
+### C5: Score arithmetic
 
 Confirm the documented formula is what actually happens:
 
@@ -211,7 +211,7 @@ confirm the time deduction appears and **caps at 20**. If grading uses explicit
 checks rather than the detection check, confirm a partial fix scales the score
 rather than zeroing or maxing it.
 
-### C6 — Abort and history
+### C6: Abort and history
 
 ```bash
 labctl challenge start <name>
@@ -219,7 +219,7 @@ labctl challenge abort          # must undo the setup cleanly, no score
 labctl challenge history        # the run is recorded
 ```
 
-Then sweep the lab the way an incident review does — `abort` runs the same
+Then sweep the lab the way an incident review does: `abort` runs the same
 teardown as `incident resolve`, so the same residue matters: no `labfault-*`
 annotations, no orphaned namespace, no armed PrometheusRule.
 
@@ -253,25 +253,25 @@ annotations, no orphaned namespace, no armed PrometheusRule.
 
 Both weight sets sum to 1.00. (They did not: the challenge weights summed to
 1.05, so a flawless challenge scored 5.14 and every score above about 4.8 was
-inflated. Completability moved from 0.15 to 0.10 — it is the dimension most
+inflated. Completability moved from 0.15 to 0.10: it is the dimension most
 nearly implied by the other six, since a challenge that grades honestly, aborts
 cleanly and frames its task is by construction completable.)
 
-**Anchors** for both. 5 — no finding. 4 — one cosmetic finding. 3 — a finding a
-learner would notice. 2 — a finding that misleads a learner. 1 — the dimension's
-promise is not delivered. 0 — the content teaches or grades the wrong thing.
+**Anchors** for both. 5, no finding. 4 - one cosmetic finding. 3 - a finding a
+learner would notice. 2 - a finding that misleads a learner. 1 - the dimension's
+promise is not delivered. 0 - the content teaches or grades the wrong thing.
 
 Score to two decimals. Every dimension below 5 carries a named finding, and a
 score rises only on new evidence from a re-run.
 
-**Two caps.** A path with any premature-green check cannot score above 3.5 — it
+**Two caps.** A path with any premature-green check cannot score above 3.5 - it
 advances learners without teaching them. A challenge whose zero-work submit
-passes cannot score above 3.5 — it grades nothing.
+passes cannot score above 3.5 - it grades nothing.
 
 ## The loop
 
 Fix the highest-impact finding, re-run the phases it touches, re-score, and stop
-at 4.8 — or at 4.7 with nothing left to recommend. Four rounds without
+at 4.8, or at 4.7 with nothing left to recommend. Four rounds without
 convergence is a failed review, reported with its open findings named.
 
 One caution specific to this content class: **a fix to the wrapped content
@@ -280,7 +280,7 @@ what `challenge submit` grades and what a path module's incident step proves.
 
 ## Related
 
-- [learn/README.md](../../learn/README.md) — the path contract
-- [challenges/README.md](../../challenges/README.md) — the challenge contract and score formula
-- [Scenario review](scenario-review.md) · [Incident review](incident-review.md) — the content underneath
+- [learn/README.md](../../learn/README.md): the path contract
+- [challenges/README.md](../../challenges/README.md): the challenge contract and score formula
+- [Scenario review](scenario-review.md) · [Incident review](incident-review.md) - the content underneath
 - [CLI: learning & challenges](../reference/cli/learning.md)

@@ -3,7 +3,7 @@
 #
 # `app deploy` must ensure a docker-built image is present inside a local
 # cluster runtime (k3d/kind) before deploying. Without this, a deploy after a
-# cluster re-create — which wipes previously-imported images — leaves the pod
+# cluster re-create - which wipes previously-imported images - leaves the pod
 # stuck in ImagePullBackOff trying to pull the never-published image from a
 # registry. These tests pin the import behaviour per runtime.
 

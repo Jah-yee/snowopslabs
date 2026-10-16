@@ -253,7 +253,7 @@ func (h Host) ResizeHint(n Need) string {
 		return fmt.Sprintf("in %%UserProfile%%\\.wslconfig on Windows set [wsl2] processors=%d and memory=%sGB,\n"+
 			"then run `wsl --shutdown` in PowerShell and reopen this terminal", n.CPUs, mem)
 	default:
-		return fmt.Sprintf("Docker uses this machine's own CPU and memory: it needs %d CPUs and %s GB free —\n"+
+		return fmt.Sprintf("Docker uses this machine's own CPU and memory: it needs %d CPUs and %s GB free -\n"+
 			"close other memory-hungry programs, or use a bigger machine", n.CPUs, mem)
 	}
 }

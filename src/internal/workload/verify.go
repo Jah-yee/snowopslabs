@@ -76,7 +76,7 @@ func (c Contract) Checks(w Workload) []checks.Check {
 			Operator: ">=",
 			Value:    "1",
 			Remediation: fmt.Sprintf(
-				"Prometheus has no %s_count for app=%q. Either the app does not expose %s (check %s), it is not being scraped (the pod needs prometheus.io/scrape and an app=%s label), or no traffic has reached it yet — try: labctl traffic start --profile steady --rps 10",
+				"Prometheus has no %s_count for app=%q. Either the app does not expose %s (check %s), it is not being scraped (the pod needs prometheus.io/scrape and an app=%s label), or no traffic has reached it yet - try: labctl traffic start --profile steady --rps 10",
 				c.RequestMetric, w.Name, c.RequestMetric, KeyRequestMetric, w.Name),
 		})
 	}

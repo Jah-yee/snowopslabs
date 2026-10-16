@@ -6,12 +6,12 @@
 #
 # Sizing contract: a stopped colima is started at LAB_CPUS/LAB_MEMORY (default
 # 2 CPU / 4 GB), never smaller than it already is. A running engine is never
-# resized here — labctl's preflight refuses an undersized one and prints how.
+# resized here - labctl's preflight refuses an undersized one and prints how.
 
 LAB_CPUS="${LAB_CPUS:-2}"
 LAB_MEMORY="${LAB_MEMORY:-4}"
 
-# wait_for_docker <seconds> — succeed once the daemon answers.
+# wait_for_docker <seconds> - succeed once the daemon answers.
 wait_for_docker() {
   local limit="${1:-60}" waited=0
   until docker info >/dev/null 2>&1; do
@@ -24,7 +24,7 @@ wait_for_docker() {
   done
 }
 
-# colima_size_arg <field> <wanted> — the larger of colima's configured value
+# colima_size_arg <field> <wanted> - the larger of colima's configured value
 # for field (cpus | memory, memory in GiB) and wanted, so a stopped VM is only
 # ever grown. Falls back to wanted when colima reports nothing.
 colima_size_arg() {
@@ -77,7 +77,7 @@ docker_access_problem() {
   return 0
 }
 
-# docker_cli_missing — succeed when no docker CLI is on PATH. A function so
+# docker_cli_missing - succeed when no docker CLI is on PATH. A function so
 # tests can stand in for a machine without one.
 docker_cli_missing() {
   ! command -v docker >/dev/null 2>&1
@@ -99,7 +99,7 @@ windows_docker_app() {
   fi
 }
 
-# ensure_docker_running — make the daemon answer, starting colima on macOS.
+# ensure_docker_running - make the daemon answer, starting colima on macOS.
 ensure_docker_running() {
   if docker info >/dev/null 2>&1; then
     return 0
@@ -137,7 +137,7 @@ ensure_docker_running() {
   return 1
 }
 
-# pull_with_timeout <image> <seconds> — pull an image, giving up if it takes
+# pull_with_timeout <image> <seconds> - pull an image, giving up if it takes
 # longer than seconds. A stalled registry download otherwise hangs cluster
 # creation forever with no output. Returns 124 on timeout.
 pull_with_timeout() {
@@ -157,7 +157,7 @@ pull_with_timeout() {
   wait "$pid"
 }
 
-# prepull_images <image>... — pull each image with one retry, so a slow or
+# prepull_images <image>... - pull each image with one retry, so a slow or
 # stalled network surfaces as a clear error instead of a silent hang.
 prepull_images() {
   local image rc
@@ -166,7 +166,7 @@ prepull_images() {
     rc=0
     pull_with_timeout "$image" 600 || rc=$?
     if [ "$rc" -ne 0 ]; then
-      echo "Pull of ${image} failed or stalled — retrying once..." >&2
+      echo "Pull of ${image} failed or stalled - retrying once..." >&2
       rc=0
       pull_with_timeout "$image" 600 || rc=$?
     fi
@@ -178,13 +178,13 @@ prepull_images() {
   done
 }
 
-# cluster_record_file <cluster> — where labctl reads how this machine reaches
+# cluster_record_file <cluster> - where labctl reads how this machine reaches
 # the cluster's ingress (internal/config.ClusterStateFile).
 cluster_record_file() {
   printf '%s/clusters/%s.env' "${SNOWOPS_HOME:-$HOME/.snowops}" "$1"
 }
 
-# record_value <cluster> <KEY> — print KEY from the cluster's record, if any.
+# record_value <cluster> <KEY> - print KEY from the cluster's record, if any.
 record_value() {
   local file
   file="$(cluster_record_file "$1")"
@@ -192,7 +192,7 @@ record_value() {
   sed -n "s/^$2=//p" "$file" | tail -n 1
 }
 
-# write_record <cluster> <http-port> <https-port> <domain-suffix> — record the
+# write_record <cluster> <http-port> <https-port> <domain-suffix> - record the
 # host ports and the domain suffix labctl builds every URL and check from.
 write_record() {
   local file
@@ -201,7 +201,7 @@ write_record() {
   printf 'HTTP_PORT=%s\nHTTPS_PORT=%s\nDOMAIN_SUFFIX=%s\n' "$2" "$3" "$4" >"$file"
 }
 
-# mapped_port <container> <container-port> <recorded> — the host port the
+# mapped_port <container> <container-port> <recorded> - the host port the
 # container maps its port to: the recorded one while it is still mapped (a
 # moved ingress maps several), else the first mapping.
 mapped_port() {
@@ -222,7 +222,7 @@ ingress_suffix_in_use() {
     sed -n -e 's/^grafana\.//p' -e 's/^prometheus\.//p' | head -n 1
 }
 
-# record_ingress_ports <cluster> <container> — record the host ports mapped to
+# record_ingress_ports <cluster> <container> - record the host ports mapped to
 # the container's :80 and :443 and the domain suffix of the cluster's ingress
 # hostnames. A suffix already recorded is kept; the first record takes the one
 # the cluster's ingresses use, else DOMAIN_SUFFIX.
@@ -239,14 +239,14 @@ record_ingress_ports() {
   write_record "$cluster" "$http" "${https:-443}" "$suffix"
 }
 
-# port_free <port> — 0 if nothing answers on the host TCP port. Uses bash's
+# port_free <port> - 0 if nothing answers on the host TCP port. Uses bash's
 # /dev/tcp so it needs no nc/lsof/ss, which differ across macOS and Linux. The
 # subshell scopes fd 3.
 port_free() {
   ! (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null
 }
 
-# pick_port <preferred> <fallback-base> — echo <preferred> if it is free, else
+# pick_port <preferred> <fallback-base> - echo <preferred> if it is free, else
 # the first free port at or above <fallback-base>, so a second lab (or any
 # service holding the port) does not stop this one from coming up.
 pick_port() {
@@ -266,7 +266,7 @@ pick_port() {
   printf '%s' "$p"
 }
 
-# name_used_by <runtime> <cluster> — succeed when another runtime on this
+# name_used_by <runtime> <cluster> - succeed when another runtime on this
 # machine already has a cluster of that name. Names are unique per machine,
 # because the lab's state and hostnames are keyed by them.
 name_used_by() {
@@ -277,7 +277,7 @@ name_used_by() {
   esac
 }
 
-# forget_cluster <cluster> — drop the record when the cluster is deleted, so a
+# forget_cluster <cluster> - drop the record when the cluster is deleted, so a
 # new cluster starts from the configured ports again.
 forget_cluster() {
   rm -f "$(cluster_record_file "$1")"

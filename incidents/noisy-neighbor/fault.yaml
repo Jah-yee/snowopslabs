@@ -1,7 +1,7 @@
 name: noisy-neighbor
 verified: true
 displayName: "Noisy neighbor: CPU-hungry tenant"
-description: "You have been paged: the node {{.WorkloadName}} runs on is out of CPU. Nothing you deployed changed — same image, same replicas, same config — and the other two nodes are idle. Something else moved in, and it is taking the machine."
+description: "You have been paged: the node {{.WorkloadName}} runs on is out of CPU. Nothing you deployed changed (same image, same replicas, same config) and the other two nodes are idle. Something else moved in, and it is taking the machine."
 category: resources
 severity: low
 target:

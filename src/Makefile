@@ -1,4 +1,4 @@
-# src/ — the self-contained labctl Go module (issue #7).
+# src/ - the self-contained labctl Go module (issue #7).
 #
 # Everything needed to build and test the labctl binary lives under src/: the
 # Go source, go.mod/go.sum, the embedded SPA (ui/), the Go coverage ratchet and
@@ -19,7 +19,7 @@ include make/test.mk
 .PHONY: help
 
 help:
-	@echo "labctl module (src/) — build and test the CLI"
+	@echo "labctl module (src/) - build and test the CLI"
 	@echo ""
 	@echo "  make cli-build        Build bin/labctl with the UI embedded"
 	@echo "  make cli-build-all    Cross-compile every release target into dist/"

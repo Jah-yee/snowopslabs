@@ -55,13 +55,13 @@ func TestMainStaysTrivial(t *testing.T) {
 	}
 
 	if len(otherDecls) > 0 {
-		t.Errorf("cmd/labctl/main.go declares %s — move it into internal/cli, "+
+		t.Errorf("cmd/labctl/main.go declares %s - move it into internal/cli, "+
 			"where the coverage gate applies (ADR-0005)", strings.Join(otherDecls, ", "))
 	}
 
 	// main must be a single call into internal/cli.
 	if n := len(mainFn.Body.List); n > 1 {
-		t.Errorf("main() has %d statements, want 1 — cmd/labctl is an entrypoint only (ADR-0005). "+
+		t.Errorf("main() has %d statements, want 1 - cmd/labctl is an entrypoint only (ADR-0005). "+
 			"Move the logic into internal/cli so it can be tested.", n)
 	}
 }

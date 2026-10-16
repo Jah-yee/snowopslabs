@@ -1,4 +1,4 @@
-# ADR 0012 — Grafana Alloy as the trace collector; Promtail retained for logs
+# ADR 0012: Grafana Alloy as the trace collector; Promtail retained for logs
 
 **Status:** Accepted
 **Date:** 2026-09-04
@@ -16,7 +16,7 @@ lesson. Production systems put a collector between the two so that batching,
 retry, sampling and backend selection are operational concerns rather than
 application code.
 
-Separately, Promtail — which ships the lab's logs — is deprecated and
+Separately, Promtail, which ships the lab's logs, is deprecated and
 end-of-life, with Grafana Alloy as its successor (ADR-0011).
 
 ## Decision
@@ -43,16 +43,16 @@ shipper.
 | App exports directly to Tempo | Smallest change, but teaches an anti-pattern and couples every app to the backend's address and protocol. |
 | Migrate logs to Alloy at the same time | Changes the log pipeline's label set (`app`, `namespace`) while log delivery was itself being fixed. Two variables, one debugging session. |
 | OpenTelemetry Collector instead of Alloy | Equivalent for this purpose. Alloy is the successor to the Promtail already in the stack, so one component eventually covers logs, metrics and traces. |
-| Alloy as a DaemonSet | Wasteful for a trace gateway, and misleading — it implies node-local collection, which is a log-shipping concern. |
+| Alloy as a DaemonSet | Wasteful for a trace gateway, and misleading - it implies node-local collection, which is a log-shipping concern. |
 
 ## Consequences
 
 - Swapping trace backends is a change to one exporter block, with no application
-  redeploy — demonstrable in the lab.
+  redeploy - demonstrable in the lab.
 - Alloy is already deployed when the log migration happens: that change becomes
   a config addition rather than a new component.
 - Two agents run in the monitoring namespace during the overlap (Promtail
   DaemonSet, Alloy Deployment), costing roughly 128Mi. Accepted.
 - Tracing is off in the app's chart by default (`tracing.enabled: false`). With
   no collector listening, the OTLP exporter retries every batch and floods the
-  log — the scenario turns it on once Alloy is running.
+  log - the scenario turns it on once Alloy is running.

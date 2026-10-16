@@ -58,7 +58,7 @@ alloy:
       }
 
       // Ship to Tempo's OTLP gRPC receiver. Swapping trace backends is a change
-      // to this block alone — no application redeploy.
+      // to this block alone, no application redeploy.
       otelcol.exporter.otlp "tempo" {
         client {
           endpoint = "tempo.{{.MonitoringNamespace}}.svc.cluster.local:4317"

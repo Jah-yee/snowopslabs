@@ -60,8 +60,8 @@ type Context struct {
 	// each language's instrumentation library picks its own.
 	WorkloadMetric string
 
-	// SinceActivation is how long this run has been going — since the scenario
-	// was activated or the fault injected — as a PromQL range such as "95m". A
+	// SinceActivation is how long this run has been going - since the scenario
+	// was activated or the fault injected - as a PromQL range such as "95m". A
 	// fixed window forgets work done early; an open one counts a previous run's.
 	SinceActivation string
 }
@@ -188,7 +188,7 @@ func ExpandVars(input string, vars map[string]string) string {
 		if v, ok := vars[varRef.FindStringSubmatch(match)[1]]; ok {
 			return v
 		}
-		return match // unknown {{.Var}} — leave it for whoever else consumes it
+		return match // unknown {{.Var}} - leave it for whoever else consumes it
 	})
 }
 

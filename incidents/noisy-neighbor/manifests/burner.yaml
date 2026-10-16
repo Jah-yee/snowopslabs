@@ -24,7 +24,7 @@ spec:
     spec:
       # Pinned to the node the victim is already on. Contention is a property of
       # a SHARED node, and left to the scheduler these pods land wherever there
-      # is room — on a three-node lab, usually not the node that matters. The
+      # is room - on a three-node lab, usually not the node that matters. The
       # fault would inject cleanly and nothing would happen.
       affinity:
         nodeAffinity:

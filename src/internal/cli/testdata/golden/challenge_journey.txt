@@ -56,7 +56,7 @@ $ labctl challenge history
 No challenge history yet.
 
 $ labctl challenge hint
-[Hint 1/3 — -5% score penalty]
+[Hint 1/3 - -5% score penalty]
 
 look at the pods
 

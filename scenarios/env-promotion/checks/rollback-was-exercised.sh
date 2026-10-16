@@ -54,6 +54,6 @@ if [ -z "$SERVED_BEFORE" ]; then
 fi
 
 echo "OK: ${NS} is serving ${SERVING_RS} (revision ${SERVING_REV}), which it served before as"
-echo "revision ${SERVED_BEFORE}. Prod went forward and was brought back — and the rollback reused"
+echo "revision ${SERVED_BEFORE}. Prod went forward and was brought back - and the rollback reused"
 echo "an existing ReplicaSet rather than building anything, which is why it is the fastest lever"
 echo "you have in an incident."

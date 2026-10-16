@@ -3,8 +3,8 @@ set -eu
 . "$(dirname "$0")/../../_lib/workload.sh"
 
 # Grades the OUTCOME: the file inside the running consumer pod must equal what
-# Vault currently holds. This is the end of the chain — Vault -> ESO -> Secret ->
-# kubelet -> the file a process reads — and it is what "rotation works" means.
+# Vault currently holds. This is the end of the chain - Vault -> ESO -> Secret ->
+# kubelet -> the file a process reads - and it is what "rotation works" means.
 
 ROOT_TOKEN="${VAULT_DEV_ROOT_TOKEN:-root}"
 NS="${WORKLOAD_NAMESPACE}"
@@ -27,7 +27,7 @@ fi
 # passing on that would grade the stage rather than the drill.
 if [ "$WANT" = "$BASELINE" ]; then
   echo "PENDING: secret/${WORKLOAD_NAME} is still the baseline ('${BASELINE}')." >&2
-  echo "The file already matches it, which says nothing about propagation — rotate first." >&2
+  echo "The file already matches it, which says nothing about propagation - rotate first." >&2
   exit 1
 fi
 
@@ -46,5 +46,5 @@ fi
 
 echo "PENDING: pod has '${GOT:-<empty>}', Vault has '${WANT}'." >&2
 echo "ESO refreshes every 15s and the kubelet updates the mounted file on its own" >&2
-echo "cycle — propagation to the file takes up to ~90s. Give it another minute." >&2
+echo "cycle - propagation to the file takes up to ~90s. Give it another minute." >&2
 exit 1

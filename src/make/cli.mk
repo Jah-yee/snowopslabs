@@ -1,4 +1,4 @@
-# Building the labctl binary (the Go module lives under src/ — ADR-0005, issue #7).
+# Building the labctl binary (the Go module lives under src/ - ADR-0005, issue #7).
 #
 # The SPA is built first and embedded, so a release is one self-contained
 # artifact with no separate frontend deploy.

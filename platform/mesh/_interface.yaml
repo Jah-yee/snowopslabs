@@ -41,7 +41,7 @@ conventions:
   - install.sh enrols MESH_NAMESPACE via the provider's inject label/annotation
     and restarts existing deployments so sidecars are injected.
   - uninstall.sh removes the inject label/annotation and restarts deployments so
-    sidecars are dropped — leaving the namespace mesh-free.
+    sidecars are dropped - leaving the namespace mesh-free.
   - Both operations are idempotent and portable (no GNU-only flags).
   - Chart versions are pinned and overridable via env (defaults in config/versions.env).
 

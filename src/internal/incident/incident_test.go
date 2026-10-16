@@ -37,7 +37,7 @@ detection:
 `
 
 // writeFault creates a complete fault dir whose inject.sh drops a marker
-// file and whose detection check passes once the marker is gone — a fully
+// file and whose detection check passes once the marker is gone - a fully
 // working incident without a cluster.
 func writeFault(t *testing.T, root, name string) {
 	t.Helper()
@@ -272,7 +272,7 @@ func TestPickRandom(t *testing.T) {
 	}
 
 	if _, err := e.PickRandom(1, "network"); err == nil {
-		t.Fatal("no eligible faults in category network — expected error")
+		t.Fatal("no eligible faults in category network - expected error")
 	}
 	if f, err := e.PickRandom(1, "workload"); err != nil || f == nil {
 		t.Fatalf("category filter: %v", err)
@@ -410,7 +410,7 @@ func TestPinnedAppsExcludesTheBinding(t *testing.T) {
 	e := NewEngine(root, "k3d.local")
 
 	if got := e.PinnedApps("bound-fault"); len(got) != 0 {
-		t.Errorf("PinnedApps = %v, want none — the only entry is the binding", got)
+		t.Errorf("PinnedApps = %v, want none - the only entry is the binding", got)
 	}
 	if got := e.PinnedApps("no-such-fault"); got == nil || len(got) != 0 {
 		t.Errorf("PinnedApps for an unknown fault = %v, want an empty slice", got)
@@ -445,7 +445,7 @@ detection:
 `
 
 // writeBoundFault creates a fault that names its workload through the binding
-// rather than pinning an app — the shape all shipped content uses.
+// rather than pinning an app - the shape all shipped content uses.
 func writeBoundFault(t *testing.T, root, name string) {
 	t.Helper()
 	writeFault(t, root, name)

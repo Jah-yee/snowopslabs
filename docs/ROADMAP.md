@@ -1,53 +1,63 @@
-# SnowOps Labs — Roadmap
+# SnowOps Labs roadmap
 
-> Product rationale: [`PRODUCT.md`](PRODUCT.md). How it fits together:
+> Why the product exists: [`PRODUCT.md`](PRODUCT.md). How it fits together:
 > [`architecture/ARCHITECTURE.md`](architecture/ARCHITECTURE.md).
 
-This is a living, high-level view of where SnowOps Labs is and where it's going.
-It's an early release: the core loop works, and the surrounding surfaces are
-being built out in the open. Priorities shift with feedback — if something here
-matters to you, [open an issue](https://github.com/sagar2395/snowopslabs/issues)
-or 👍 an existing one.
+A high-level view of where SnowOps Labs is and where it's going. It's an early
+release: the core loop works, and the rest is built in the open. Priorities
+shift with feedback, so if something here matters to you,
+[open an issue](https://github.com/sagar2395/snowopslabs/issues) or 👍 an
+existing one. Smaller known problems are tracked in [`backlog.md`](backlog.md).
 
 ## Works today
 
-- **Cluster lifecycle** — stand up a production-shaped cluster locally (`k3d` /
-  `kind`) with a real platform stack (ingress, Prometheus, Grafana, Loki, …),
-  and tear it down cleanly. Idempotent: interrupt and re-run and it converges.
-- **Scenarios** — activate a realistic situation, explore it, and verify your
-  work against machine-checkable objectives that report *why* they failed.
-- **Incidents** — inject a reversible fault, detect its resolution, and get
-  scored on how you fixed it.
-- **Content model** — every scenario, incident, learning path and challenge is
-  schema-validated and cross-referenced (`labctl validate`); author your own and
-  drop them in via `SNOWOPS_CONTENT_PATH` without forking.
-- **A durable core** — every operation that shells out is cancellable,
-  time-bounded, and recorded, so history survives restarts.
+- **The lab.** One command (`labctl init`) builds a local k3d or kind cluster
+  with a real platform stack, on macOS, Linux and WSL2. It checks Docker has
+  room before a scenario or fault starts, and keeps state outside your clone.
+- **Scenarios.** Thirteen scenarios across observability, autoscaling, delivery,
+  security, networking, data, cost and day-2 operations, each graded by checks
+  against the live cluster.
+- **Incidents.** Reversible faults with hints, silent and random game-day mode,
+  time-to-resolve measurement, and on-call drills that page through Alertmanager.
+- **Learning paths and challenges.** Guided modules gated by checks, and timed
+  challenges scored on par time and hints used.
+- **Any app.** Scenarios and faults bind to a workload, so they run against
+  `go-api`, `java-api`, `echo-server` or an app you bring
+  ([ADR-0014](adr/0014-workload-binding-and-app-contract.md)), and
+  `labctl compare` runs one scenario against two apps.
+- **CLI and web UI.** Every operation is cancellable and recorded, and the
+  dashboard is built into the binary. Team mode adds users and a leaderboard on
+  a shared in-cluster server.
+- **Your own content.** Everything is schema-validated (`labctl validate`), and
+  your own scenarios load from `SNOWOPS_CONTENT_PATH` without forking.
 
-## In progress / next
+## Next
 
-- **Lab & platform lifecycle on the durable engine** — moving the remaining
-  cluster/component operations onto the cancellable, recorded run engine, with
-  exact teardown and instant status.
-- **The simulation loop, hardened** — a curated, verified set of scenarios and
-  incidents with reproducible scoring (MTTD/MTTR), progressive hints, and a
-  traffic generator.
-- **A versioned, hardened HTTP API** and a rebuilt web UI — a run console you
-  can watch, deep-linkable views, and honest loading/empty/error states.
-- **Learning & assessment in the UI** — guided paths, timed challenges, and a
-  results view with score breakdowns.
-- **Team mode & packaging** — an in-cluster server for shared game days, a Helm
-  chart, and signed release artifacts.
+- **More content.** New faults and scenarios drawn from real failures.
+- **A smoother first run.** Fewer surprises on small machines and fresh
+  installs; see the open items in [`backlog.md`](backlog.md).
+- **Web UI on the run engine.** UI actions go through the same durable,
+  cancellable runs as the CLI.
+- **Team mode packaging.** An easier way to run the shared server for a game
+  day.
+
+## Later
+
+- **Hosted labs.** The same scenarios on a cluster we run, opened in a browser.
+  This is a long-term goal that comes after the open-source lab has a solid
+  base of users, and its shape will follow what they need. The open-source lab
+  stays complete and free either way
+  ([ADR-0016](adr/0016-hosted-labs-long-term.md)).
 
 ## How releases work
 
-Changes land in small, independently mergeable increments that keep `main`
-working. Every feature ships with tests at each applicable layer (see
+Changes land in small, independently mergeable pieces that keep `main`
+working. Every feature ships with tests at each layer it touches (see
 [`TESTING.md`](TESTING.md)) and a runbook a human follows before it merges (see
-[`runbooks/`](runbooks/)). Versioning is [SemVer](../RELEASING.md); pre-1.0,
-minor releases may include breaking changes, each called out in the notes.
+[`runbooks/`](runbooks/)). Versioning is [SemVer](../RELEASING.md), and
+breaking changes follow the [stability policy](authoring/sdk-stability-policy.md).
 
 ## Get involved
 
-Bugs, scenario/incident ideas, and PRs are all welcome — start with
+Bugs, scenario and incident ideas, and PRs are all welcome. Start with
 [`CONTRIBUTING.md`](../CONTRIBUTING.md).

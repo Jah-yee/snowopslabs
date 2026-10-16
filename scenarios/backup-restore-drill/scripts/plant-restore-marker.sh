@@ -4,7 +4,7 @@
 #
 # It is a script rather than a static manifest for one reason. If the marker were
 # a file in this repository, "restore it" could be satisfied by re-applying that
-# file — or by 'labctl scenario up --force', which restages it. Then the check
+# file - or by 'labctl scenario up --force', which restages it. Then the check
 # would grade the object's existence, which was never in doubt, instead of the
 # round-trip. A token minted here and nowhere else means the only way to put the
 # marker back with the SAME value is to take it from the backup archive, which is

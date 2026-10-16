@@ -1,6 +1,6 @@
 # SnowOps Labs Architecture (v2)
 
-> The target design. Anything not yet built is marked **Planned** — treat an
+> The target design. Anything not yet built is marked **Planned** - treat an
 > unmarked statement as describing the system as it ships. Decisions with
 > alternatives considered live in `docs/adr/`. Product rationale:
 > `docs/PRODUCT.md`. Delivery order: `docs/ROADMAP.md`.
@@ -66,13 +66,13 @@ Issue #7 then moved the whole module under `src/` so the repository root reads a
 a content/authoring workspace and a later "the engine gets its own repo" split is
 a straight lift of `src/`. **The module path is unchanged**
 (`github.com/sagar2395/snowopslabs`), so every import below is still written with
-no `src/` prefix — only the on-disk path gained one:
+no `src/` prefix, only the on-disk path gained one:
 
 ```
 src/go.mod                      module github.com/sagar2395/snowopslabs
 src/cmd/labctl/main.go          entrypoint, nothing else
-src/internal/cli/               cobra commands — thin, parse + call service
-src/internal/httpapi/           REST/WS/SSE — thin, decode + call service
+src/internal/cli/               cobra commands - thin, parse + call service
+src/internal/httpapi/           REST/WS/SSE - thin, decode + call service
 src/internal/service/           use-cases (the only place invariants live)
 src/internal/run/               durable run engine
 src/internal/store/             SQLite persistence + migrations
@@ -117,7 +117,7 @@ lands, the guarantees below hold only for work submitted as a `run.Spec`.
                       │                     ├──▶ [failed]      (non-zero exit)
                       │                     ├──▶ [cancelled]   (user or shutdown)
                       │                     └──▶ [timed_out]
-                      └──▶ [rejected]  (lock conflict — 409, names the holder)
+                      └──▶ [rejected]  (lock conflict - 409, names the holder)
 ```
 
 A `RunSpec` declares: kind (`platform.install`, `scenario.activate`,
@@ -128,8 +128,8 @@ A `RunSpec` declares: kind (`platform.install`, `scenario.activate`,
 
 Every run gets a `context.Context`. Cancellation is not best-effort:
 
-1. The process is started in its **own process group** (`Setpgid`), so children
-   — and `helm` spawns plenty — are reachable.
+1. The process is started in its **own process group** (`Setpgid`), so children,
+    and `helm` spawns plenty, are reachable.
 2. On cancel, `SIGTERM` goes to the whole group.
 3. After a grace period (default 15s, configurable per run kind), `SIGKILL`.
 4. The run is marked `cancelled` with the partial log intact, and any registered
@@ -143,7 +143,7 @@ rather than leaving orphaned `helm` processes behind.
 Runs declare a lock key, typically `lab:<name>` or `lab:<name>/ns:<namespace>`.
 The engine holds an exclusive lock per key. A conflicting submission is
 **rejected immediately** with the ID and description of the run holding the
-lock — not silently queued, because a user who fires `platform up` twice wants
+lock, not silently queued, because a user who fires `platform up` twice wants
 to be told, not to wait five minutes for a duplicate.
 
 Runs with disjoint lock keys execute concurrently, bounded by a worker pool.
@@ -169,7 +169,7 @@ failure reports a precise "failed at step X".
 
 ## 4. Persistence
 
-**SQLite via `modernc.org/sqlite`** — a pure-Go implementation, no cgo. That
+**SQLite via `modernc.org/sqlite`**: a pure-Go implementation, no cgo. That
 matters: cgo would break cross-compilation and the cross-platform golden rule.
 See `docs/adr/0002-sqlite-persistence.md`.
 
@@ -186,7 +186,7 @@ Core tables:
 | `run_logs` | per-run ordered output lines (the replay source) |
 | `run_steps` | parsed step timeline |
 | `labs` | lab identity, runtime profile, lifecycle state |
-| `components` | what is installed where — makes `status` fast and `down` precise |
+| `components` | what is installed where - makes `status` fast and `down` precise |
 | `scenario_state` | active scenario, current stage, activation history |
 | `incidents` | injected faults, detect/resolve timestamps, hints consumed |
 | `results` | graded outcomes for scenarios, incidents, challenges, paths |
@@ -202,12 +202,12 @@ instant, without claiming to own drift correction.
 All external binaries go through `internal/toolchain`. Each adapter:
 
 - **Preflights** on first use: binary present, version at or above minimum,
-  actionable error otherwise ("helm 3.9.0 found, 3.12+ required — brew upgrade helm").
+  actionable error otherwise ("helm 3.9.0 found, 3.12+ required - brew upgrade helm").
 - **Builds argv arrays, never shell strings.** No user-supplied value is ever
   interpolated into a command line. Script paths resolve against an allowlisted
   root with symlink-resolved containment checks, closing the path-traversal hole.
 - **Has a fake.** `toolchain.Fake` records invocations and returns scripted
-  responses, which is what lets service-layer and API tests be fully hermetic —
+  responses, which is what lets service-layer and API tests be fully hermetic,
   no cluster, no network, in any test.
 
 `labctl doctor` runs every preflight at once and prints a fix for each failure.
@@ -235,7 +235,7 @@ Checks stay the grading primitive. v2 adds what real assertions need:
   "readyReplicas >= 1" is true *eventually*, not instantly.
 - **Observed vs expected in the result**, so a failure says
   `p99 latency: observed 0.84s, expected < 0.30s` instead of `FAIL`.
-- **Per-check timeout and independence** — one hanging check cannot stall a
+- **Per-check timeout and independence**: one hanging check cannot stall a
   verify run.
 
 ## 7. API
@@ -276,7 +276,7 @@ Server mode is opt-in but hardened by default:
 
 ## 8. Web UI
 
-A full rebuild. v1 was a hand-rolled SPA with tab state in `useState` — no
+A full rebuild. v1 was a hand-rolled SPA with tab state in `useState`, no
 routing, no deep links, no browser back, no caching, and zero tests.
 
 **Stack:** React 18 + TypeScript (strict) + Vite, React Router (real URLs),
@@ -298,7 +298,7 @@ Radix primitives for accessible dialogs/menus/tabs.
 - **Honest states.** Every view has designed loading, empty, error and
   offline states. No spinner that hangs forever when the backend is gone.
 
-The built SPA is embedded into the Go binary — one artifact, no separate deploy.
+The built SPA is embedded into the Go binary - one artifact, no separate deploy.
 
 ## 9. Extensibility
 
@@ -312,7 +312,7 @@ With the marketplace cut, extensibility is a small, documented seam:
 - **`pkg/extension`** keeps a resolver-chain seam for out-of-tree behaviour, with
   a stability policy (`docs/authoring/sdk-stability-policy.md`).
 
-Everything the deleted marketplace did — publish, discover, install — is
+Everything the deleted marketplace did (publish, discover, install) is
 achievable with git and a content path, without 2,000 lines of code.
 
 ## 10. Observability of SnowOps Labs itself
@@ -320,7 +320,7 @@ achievable with git and a content path, without 2,000 lines of code.
 - Structured `slog` throughout, with request ID and run ID on every line.
 - Optional `/metrics` (Prometheus): run counts by kind and outcome, run
   duration, queue depth, lock contention, check pass rate.
-- `labctl runs list` / `labctl runs logs <id>` for post-hoc debugging — the
+- `labctl runs list` / `labctl runs logs <id>` for post-hoc debugging - the
   durable store makes support questions answerable.
 - Metrics and access logs are installed as middleware wrapping the whole mux,
   never per handler, so a new route cannot ship unmeasured.
@@ -329,13 +329,13 @@ achievable with git and a content path, without 2,000 lines of code.
 
 What the labs themselves emit, as distinct from labctl's instrumentation:
 
-- **Metrics** — apps expose `/metrics`; Prometheus scrapes them. `labctl traffic`
+- **Metrics**: apps expose `/metrics`; Prometheus scrapes them. `labctl traffic`
   also remote-writes k6's client-side metrics, so a dashboard can show what the
   generator sent next to what the app received. A gap between the two means
   requests are being lost before the app sees them.
-- **Logs** — Promtail ships pod logs to Loki, relabelling the pod's `app` label
+- **Logs**: Promtail ships pod logs to Loki, relabelling the pod's `app` label
   so `{app="go-api"}` resolves.
-- **Traces** — apps export OTLP to **Grafana Alloy**, which forwards to Tempo.
+- **Traces**: apps export OTLP to **Grafana Alloy**, which forwards to Tempo.
   Never straight to the backend ([ADR-0012](../adr/0012-alloy-as-trace-collector.md)).
 
 The pipeline's failure modes, all of which are silent, are in

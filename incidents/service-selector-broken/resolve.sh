@@ -45,14 +45,14 @@ if [ -z "$SELECTOR" ] || [ "$SELECTOR" = "none" ] || [ "$SELECTOR" = "{}" ]; the
   SELECTOR="$(kubectl -n "$NS" get deploy "$DEPLOY" -o 'jsonpath={.spec.selector.matchLabels}' 2>/dev/null || true)"
 fi
 if [ -z "$SELECTOR" ] || [ "$SELECTOR" = "{}" ] || [ "$SELECTOR" = "none" ]; then
-  echo "FAIL: cannot determine $SVC's original selector — restore it by hand:" >&2
+  echo "FAIL: cannot determine $SVC's original selector - restore it by hand:" >&2
   echo "  kubectl -n $NS get deploy $DEPLOY -o jsonpath='{.spec.selector.matchLabels}'" >&2
   exit 1
 fi
 
 # REPLACE the selector, do not merge into it. A strategic-merge patch only
 # overwrites the keys it names, so the injected key survives alongside the
-# restored ones — and a selector is an AND, so the Service still matches zero
+# restored ones - and a selector is an AND, so the Service still matches zero
 # pods while resolve reports success. Only visible when the workload selects on
 # a different label key than the one injected.
 echo "Restoring $SVC's selector..."

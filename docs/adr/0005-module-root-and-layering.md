@@ -1,14 +1,14 @@
-# ADR 0005 — Module at the repo root; service-layer architecture
+# ADR 0005: Module at the repo root; service-layer architecture
 
 **Status:** Accepted
 **Date:** 2026-07-26
 **Wave:** W0
 
-> **Update (issue #7 — repo restructure):** the Go module moved from the repo
+> **Update (issue #7 - repo restructure):** the Go module moved from the repo
 > root into `src/` so the root reads as a content/authoring workspace and a
 > later "the engine gets its own repo" split is a straight lift of `src/`. The
 > **module path is unchanged** (`github.com/sagar2395/snowopslabs`), so every
-> import path in this ADR still holds — only the on-disk location gained a `src/`
+> import path in this ADR still holds, only the on-disk location gained a `src/`
 > prefix (e.g. `src/internal/service`). Tooling still runs from the module root;
 > that root is now `src/`, and the top-level `Makefile` delegates into it. The
 > service-layer decision below is otherwise unaffected.
@@ -24,7 +24,7 @@ convention that assumes the module root is the repo root.
 Separately, business logic was spread across Cobra command functions and HTTP
 handlers. `internal/api/handlers.go` was 695 lines mixing decoding, orchestration
 and formatting, which is why its coverage sat at 42% while pure packages sat
-above 85% — the logic simply was not reachable without an HTTP request.
+above 85% - the logic simply was not reachable without an HTTP request.
 
 ## Decision
 
@@ -34,7 +34,7 @@ above 85% — the logic simply was not reachable without an HTTP request.
    a service method, format output. Neither contains a business rule.
 3. Every service method takes a `context.Context` as its first parameter.
 
-`apps/go-api` keeps its own module — it is sample workload code, not part of the
+`apps/go-api` keeps its own module - it is sample workload code, not part of the
 tool.
 
 ## Alternatives considered

@@ -42,7 +42,7 @@ var AllKinds = []Kind{KindScenario, KindIncident, KindPath, KindChallenge}
 type Catalog struct {
 	// Roots are the content roots this snapshot was built from, in precedence
 	// order (later roots override earlier ones on a name collision, so an
-	// external root can shadow in-repo content — see SNOWOPS_CONTENT_PATH).
+	// external root can shadow in-repo content - see SNOWOPS_CONTENT_PATH).
 	Roots []string
 
 	scenarios  map[string]*scenario.Scenario

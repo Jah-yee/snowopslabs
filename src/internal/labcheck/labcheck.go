@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
-// Package labcheck builds the check runner every grading path uses — scenario
-// verify, incident status, learning modules, challenge submit, compare — so
+// Package labcheck builds the check runner every grading path uses - scenario
+// verify, incident status, learning modules, challenge submit, compare - so
 // they all reach the lab the same way: through the ingress port the runtime
 // actually bound, with the same script environment.
 package labcheck

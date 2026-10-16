@@ -5,7 +5,7 @@
 # it read: Kafka keeps its committed offsets under __consumer_offsets. Left
 # behind, the next activation starts against a brand-new 'orders' topic while
 # the group still remembers offsets from the old one, and kafka-exporter
-# reports NEGATIVE lag for several scrapes — committed ahead of the log end.
+# reports NEGATIVE lag for several scrapes - committed ahead of the log end.
 #
 # Runs on both activation and teardown, and is deliberately idempotent: a
 # missing group is the desired state, not an error.
@@ -21,7 +21,7 @@ if ! kubectl -n "$NS" get pod "$BROKER" >/dev/null 2>&1; then
 fi
 
 # Deleting the Deployment does not wait for its pods, so on teardown a consumer
-# is usually still alive here — and one that is still alive re-registers the
+# is usually still alive here - and one that is still alive re-registers the
 # group moments after it is deleted. Wait for the members to actually go before
 # touching the group. On activation there are no consumer pods yet, so this
 # falls through immediately.

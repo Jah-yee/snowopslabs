@@ -49,7 +49,7 @@ func TestIsExclusive(t *testing.T) {
 
 func TestIsExclusiveMalformedInterface(t *testing.T) {
 	root := t.TempDir()
-	// A malformed _interface.yaml must not panic or claim exclusivity — it
+	// A malformed _interface.yaml must not panic or claim exclusivity - it
 	// falls back to the complementary default.
 	writeInterface(t, root, "broken", "name: broken\nselection: [not, a, string\n")
 	r := NewRegistry(root)

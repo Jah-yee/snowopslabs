@@ -82,7 +82,7 @@ STUB
   done
 }
 
-# stub_script <name> — a recording shim whose behaviour is the bash read from
+# stub_script <name> - a recording shim whose behaviour is the bash read from
 # stdin. Use it when a tool's answer depends on its arguments or on state the
 # test exports: the body sees the call's arguments as "$@".
 #
@@ -101,13 +101,13 @@ stub_script() {
   chmod +x "$STUB_BIN/$name"
 }
 
-# stub_exit <name> <code> — make every call to <name> exit with <code>.
+# stub_exit <name> <code> - make every call to <name> exit with <code>.
 # Use this to prove a script propagates tool failure (set -euo pipefail).
 stub_exit() {
   echo "$2" >"$STUB_DIR/spec/$1/exit"
 }
 
-# stub_stdout <name> <text> — make <name> print <text> on every call.
+# stub_stdout <name> <text> - make <name> print <text> on every call.
 stub_stdout() {
   printf '%s\n' "$2" >"$STUB_DIR/spec/$1/stdout"
 }
@@ -120,13 +120,13 @@ stub_when() {
   printf '%s\t%s\t%s\n' "$2" "$3" "${4:-}" >>"$STUB_DIR/spec/$1/rules"
 }
 
-# calls_for <name> — print the argument line of every call to <name>.
+# calls_for <name> - print the argument line of every call to <name>.
 calls_for() {
   # shellcheck disable=SC2001  # portable substitution, no bash-only expansion
   grep "^$1$(printf '\t')" "$STUB_LOG" | sed "s/^[^$(printf '\t')]*$(printf '\t')//"
 }
 
-# call_count <name> [arg-substring] — number of matching calls.
+# call_count <name> [arg-substring] - number of matching calls.
 call_count() {
   if [ -n "${2:-}" ]; then
     calls_for "$1" | grep -c -- "$2" || true
@@ -135,7 +135,7 @@ call_count() {
   fi
 }
 
-# assert_called <name> [arg-substring] — fail unless <name> was called (with
+# assert_called <name> [arg-substring] - fail unless <name> was called (with
 # arguments containing <arg-substring>, when given).
 assert_called() {
   local n
@@ -148,7 +148,7 @@ assert_called() {
   fi
 }
 
-# refute_called <name> [arg-substring] — fail if <name> was called.
+# refute_called <name> [arg-substring] - fail if <name> was called.
 # The idempotency assertion: a second run must make no destructive call.
 refute_called() {
   local n

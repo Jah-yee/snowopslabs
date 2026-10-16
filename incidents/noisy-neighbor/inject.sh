@@ -32,12 +32,12 @@ if [ -z "${NODE:-}" ]; then
     echo "  neighbour to be noisy to. Deploy the app first:  labctl app deploy ${VICTIM}" >&2
     exit 1
   fi
-  echo "No cluster reachable — staging the manifests without node placement."
+  echo "No cluster reachable - staging the manifests without node placement."
 fi
 
 # Size the burner to the node it is landing on. A fixed replica count is either
 # a no-op on a large node or a stampede on a small one, and the symptom the
-# fault promises — a saturated node — has to actually happen.
+# fault promises - a saturated node - has to actually happen.
 CORES="$(kubectl get node "${NODE:-}" -o jsonpath='{.status.allocatable.cpu}' 2>/dev/null |
   awk '{ if ($0 ~ /m$/) { sub(/m$/, ""); printf "%d", $0 / 1000 } else { printf "%d", $0 } }')"
 [ "${CORES:-0}" -ge 2 ] || CORES=2
@@ -46,7 +46,7 @@ REPLICAS="$CORES"
 
 # resolve.sh deletes the namespace without waiting, so an inject that follows a
 # resolve closely finds it still Terminating. kubectl apply into a Terminating
-# namespace reports "unchanged" and exits 0 — the fault would be recorded as
+# namespace reports "unchanged" and exits 0 - the fault would be recorded as
 # injected while the deployment it just "created" is being garbage-collected,
 # and the learner is handed an incident that is not happening.
 NS_PHASE="$(kubectl get ns "${TARGET_NAMESPACE:-labfault-batch}" -o jsonpath='{.status.phase}' 2>/dev/null || true)"
@@ -70,7 +70,7 @@ render_targeted "$SCRIPT_DIR/manifests/burner.yaml" |
 # Arm the page. The alert watches node CPU, not this namespace: on-call is told
 # a node is saturated and has to go and find out by whom, which is the drill.
 render_targeted "$SCRIPT_DIR/alerts/rule.yaml" | kubectl apply -n "$MON_NS" -f - >/dev/null 2>&1 ||
-  echo "Note: the alert rule could not be applied — is kube-prometheus-stack installed?" >&2
+  echo "Note: the alert rule could not be applied - is kube-prometheus-stack installed?" >&2
 
 echo "Done. It may take a few minutes for the effect to show up in your metrics."
 echo "Tip: run 'labctl traffic start' so there is real traffic to degrade."

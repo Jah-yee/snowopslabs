@@ -54,7 +54,7 @@ func renderSnippets(w io.Writer, snips []scenario.Snippet, dir string, resolve r
 		sn, err := snippet.Resolve(dir, raw, resolve)
 		fmt.Fprintf(w, "\n  # %s", sn.Label)
 		if sn.Description != "" {
-			fmt.Fprintf(w, " — %s", sn.Description)
+			fmt.Fprintf(w, " - %s", sn.Description)
 		}
 		fmt.Fprintln(w)
 		if sn.Exercise {

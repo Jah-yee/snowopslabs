@@ -462,7 +462,7 @@ func TestPreflight_RuntimeCompatible(t *testing.T) {
 	root := t.TempDir()
 	createTestScenario(t, root, "runtime-scenario", scenarioWithRuntimesYAML)
 
-	engine := NewEngine(root, "k3d.local", "kind") // active profile: kind — listed in scenario
+	engine := NewEngine(root, "k3d.local", "kind") // active profile: kind - listed in scenario
 	s, _ := engine.Get("runtime-scenario")
 
 	if err := engine.Preflight(s); err != nil {

@@ -1,24 +1,24 @@
 ---
 name: incident-author
-description: "Write, edit, debug or review a SnowOps Labs incident (fault) — fault.yaml, inject.sh, resolve.sh, hints, solution, detection checks and paging drills. Use whenever a task involves anything under incidents/, a fault.yaml, `labctl incident inject|status|resolve`, or a fault that will not resolve cleanly."
+description: "Write, edit, debug or review a SnowOps Labs incident (fault): fault.yaml, inject.sh, resolve.sh, hints, solution, detection checks and paging drills. Use whenever a task involves anything under incidents/, a fault.yaml, `labctl incident inject|status|resolve`, or a fault that will not resolve cleanly."
 user-invocable: true
 ---
 
 # Authoring an incident
 
 An incident is a **realistic, reversible** production fault. Inject it, let the
-lab break, diagnose it, fix it — and the detection check confirms the fix.
+lab break, diagnose it, fix it, and the detection check confirms the fix.
 
 ## Read first
 
-1. **[incidents/README.md](../../../incidents/README.md)** — the fault contract:
+1. **[incidents/README.md](../../../incidents/README.md)**: the fault contract:
    every file a fault directory must contain, and the `fault.yaml` schema.
-2. [docs/reference/cli/incidents.md](../../../docs/reference/cli/incidents.md) —
+2. [docs/reference/cli/incidents.md](../../../docs/reference/cli/incidents.md): 
    the commands and how timing and history are recorded.
 3. The closest existing fault. `service-selector-broken` is the subtle one;
    `oom-kill` is the one with a paging drill.
 
-Checks, references and snippets share the scenario shapes — see
+Checks, references and snippets share the scenario shapes - see
 [the scenario schema](../../../docs/reference/scenario-schema.md).
 
 ## What makes an incident worth doing
@@ -35,7 +35,7 @@ endpoints, events, dashboards and logs. Design the *symptom* first and the
 injection second.
 
 **The symptom must be discoverable through observability.** A dashboard, an
-alert, an event, a log line — something the lab already collects must point at
+alert, an event, a log line - something the lab already collects must point at
 the fault. If the only route to the answer is reading `inject.sh`, you have
 written a puzzle, not a drill. `service-selector-broken` is the shape to copy:
 the ingress 503s, every pod is Ready, and `kubectl get endpoints` tells the
@@ -58,22 +58,22 @@ teaches learners to distrust the grader.
    `fault_state_save` from `incidents/_lib/state.sh` (a ConfigMap
    `labfault-<name>` in `kube-system`); `resolve.sh` reads them with
    `fault_state_get` and ends with `fault_state_clear`. Never annotate or label
-   the object the fault breaks — the answer would be in the learner's first
+   the object the fault breaks - the answer would be in the learner's first
    `kubectl describe`. An object the fault adds to the workload's namespace gets
    a real-world name and no `labfault` label, and its name goes in the record.
 3. **`resolve.sh` must never fail the user.** It runs after any amount of manual
    fixing, and `incident status` runs it again after a hand fix passes, to
-   tidy up. Every step tolerates "already fixed" — `--ignore-not-found`, guards,
+   tidy up. Every step tolerates "already fixed": `--ignore-not-found`, guards,
    `|| true` where it is genuinely safe.
 4. **`inject.sh` is idempotent.** Re-running while injected is a no-op.
 5. **Write the detection check as "what must be true when healthy."** It is both
    the resolution detector and the challenge grader, so it has to be honest in
-   both directions: it must fail while the fault is live and pass once — and
-   only once — the user has really fixed it. Test that claim two ways. *False
-   green:* satisfy the check without repairing the cause — scale a decoy in to
-   answer the probe, patch the field the check reads — and confirm it stays red.
-   *False red:* fix the fault by a route you did not plan for — a rollout
-   restart, a chart re-apply — and confirm it goes green.
+   both directions: it must fail while the fault is live and pass once, and
+   only once, the user has really fixed it. Test that claim two ways. *False
+   green:* satisfy the check without repairing the cause (scale a decoy in to
+   answer the probe, patch the field the check reads) and confirm it stays red.
+   *False red:* fix the fault by a route you did not plan for (a rollout
+   restart, a chart re-apply) and confirm it goes green.
 
 Hints go from gentle nudge to near-answer. The last hint may name the resource;
 the solution names the command.
@@ -125,7 +125,7 @@ out of 5 and improves it until it reaches 4.8.
 
 Treat the score as part of the definition of done: below 4.8 the incident is a
 draft, whatever `validate` says. Note that the reviewer gets **one** blind
-diagnosis per fault — once they have read `inject.sh`, diagnosability can no
+diagnosis per fault - once they have read `inject.sh`, diagnosability can no
 longer be scored honestly.
 
 ## Before you finish

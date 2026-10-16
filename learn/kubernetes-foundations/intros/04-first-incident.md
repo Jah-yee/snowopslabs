@@ -1,4 +1,4 @@
-# Module 4 — Your first incident
+# Module 4: Your first incident
 
 ## What you'll do
 
@@ -29,7 +29,7 @@ thing that serves traffic actually pointing at anything*, and *what does the
 cluster think should be behind it*. `kubectl get pods` will look reassuring;
 keep going past it.
 
-When you have a theory, fix it by hand — with `kubectl`, not with labctl.
+When you have a theory, fix it by hand, with `kubectl`, not with labctl.
 
 **Completion check:** the most recent run of `service-selector-broken` in your
 history was resolved **by hand**. `labctl incident resolve` is the escape hatch
@@ -37,4 +37,4 @@ and does not count: it undoes the fault for you, which is not the exercise.
 
 **Note:** `bin/labctl incident hint` walks you in one rung at a time if you get
 stuck, and `bin/labctl incident solution` is there when you would rather read
-the answer than find it — you can always inject it again and do it properly.
+the answer than find it - you can always inject it again and do it properly.

@@ -76,7 +76,7 @@ func (s *Server) handleStreamSSE(w http.ResponseWriter, r *http.Request) {
 			// Client disconnected; unsubscribe runs via defer.
 			return
 		case <-keepalive.C:
-			// SSE comment line — ignored by clients, resets idle timers.
+			// SSE comment line - ignored by clients, resets idle timers.
 			fmt.Fprint(w, ": keepalive\n\n")
 			flusher.Flush()
 		case e, open := <-ch:

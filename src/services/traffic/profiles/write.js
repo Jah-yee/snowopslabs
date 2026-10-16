@@ -1,4 +1,4 @@
-// Write profile — exercises a WRITE path with a JSON body, not just reads.
+// Write profile - exercises a WRITE path with a JSON body, not just reads.
 // Good against echo-server's /echo (set the target app to echo-server in the
 // UI, or pass --target http://echo-server.echo-server.svc.cluster.local:8080/).
 // TRAFFIC_TARGET is treated as a BASE origin; TRAFFIC_METHOD overrides the verb.

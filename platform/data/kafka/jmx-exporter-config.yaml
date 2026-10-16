@@ -3,7 +3,7 @@
 # "tcp-prometheus" port.
 #
 # The rules translate Kafka's JMX MBean names into Prometheus metric names.
-# Only the beans the lab dashboards actually query are kept — the upstream
+# Only the beans the lab dashboards actually query are kept - the upstream
 # ruleset produces thousands of series and is too heavy for a laptop cluster.
 apiVersion: v1
 kind: ConfigMap
@@ -46,7 +46,7 @@ data:
         labels:
           request: "$1"
 
-      # Log size per topic partition — how much disk the lab is using.
+      # Log size per topic partition - how much disk the lab is using.
       - pattern: kafka.log<type=Log, name=Size, topic=(.+), partition=(.+)><>Value
         name: kafka_log_log_size
         type: GAUGE

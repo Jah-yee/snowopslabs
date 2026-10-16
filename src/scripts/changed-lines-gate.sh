@@ -54,7 +54,7 @@ skip_or_fail() {
     echo "changed-lines gate ($mode): $1" >&2
     exit 1
   fi
-  echo "changed-lines gate ($mode): skipped — $1"
+  echo "changed-lines gate ($mode): skipped - $1"
   exit 0
 }
 
@@ -201,7 +201,7 @@ awk -v mode="$mode" -v min="$min" -v top="$top" -v prefix="$prefix" \
     printf "changed-lines gate failed (%s): %d of %d changed lines covered (%.1f%%, minimum %s%%)\n", \
       mode, hit, total, pct, min | err
     for (f in report) printf "  %s: %s\n", f, report[f] | err
-    printf "\nAdd tests that run these lines — see docs/TESTING.md\n" | err
+    printf "\nAdd tests that run these lines - see docs/TESTING.md\n" | err
     close(err)
     exit 1
   }

@@ -1,7 +1,8 @@
-# SnowOps Labs — Product Definition (v2)
+# SnowOps Labs: what it is and why
 
-> What we are building and why. The *how* is `docs/architecture/ARCHITECTURE.md`.
-> The *when* is `docs/ROADMAP.md`.
+> What we are building and why. How it works is in
+> [`architecture/ARCHITECTURE.md`](architecture/ARCHITECTURE.md), and what
+> comes next is in [`ROADMAP.md`](ROADMAP.md).
 
 ---
 
@@ -21,93 +22,120 @@ get to practise:
 - Draining a node under load without breaking the SLO.
 - Knowing what "p99 latency regressed" actually looks like on a dashboard.
 
-Production is the only place these skills are exercised, and production is the
-worst possible classroom. Existing options each miss:
+Production is the only place these skills get exercised, and production is the
+worst possible classroom. The existing options each fall short:
 
 | Option | Gap |
 |---|---|
-| Katacoda-style browser labs | Toy clusters, no real observability stack, no failure realism |
+| Browser-based labs | Toy clusters, no real observability stack, no realistic failures |
 | Certification courses (CKA/CKAD) | Test *knowledge*, not incident response under time pressure |
-| Internal game days | Enormous setup cost; run twice a year at best |
-| Just reading docs | No feedback loop, no way to know if you'd actually cope |
+| Internal game days | Huge setup cost, so they happen twice a year at best |
+| Reading docs | No feedback loop, no way to know whether you'd actually cope |
 
 ## What SnowOps Labs does
 
-A single Go binary (`labctl`) plus a web UI drives four loops:
+A single Go binary (`labctl`) with a built-in web UI drives four loops:
 
 **1. Build a realistic platform.** Spin up a local cluster and install a real
-stack — ingress, metrics, logs, traces, GitOps, service mesh, secrets,
-autoscaling — from swappable providers. Not a toy: the same Helm charts you'd
+stack (ingress, metrics, logs, traces, GitOps, service mesh, secrets,
+autoscaling) from swappable providers. Not a toy: the same Helm charts you'd
 run in production, at laptop scale.
 
-**2. Run a scenario.** Declarative YAML stages a situation (an event-driven
+**2. Run a scenario.** Declarative YAML sets up a situation (an event-driven
 architecture, a canary rollout, a cost-optimisation exercise), states its
 objectives, and carries machine-verifiable `checks`. `labctl scenario verify`
 tells you objectively whether you achieved the goal.
 
-**3. Break it.** The incident library injects realistic, reversible faults —
-OOM kills, bad configs, network blackholes, broken selectors, noisy
-neighbours — while traffic flows and alerts fire. Progressive hints cost you
-points. Time-to-detect and time-to-resolve are measured.
+**3. Break it.** The incident library injects realistic, reversible faults
+(OOM kills, bad configs, network blackholes, broken selectors, noisy
+neighbours) while traffic flows and alerts fire. Hints are there when you're
+stuck, and time to detect and time to resolve are measured.
 
 **4. Measure.** Learning paths chain scenarios and incidents into a curriculum.
-Challenge mode adds a timer and hides the hints. Results persist, and on a
-shared deployment a team leaderboard turns a game day into something people
-actually want to win.
+Challenge mode adds a timer and costs you points for hints. Results persist,
+and on a shared deployment a team leaderboard turns a game day into something
+people actually want to win.
 
 ## Who it is for
 
 | User | Primary loop | Success looks like |
 |---|---|---|
-| **Individual engineer learning** | Learn → scenario → incident | Completes a path, can debug the class of failure unaided |
-| **Platform team evaluating** | Build → swap provider → compare | Picks mesh A over mesh B with evidence, in a day not a month |
-| **SRE running a game day** | Break → measure | Team's MTTR drops measurably across sessions |
-| **Lead assessing skills** | Challenge → leaderboard | Objective, reproducible signal on incident-response ability |
+| **Individual engineer learning** | Learn → scenario → incident | Completes a path and can debug that class of failure unaided |
+| **Platform team evaluating** | Build → swap provider → compare | Picks one mesh over another with evidence, in a day instead of a month |
+| **SRE running a game day** | Break → measure | The team's time to resolve drops across sessions |
+| **Lead assessing skills** | Challenge → leaderboard | A fair, repeatable read on incident-response ability |
 
-## Design principles (non-negotiable)
+## Design principles
 
-1. **Laptop-first.** The golden path is `k3d` on a MacBook or a Linux box, with
-   no cloud account, no credit card, no network dependency beyond image pulls.
-   If it does not work flawlessly there, it does not ship.
-2. **Real components, real failures.** We install actual Prometheus, actual
-   Istio, actual Kafka. Simulated failures are injected into real systems, not
-   mocked. The observability signal an engineer sees is the real signal.
+1. **Laptop-first.** The golden path is `k3d` on a MacBook, a Linux box or WSL2,
+   with no cloud account, no credit card and no network dependency beyond image
+   pulls. If it does not work well there, it does not ship.
+2. **Real components, real failures.** We install actual Prometheus, Istio and
+   Kafka. Failures are injected into real systems, not mocked, so the signal an
+   engineer sees is the real signal.
 3. **Declarative content, orchestrating code.** Scenarios, incidents, paths,
    challenges and checks are YAML plus shell scripts. Go orchestrates, records,
-   grades and serves — it never encodes the content itself. Anyone who can write
-   YAML can author for SnowOps Labs.
+   grades and serves, but never contains the content itself. Anyone who can
+   write YAML can author for SnowOps Labs.
 4. **Everything is verifiable.** Checks are the core primitive. A scenario
    without checks is a blog post. Checks power grading, CI validation, incident
-   resolution detection and progress tracking alike.
-5. **Every run is durable.** What happened, when, with what output, is recorded
-   and survives a restart. You can cancel a run, resume watching it, and read it
-   back tomorrow.
-6. **Cross-platform.** macOS (Apple Silicon and Intel) and modern Linux, always.
-   No GNU-only flags, no cgo, no hardcoded architectures.
-7. **Fast reset.** Snapshot and restore lab state so an engineer can retry a
-   scenario in seconds, not by rebuilding a cluster.
+   resolution and progress tracking alike.
+5. **Every run is durable.** What happened, when and with what output is
+   recorded and survives a restart. You can cancel a run, watch it again, and
+   read it back tomorrow.
+6. **Cross-platform.** macOS (Apple Silicon and Intel), modern Linux and WSL2,
+   always. No GNU-only flags, no cgo, no hardcoded architectures.
+7. **Fast reset.** Snapshot and restore lab state, so an engineer can retry a
+   scenario in seconds instead of rebuilding a cluster.
 
-## Explicitly out of scope
+## The open-source lab comes first
 
-- **Cloud runtimes (AKS/EKS/GKE).** Cut in v2. They were never verified against
-  a real account and split focus. Local (`k3d`, `kind`) and in-cluster only.
-- **A marketplace, entitlement tiers, or paid editions.** Cut in v2. Replaced by
-  a small documented extension seam so third-party content stays possible.
-- **Hosted multi-tenant SaaS.** The shared in-cluster server supports a team on
-  one cluster. It is not a tenant-isolated platform.
-- **Reimplementing tools we wrap.** k6, Chaos Mesh, Helm, kubectl stay themselves.
+Everything above ships as open source under Apache-2.0, and the open core
+(engine, CLI, SDK and community content) stays that way. Anything commercial
+lives outside this repository and never gates what the open-source lab can do
+([GOVERNANCE.md](../GOVERNANCE.md)). Third-party content uses the documented
+extension seam ([ADR-0008](adr/0008-content-extensibility-seam.md)), not a
+marketplace.
+
+## Hosted labs: a long-term goal
+
+Running the lab needs Docker with a few GB of memory to spare, and some people
+won't have that, or would rather not run Kubernetes on their own machine.
+A hosted version, where the same scenarios run on a cluster we operate and you
+open them in a browser, is something we want to build eventually.
+
+It is not on the near-term roadmap. It comes after the open-source lab has a
+solid base of users, and what it looks like will depend on what those users
+ask for. When it happens:
+
+- It is a separate service built on the open-source lab, not a paid edition of
+  it, and it never takes features away from the local lab.
+- Any change it needs in this repository goes through an RFC first.
+
+See [ADR-0016](adr/0016-hosted-labs-long-term.md) for the reasoning.
+
+## Not in scope today
+
+- **Cloud runtimes for your own cluster (AKS, EKS, GKE).** Local (`k3d`, `kind`)
+  and `incluster` only. The runtime profile contract would allow a cloud
+  profile later, verified against a real account ([ADR-0001](adr/0001-cut-cloud-and-commercial-scope.md)).
+- **A content marketplace or paid editions.** See above.
+- **A multi-tenant platform in this repository.** The shared in-cluster server
+  supports one team on one cluster; it does not isolate tenants from each other.
+- **Reimplementing the tools we wrap.** k6, Chaos Mesh, Helm and kubectl stay
+  themselves.
 - **Offensive security labs.** Defensive misconfiguration drills only.
 
 ## What "production grade" means here
 
-This is the bar every wave is measured against:
+This is the bar every change is measured against:
 
 - A user can cancel any long-running operation and the cluster is left coherent.
 - Two conflicting operations cannot race; the second is rejected with a clear
   message naming the run that holds the lock.
 - No output is ever silently dropped. Logs are persisted and replayable.
-- Every failure mode produces an actionable error naming the cause and the fix.
+- Every failure produces an actionable error naming the cause and the fix.
 - The tool tells you what is wrong with your environment before you hit it
   (`labctl doctor`).
-- Every feature has automated tests at every applicable layer, and a runbook a
+- Every feature has automated tests at every layer it touches, and a runbook a
   human can follow to prove it works on real hardware.

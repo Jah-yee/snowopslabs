@@ -7,7 +7,7 @@ set -euo pipefail
 # needs to know which trace backend is behind it.
 #
 # `kubectl set env` patches the Deployment's pod template, which rolls the pods
-# — the same mechanism as any other config change.
+# - the same mechanism as any other config change.
 
 NAMESPACE="${WORKLOAD_NAMESPACE}"
 MONITORING_NAMESPACE="${MONITORING_NAMESPACE:-monitoring}"

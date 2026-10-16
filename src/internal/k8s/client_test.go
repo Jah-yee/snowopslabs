@@ -176,7 +176,7 @@ func TestParsePodList_MultiContainerRestarts(t *testing.T) {
 }
 
 // kedaHPAJSON is a KEDA-created v2 HPA driven by an External (Prometheus) metric
-// — the shape the autoscaling-under-load scenario produces under load.
+// - the shape the autoscaling-under-load scenario produces under load.
 const kedaHPAJSON = `{
   "items": [
     {
@@ -278,7 +278,7 @@ func TestHumanizeQuantity(t *testing.T) {
 		"27467m": "27.467",
 		"1000m":  "1",
 		"25":     "25",
-		"80%":    "80%", // not a quantity — left as-is
+		"80%":    "80%", // not a quantity - left as-is
 		"":       "",
 	}
 	for in, want := range cases {

@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Remove KEDA and its CRDs. Idempotent.
 # Deleting the CRDs also removes any ScaledObjects/ScaledJobs (which in turn
-# removes the HPAs KEDA generated) — a clean teardown.
+# removes the HPAs KEDA generated) - a clean teardown.
 
 NAMESPACE="keda"
 

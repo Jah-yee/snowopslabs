@@ -59,7 +59,7 @@ func TestVerifiedContentSet(t *testing.T) {
 				t.Errorf("scenario %q is marked verified but is in the unverified set", s.Name)
 			}
 		} else if !unverifiedScenarios[s.Name] {
-			t.Errorf("scenario %q is unverified but not in the known unverified set — verify it or add it", s.Name)
+			t.Errorf("scenario %q is unverified but not in the known unverified set - verify it or add it", s.Name)
 		}
 	}
 	if verifiedScenarios != 13 {

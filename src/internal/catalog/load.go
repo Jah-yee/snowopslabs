@@ -64,7 +64,7 @@ func (c *Catalog) loadKind(root string, kind Kind) {
 		}
 		file := filepath.Join(dir, entry.Name(), layout.file)
 		if _, err := os.Stat(file); err != nil {
-			continue // directory without the kind's item file — skip quietly
+			continue // directory without the kind's item file - skip quietly
 		}
 		c.loadItem(kind, entry.Name(), file)
 	}

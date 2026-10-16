@@ -41,5 +41,5 @@ if kubectl get secret go-api-secrets -n "$TARGET_NS" >/dev/null 2>&1; then
   echo "  present (keys: ${keys:-?})"
   echo "  reveal: kubectl -n $TARGET_NS get secret go-api-secrets -o go-template='{{index .data \"api-key\" | base64decode}}{{\"\\n\"}}'"
 else
-  echo "  not found — check the ExternalSecret status above"
+  echo "  not found - check the ExternalSecret status above"
 fi

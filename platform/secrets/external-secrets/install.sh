@@ -9,7 +9,7 @@ set -euo pipefail
 # ESO depends on Vault. This script PREFLIGHTS for Vault rather than installing
 # it (install secrets/vault first).
 #
-# Config (env, with defaults — scripts never source .env themselves):
+# Config (env, with defaults - scripts never source .env themselves):
 #   ESO_CHART_VERSION     pinned external-secrets chart version (config/versions.env)
 #   VAULT_DEV_ROOT_TOKEN  Vault token ESO authenticates with (default: root)
 #   SECRETS_NAMESPACE     namespace to sync into (default: the bound workload)
@@ -21,7 +21,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_TOKEN="${VAULT_DEV_ROOT_TOKEN:-root}"
 TARGET_NS="${SECRETS_NAMESPACE:-${WORKLOAD_NAMESPACE:-go-api}}"
 # The ExternalSecret, the Secret it writes and the Vault key it reads all name
-# the bound workload — the scenario seeds and rotates secret/<workload>, so a
+# the bound workload - the scenario seeds and rotates secret/<workload>, so a
 # hardcoded key here silently reads a different secret than the drill writes.
 WORKLOAD="${WORKLOAD_NAME:-go-api}"
 VAULT_NS="${VAULT_NAMESPACE:-vault}"
@@ -53,7 +53,7 @@ kubectl rollout status deployment/external-secrets-webhook -n "$NAMESPACE" --tim
 # Ensure the target namespace exists.
 kubectl create namespace "$TARGET_NS" --dry-run=client -o yaml | kubectl apply -f -
 
-# Token ESO uses to talk to Vault. Sourced from env — never committed to git.
+# Token ESO uses to talk to Vault. Sourced from env - never committed to git.
 echo "Creating Vault token secret in '$TARGET_NS' (from env, not committed)..."
 kubectl create secret generic vault-token \
   --namespace "$TARGET_NS" \
@@ -106,5 +106,5 @@ kubectl wait "externalsecret/${WORKLOAD}-secret" -n "$TARGET_NS" \
 echo ""
 echo "External Secrets Operator installed and wired."
 echo "    Synced secret: '${TARGET_NS}/${WORKLOAD}-secrets' (key: api-key)"
-echo "    Refresh interval: 15s — rotate the Vault value and watch it propagate."
+echo "    Refresh interval: 15s - rotate the Vault value and watch it propagate."
 echo "    Wire into ${WORKLOAD} with envFrom.secretRef.name=${WORKLOAD}-secrets (see runbook)."

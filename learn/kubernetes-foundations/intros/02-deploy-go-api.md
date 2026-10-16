@@ -1,8 +1,8 @@
-# Module 2 — Deploy go-api
+# Module 2: Deploy go-api
 
 ## What you'll do
 
-Build and deploy the `go-api` demo service — a small Go HTTP API that
+Build and deploy the `go-api` demo service: a small Go HTTP API that
 exposes `/health`, `/metrics`, and a handful of endpoints used by later
 scenarios.
 

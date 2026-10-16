@@ -6,7 +6,7 @@
 # Run ONE at a time: overlapping experiments make the blast radius
 # unattributable, which defeats the purpose of the measurement.
 ---
-# Experiment 1: Pod Kill — randomly kill {{.WorkloadName}} pods
+# Experiment 1: Pod Kill - randomly kill {{.WorkloadName}} pods
 # Tests: self-healing, and how large the blast radius is at one replica
 apiVersion: chaos-mesh.org/v1alpha1
 kind: PodChaos
@@ -26,7 +26,7 @@ spec:
       app: "{{.WorkloadName}}"
   duration: "30s"
 ---
-# Experiment 2: Pod Failure — make {{.WorkloadName}} pods unavailable for 60s
+# Experiment 2: Pod Failure - make {{.WorkloadName}} pods unavailable for 60s
 # Tests: Readiness probe behavior, traffic routing during failures
 apiVersion: chaos-mesh.org/v1alpha1
 kind: PodChaos
@@ -46,7 +46,7 @@ spec:
       app: "{{.WorkloadName}}"
   duration: "60s"
 ---
-# Experiment 3: Network Partition — isolate {{.WorkloadName}} from ingress traffic
+# Experiment 3: Network Partition - isolate {{.WorkloadName}} from ingress traffic
 # Tests: Circuit breaker behavior, failover mechanisms
 apiVersion: chaos-mesh.org/v1alpha1
 kind: NetworkChaos
@@ -72,7 +72,7 @@ spec:
         - traefik
   duration: "60s"
 ---
-# Experiment 4: CPU Stress — saturate CPU on {{.WorkloadName}} pods
+# Experiment 4: CPU Stress - saturate CPU on {{.WorkloadName}} pods
 # Tests: what a CPU-saturated pod does to latency when nothing autoscales
 apiVersion: chaos-mesh.org/v1alpha1
 kind: StressChaos
@@ -95,7 +95,7 @@ spec:
       load: 80
   duration: "120s"
 ---
-# Experiment 5: Network Delay — add 300ms of latency between {{.WorkloadName}} and ingress
+# Experiment 5: Network Delay - add 300ms of latency between {{.WorkloadName}} and ingress
 # Tests: latency budgets, client timeouts. Watch the p99 panel, not the error
 # rate: a delayed service is still "up", which is what makes this failure mode
 # harder to spot than a pod kill.
@@ -126,7 +126,7 @@ spec:
     jitter: "50ms"
   duration: "120s"
 ---
-# Experiment 6: Memory Stress — push {{.WorkloadName}} past its 128Mi memory limit
+# Experiment 6: Memory Stress - push {{.WorkloadName}} past its 128Mi memory limit
 # Tests: OOMKill and restart behaviour. The container is killed by the kernel,
 # not by Chaos Mesh, so the OOMKill Events panel is the one that proves it.
 apiVersion: chaos-mesh.org/v1alpha1

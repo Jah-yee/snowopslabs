@@ -1,4 +1,4 @@
-# Exercise: nothing installs this file — the learner applies it.
+# Exercise: nothing installs this file - the learner applies it.
 #
 # The PodDisruptionBudget is the whole point of the drill. Nothing stages it:
 # without it, `kubectl drain` evicts every {{.WorkloadName}} pod on the node at once and

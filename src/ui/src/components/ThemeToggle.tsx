@@ -11,7 +11,7 @@ const OPTIONS: { value: Theme; label: string; icon: IconName }[] = [
 
 /** A compact three-way theme control (light / system / dark). It is a radio
  *  group so the whole control is one tab stop and arrow keys move between
- *  options — the native semantics screen readers already announce. */
+ *  options - the native semantics screen readers already announce. */
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
   return (

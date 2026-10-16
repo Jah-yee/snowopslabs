@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Exactly one PodDisruptionBudget may select the workload's pods.
 #
-# The eviction API refuses a pod covered by two PDBs — "This pod has more than
-# one PodDisruptionBudget, which the eviction subresource does not support" —
+# The eviction API refuses a pod covered by two PDBs - "This pod has more than
+# one PodDisruptionBudget, which the eviction subresource does not support" -
 # and `kubectl drain` then fails partway through, having already evicted other
 # pods. Several scenarios ship a PDB for the same workload (chaos-engineering
 # and cluster-upgrade-drill both do), so this collides in ordinary use. The
@@ -41,7 +41,7 @@ fi
 echo "FAIL: ${MATCHING} PodDisruptionBudgets select ${APP}'s pods:" >&2
 printf '%s\n' "$PDBS" | awk '{ printf "    %s (from: %s)\n", $1, $3 }' >&2
 echo "  The eviction API refuses a pod covered by more than one budget, so the" >&2
-echo "  drain will fail partway through — after it has already evicted other pods." >&2
+echo "  drain will fail partway through - after it has already evicted other pods." >&2
 echo "  Another scenario left its budget behind. Deactivate it, or remove the one" >&2
 echo "  that is not ${MINE}:" >&2
 echo "    kubectl -n $NS get pdb" >&2

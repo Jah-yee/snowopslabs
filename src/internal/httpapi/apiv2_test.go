@@ -29,7 +29,7 @@ func TestAPIVersion_OnlyV2IsServed(t *testing.T) {
 	w = httptest.NewRecorder()
 	s.router.ServeHTTP(w, req)
 	if ct := w.Header().Get("Content-Type"); strings.Contains(ct, "json") {
-		t.Errorf("GET /api/challenges/status served JSON (%q) — the unversioned API should be gone", ct)
+		t.Errorf("GET /api/challenges/status served JSON (%q) - the unversioned API should be gone", ct)
 	}
 }
 

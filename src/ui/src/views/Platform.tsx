@@ -38,14 +38,14 @@ function sortCategories(cats: string[]) {
 
 export function Platform({ notify, requestConfirm, clusterDown = false }: PlatformProps) {
   // Poll while this tab is open (paused when the tab is hidden) so per-component
-  // changes made out of band — a namespace deleted from the CLI, a cluster reset —
+  // changes made out of band - a namespace deleted from the CLI, a cluster reset -
   // are reflected without a manual refresh. `installed` is re-derived from the
   // live cluster on every request server-side, so a poll always shows the truth.
   const { data: providers = null, loading, loadError, refreshing, reload: load } =
     useApiQuery(qk.platform, api.getPlatform, { refetchInterval: 15_000 })
   // Service dashboards (Grafana, Prometheus, Traefik, ArgoCD, …). The server only
   // returns links whose namespace actually exists, so this list is exactly the
-  // reachable set — which is why it lives here next to the components that serve them.
+  // reachable set - which is why it lives here next to the components that serve them.
   const dashQ = useApiQuery(qk.dashboards, () => api.getDashboards().catch(() => [] as DashboardURL[]), { refetchInterval: 15_000 })
   const dashboards = (dashQ.data ?? []).filter(d => d.available)
   const { busy, run } = useJobRunner(notify)
@@ -70,7 +70,7 @@ export function Platform({ notify, requestConfirm, clusterDown = false }: Platfo
       await navigator.clipboard.writeText(cmd)
       notify('success', 'Copied to clipboard', '')
     } catch {
-      notify('error', 'Copy failed', 'Clipboard access denied — copy the command manually.')
+      notify('error', 'Copy failed', 'Clipboard access denied - copy the command manually.')
     }
   }
 
@@ -80,7 +80,7 @@ export function Platform({ notify, requestConfirm, clusterDown = false }: Platfo
     if (installedSibling) {
       requestConfirm({
         title: `Swap ${categoryLabel(entry.category).toLowerCase()} provider?`,
-        message: `"${installedSibling.name}" is currently installed for ${entry.category}. Installing "${entry.name}" alongside it can conflict — consider removing "${installedSibling.name}" first.`,
+        message: `"${installedSibling.name}" is currently installed for ${entry.category}. Installing "${entry.name}" alongside it can conflict - consider removing "${installedSibling.name}" first.`,
         confirmLabel: `Install ${entry.name} anyway`,
         onConfirm: doRun,
       })
@@ -119,7 +119,7 @@ export function Platform({ notify, requestConfirm, clusterDown = false }: Platfo
       {loadError && (
         <div className="banner banner-warn" role="alert">
           <Icon name="alert-triangle" size={16} className="banner-icon" />
-          <span className="banner-body">Refresh failed ({loadError}) — showing last known data.</span>
+          <span className="banner-body">Refresh failed ({loadError}) - showing last known data.</span>
           <span className="banner-actions">
             <button className="btn btn-sm" onClick={load} disabled={refreshing}>Retry</button>
           </span>
@@ -218,7 +218,7 @@ export function Platform({ notify, requestConfirm, clusterDown = false }: Platfo
             title="Tear the lab back to its initial state: deactivate all scenarios and incidents, destroy deployed apps, and uninstall non-baseline platform components. The cluster itself stays up."
             onClick={() => requestConfirm({
               title: 'Reset the whole lab?',
-              message: 'This deactivates every scenario and incident, destroys all deployed apps, and uninstalls every platform component except the ingress baseline. The cluster stays up, and your learning progress is kept. Scenarios and incidents can be re-activated afterwards. This cannot be undone — consider taking a snapshot first.',
+              message: 'This deactivates every scenario and incident, destroys all deployed apps, and uninstalls every platform component except the ingress baseline. The cluster stays up, and your learning progress is kept. Scenarios and incidents can be re-activated afterwards. This cannot be undone - consider taking a snapshot first.',
               confirmLabel: 'Reset lab',
               onConfirm: () => run('lab-reset', 'Reset lab', () => api.resetLab(), () => { load(); dashQ.reload() }),
             })}
@@ -228,7 +228,7 @@ export function Platform({ notify, requestConfirm, clusterDown = false }: Platfo
         </div>
       </div>
 
-      {/* Service dashboards — only appear when the backing service is present. */}
+      {/* Service dashboards - only appear when the backing service is present. */}
       <div className="card">
         <div className="card-header">
           <span className="card-title">Dashboards &amp; Access</span>
@@ -256,13 +256,13 @@ export function Platform({ notify, requestConfirm, clusterDown = false }: Platfo
                 <summary>Configuring Grafana</summary>
                 <div className="field-help">
                   <p><strong>Log in:</strong> <code>admin</code> / <code>admin</code> (override with the <code>GRAFANA_ADMIN_PASSWORD</code> env var before installing).</p>
-                  <p><strong>Data sources</strong> are auto-provisioned — you don't create them by hand. Three come pre-wired, each with a fixed UID you'll see referenced in panels:</p>
+                  <p><strong>Data sources</strong> are auto-provisioned - you don't create them by hand. Three come pre-wired, each with a fixed UID you'll see referenced in panels:</p>
                   <ul>
-                    <li><code>Prometheus</code> (uid <code>prometheus</code>) — metrics, the default source</li>
-                    <li><code>Loki</code> (uid <code>loki</code>) — logs</li>
-                    <li><code>Tempo</code> (uid <code>tempo</code>) — traces</li>
+                    <li><code>Prometheus</code> (uid <code>prometheus</code>) - metrics, the default source</li>
+                    <li><code>Loki</code> (uid <code>loki</code>) - logs</li>
+                    <li><code>Tempo</code> (uid <code>tempo</code>) - traces</li>
                   </ul>
-                  <p><strong>Dashboards</strong> are auto-provisioned too: the baseline set ships with Grafana, and each scenario adds its own when you activate it. Find them under <em>Dashboards</em> in Grafana — no import needed.</p>
+                  <p><strong>Dashboards</strong> are auto-provisioned too: the baseline set ships with Grafana, and each scenario adds its own when you activate it. Find them under <em>Dashboards</em> in Grafana - no import needed.</p>
                   <p><strong>Reading a panel:</strong> if a query shows a <code>$</code> variable (e.g. <code>$__rate_interval</code>), that's Grafana's own interval macro and resolves automatically. The install commands on each component's <em>Details</em> page already have their <code>$NAMESPACE</code> / <code>{'${DOMAIN_SUFFIX}'}</code> filled in with this lab's values.</p>
                 </div>
               </details>
@@ -378,7 +378,7 @@ function ComponentDetailModal({ detail, loading, onClose, onCopy }: {
                   ))}
                 </div>
               ) : (
-                <div className="field-help">No scenario lists this as a prerequisite — it's available for ad-hoc use.</div>
+                <div className="field-help">No scenario lists this as a prerequisite - it's available for ad-hoc use.</div>
               )}
             </div>
           </>

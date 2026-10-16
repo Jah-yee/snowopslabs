@@ -1,5 +1,5 @@
 ---
-# dev environment — namespace, release metadata, {{.WorkloadName}} deployment + service + ingress.
+# dev environment - namespace, release metadata, {{.WorkloadName}} deployment + service + ingress.
 # All three environments start at the SAME baseline image ({{.WorkloadName}}:v1.0.0).
 apiVersion: v1
 kind: Namespace

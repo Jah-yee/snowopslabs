@@ -1,4 +1,4 @@
-# R03 — Content authoring & validation
+# R03: Content authoring & validation
 
 **Wave:** W2 · **Time:** ~15 minutes · **Cluster needed:** no
 
@@ -6,7 +6,7 @@
 and challenge honest: required fields present, cross-references resolvable,
 templates well-formed. This runbook confirms it catches the mistakes an author
 actually makes, and that the messages point at the exact file, line and
-reference — not a vague "invalid".
+reference, not a vague "invalid".
 
 **Read this as a reviewer.** For every failure message, ask: *would this tell me
 what to fix without opening the loader source?*
@@ -16,7 +16,7 @@ what to fix without opening the loader source?*
 ## Preconditions
 
 - Repo checked out; Go toolchain installed.
-- Nothing here touches a cluster or your machine — validation is pure file I/O.
+- Nothing here touches a cluster or your machine - validation is pure file I/O.
 
 A scratch external content root for the later steps:
 
@@ -36,10 +36,10 @@ $ go run ./cmd/labctl validate ; echo "exit=$?"
 **Expect:** a single success line and `exit=0`, e.g.
 
 ```
-✓ all content valid — 3 challenges, 6 incidents, 1 paths, 13 scenarios
+✓ all content valid - 3 challenges, 6 incidents, 1 paths, 13 scenarios
 ```
 
-If this fails on an untouched checkout, stop — the repo is broken, not your test.
+If this fails on an untouched checkout, stop - the repo is broken, not your test.
 
 ---
 
@@ -133,7 +133,7 @@ $ printf 'name: garbage\n\t- : :\n' > "$R03_DIR/scenarios/garbage/scenario.yaml"
 $ SNOWOPS_CONTENT_PATH="$R03_DIR" go run ./cmd/labctl validate ; echo "exit=$?"
 ```
 
-**Expect:** `exit=1` with a YAML-parse problem for that file — never a panic or
+**Expect:** `exit=1` with a YAML-parse problem for that file, never a panic or
 stack trace. (The parsers are also fuzzed in CI: `make fuzz`.)
 
 ---

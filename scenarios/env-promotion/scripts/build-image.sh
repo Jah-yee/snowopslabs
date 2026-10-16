@@ -16,7 +16,7 @@ case "$TAG" in
 esac
 
 echo "Building ${WORKLOAD_NAME}:${TAG} and loading it into the cluster..."
-echo "  (this is 'docker build' + import — read src/engine/build/docker.sh)"
+echo "  (this is 'docker build' + import - read src/engine/build/docker.sh)"
 echo ""
 
 DOCKER_IMAGE_TAG="${TAG}" bash src/engine/build/docker.sh ${WORKLOAD_NAME} --import

@@ -1,4 +1,4 @@
-# ADR 0004 — Exclusive lock keys; reject conflicting runs
+# ADR 0004: Exclusive lock keys; reject conflicting runs
 
 **Status:** Accepted
 **Date:** 2026-07-26
@@ -6,8 +6,8 @@
 
 ## Context
 
-v1 had no concurrency control. Two `platform up` invocations — from the CLI and
-from an impatient double-click in the UI — would run simultaneously against the
+v1 had no concurrency control. Two `platform up` invocations, from the CLI and
+from an impatient double-click in the UI, would run simultaneously against the
 same cluster, racing on Helm releases and namespaces. Helm's own locking
 produces confusing mid-operation errors rather than a clear refusal.
 
@@ -16,8 +16,8 @@ produces confusing mid-operation errors rather than a clear refusal.
 Every run declares a **lock key**, typically `lab:<name>` or
 `lab:<name>/ns:<namespace>`. The engine holds an exclusive lock per key.
 
-A submission whose lock key is held is **rejected immediately** — HTTP 409, or a
-non-zero CLI exit — with an error naming the run that holds the lock, what it is
+A submission whose lock key is held is **rejected immediately** (HTTP 409, or a
+non-zero CLI exit) with an error naming the run that holds the lock, what it is
 doing, and how long it has been running. Runs with disjoint keys proceed
 concurrently, bounded by a worker pool.
 
@@ -26,7 +26,7 @@ concurrently, bounded by a worker pool.
 | Alternative | Why rejected |
 |---|---|
 | Queue conflicting runs | A user who fires `platform up` twice wants to be told, not to silently wait five minutes for a duplicate install |
-| Global mutex (one run at a time) | Blocks legitimately independent work — watching traffic while inspecting a different namespace |
+| Global mutex (one run at a time) | Blocks legitimately independent work - watching traffic while inspecting a different namespace |
 | Optimistic, let Helm arbitrate | Produces opaque failures deep in a run, after partial mutation. Worse than refusing up front |
 
 ## Consequences

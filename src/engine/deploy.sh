@@ -42,7 +42,7 @@ ensure_image_in_cluster() {
     k3d)
       command -v k3d >/dev/null 2>&1 || return 0
       if ! docker image inspect "${image}" >/dev/null 2>&1; then
-        echo "[deploy] Image ${image} not found in the local Docker daemon — building it first..."
+        echo "[deploy] Image ${image} not found in the local Docker daemon - building it first..."
         bash "${ENGINE_DIR}/build.sh" "${APP_NAME}" # build.sh imports into k3d itself
         return 0
       fi
@@ -54,7 +54,7 @@ ensure_image_in_cluster() {
     kind)
       command -v kind >/dev/null 2>&1 || return 0
       if ! docker image inspect "${image}" >/dev/null 2>&1; then
-        echo "[deploy] Image ${image} not found in the local Docker daemon — building it first..."
+        echo "[deploy] Image ${image} not found in the local Docker daemon - building it first..."
         bash "${ENGINE_DIR}/build.sh" "${APP_NAME}" # docker build only; kind load happens below
       fi
       # kind load is idempotent; the docker build strategy does not load into kind.
@@ -62,7 +62,7 @@ ensure_image_in_cluster() {
       kind load docker-image "${image}" --name "${cluster}"
       ;;
     *)
-      # incluster / registry-backed runtimes pull from a real registry — nothing to import.
+      # incluster / registry-backed runtimes pull from a real registry - nothing to import.
       :
       ;;
   esac

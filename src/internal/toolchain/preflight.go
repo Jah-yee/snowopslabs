@@ -81,7 +81,7 @@ func Requirements() []Requirement {
 				if goos == "darwin" {
 					return "brew install jq"
 				}
-				return "apt-get install jq — or https://jqlang.github.io/jq/download/"
+				return "apt-get install jq - or https://jqlang.github.io/jq/download/"
 			},
 		},
 		{
@@ -103,9 +103,9 @@ func Requirements() []Requirement {
 			Optional:    true,
 			InstallHint: func(goos string) string {
 				if goos == "darwin" {
-					return "brew install k3d — or use PROFILE=kind"
+					return "brew install k3d - or use PROFILE=kind"
 				}
-				return "https://k3d.io/#installation — or use PROFILE=kind"
+				return "https://k3d.io/#installation - or use PROFILE=kind"
 			},
 		},
 		{
@@ -116,9 +116,9 @@ func Requirements() []Requirement {
 			Optional:    true,
 			InstallHint: func(goos string) string {
 				if goos == "darwin" {
-					return "brew install kind — or use PROFILE=k3d"
+					return "brew install kind - or use PROFILE=k3d"
 				}
-				return "https://kind.sigs.k8s.io/docs/user/quick-start/#installation — or use PROFILE=k3d"
+				return "https://kind.sigs.k8s.io/docs/user/quick-start/#installation - or use PROFILE=k3d"
 			},
 		},
 	}
@@ -208,7 +208,7 @@ func (p *Preflight) checkOne(ctx context.Context, req Requirement, goos string) 
 	path, err := p.Runner.LookPath(req.Binary)
 	if err != nil {
 		res.Status = CheckMissing
-		res.Detail = fmt.Sprintf("%s is not on your PATH — needed for %s. %s",
+		res.Detail = fmt.Sprintf("%s is not on your PATH - needed for %s. %s",
 			req.Binary, req.Why, hint(req, goos))
 		return res
 	}

@@ -27,7 +27,7 @@ type Fake struct {
 	Delay time.Duration
 
 	// LookPathErr, when set, makes LookPath fail for any binary not in
-	// Available — used to test preflight's missing-binary handling.
+	// Available - used to test preflight's missing-binary handling.
 	LookPathErr error
 	// Available lists binaries LookPath should resolve. Empty means all.
 	Available map[string]string

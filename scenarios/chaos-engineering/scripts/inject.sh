@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# inject.sh <experiment> — apply exactly one chaos experiment to the bound
+# inject.sh <experiment> - apply exactly one chaos experiment to the bound
 # workload. Run with no argument to list what is available.
 #
 # This exists because the experiment manifests are the one set of manifests the
 # scenario deliberately does NOT install as a component: applying all six at once
 # kills, delays and stresses the workload simultaneously, and nothing can be
 # attributed. But that also means nothing ever renders their {{.WorkloadName}}
-# and {{.WorkloadNamespace}} — a plain `kubectl apply -f` on the file fails with
+# and {{.WorkloadNamespace}} - a plain `kubectl apply -f` on the file fails with
 # `namespaces "{{.WorkloadNamespace}}" not found`, because kubectl does not
 # resolve Go templates. So the rendering happens here, and the learner still runs
 # one experiment at a time.

@@ -114,7 +114,7 @@ func (r *Runner) Run(ctx context.Context, c Check) Result {
 				"check's own timeoutSeconds was never reached."
 		} else {
 			res.Error = fmt.Sprintf("timed out after %s, so this is not a result about "+
-				"the cluster — the check never finished. Re-run it; if it times out every "+
+				"the cluster - the check never finished. Re-run it; if it times out every "+
 				"time, the check needs a larger timeoutSeconds.", timeout)
 		}
 	}

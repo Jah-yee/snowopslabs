@@ -2,7 +2,7 @@
 set -euo pipefail
 . "$(dirname "$0")/../../_lib/workload.sh"
 
-# unstage-ha.sh — undo stage-ha.sh, remove the PodDisruptionBudget the learner
+# unstage-ha.sh - undo stage-ha.sh, remove the PodDisruptionBudget the learner
 # applied, and return any node they left cordoned. The engine only tracks what
 # it staged, so without this a `down` leaves the budget behind and the next run
 # starts with its first check already green.

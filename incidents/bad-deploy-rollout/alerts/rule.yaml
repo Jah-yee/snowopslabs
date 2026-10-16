@@ -20,4 +20,4 @@ spec:
             severity: warning
           annotations:
             summary: "${TARGET_WORKLOAD} pods cannot pull their image"
-            description: "Pods in namespace ${TARGET_NAMESPACE} are stuck in ImagePullBackOff — the rollout will not complete. Check the deployment's image tag."
+            description: "Pods in namespace ${TARGET_NAMESPACE} are stuck in ImagePullBackOff - the rollout will not complete. Check the deployment's image tag."

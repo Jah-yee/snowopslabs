@@ -28,7 +28,7 @@ kubectl get svc -n "$NAMESPACE" 2>/dev/null || true
 echo ""
 
 echo "Ingress:"
-kubectl get ingress -n "$NAMESPACE" 2>/dev/null || echo "  (none — use port-forward to access the UI)"
+kubectl get ingress -n "$NAMESPACE" 2>/dev/null || echo "  (none - use port-forward to access the UI)"
 echo ""
 
 DOMAIN="${DOMAIN_SUFFIX:-${CLUSTER_NAME:-snowops}.localhost}"
@@ -37,5 +37,5 @@ echo "  http://opencost.${DOMAIN}  (if ingress is installed)"
 echo "  kubectl -n ${NAMESPACE} port-forward svc/opencost 9090 &"
 echo "  then: http://localhost:9090"
 echo ""
-echo "NOTE: k3d has no real cloud billing — OpenCost uses on-prem pricing defaults."
+echo "NOTE: k3d has no real cloud billing - OpenCost uses on-prem pricing defaults."
 echo "      Per-namespace cost estimates are still useful for right-sizing exercises."

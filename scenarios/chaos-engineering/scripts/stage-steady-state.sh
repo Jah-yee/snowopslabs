@@ -6,7 +6,7 @@
 # because there is only one replica". Nothing guaranteed that: another scenario
 # (node-drain-drill, cluster-upgrade-drill) scales the same shared workload out,
 # and if it left it at three the drill is already finished before the learner
-# arrives — 'workload-survives-pod-loss' is green at activation and the lesson
+# arrives - 'workload-survives-pod-loss' is green at activation and the lesson
 # never happens.
 set -euo pipefail
 . "$(dirname "$0")/../../_lib/workload.sh"
@@ -30,7 +30,7 @@ if [ -z "$CURRENT" ]; then
   exit 0
 fi
 
-# Remember what we found so teardown can hand the workload back unchanged — but
+# Remember what we found so teardown can hand the workload back unchanged - but
 # only once. A re-activation with --force runs over a cluster this scenario has
 # already staged, and re-recording would capture the drill's own doing.
 if kubectl -n "$NS" get configmap "$STATE" >/dev/null 2>&1; then
@@ -58,7 +58,7 @@ if [ -n "$OTHER" ]; then
   printf '  %s\n' $OTHER
   echo "  Two budgets over one workload make 'disruptions allowed' the MINIMUM of both,"
   echo "  so this drill's numbers will not be the ones it describes. That budget belongs"
-  echo "  to another scenario — tear that one down first."
+  echo "  to another scenario - tear that one down first."
 fi
 
 echo "Steady state staged: ${WORKLOAD} at 1 replica in ${NS}."

@@ -139,7 +139,7 @@ func streamRunLogs(ctx context.Context, out io.Writer, st *store.Store, runID st
 		return err
 	}
 
-	fmt.Fprintf(out, "Run %s — %s", rec.ID, rec.Kind)
+	fmt.Fprintf(out, "Run %s - %s", rec.ID, rec.Kind)
 	if rec.Target != "" {
 		fmt.Fprintf(out, " %s", rec.Target)
 	}
@@ -216,7 +216,7 @@ func runsCancelCmd() *cobra.Command {
 		Use:   "cancel <run-id>",
 		Short: "Cancel a run that is queued or in progress",
 		Long: `Cancels a run. A run that has already started is sent SIGTERM,
-then SIGKILL after a grace period — and because it executes in its own process
+then SIGKILL after a grace period - and because it executes in its own process
 group, its children go with it.
 
 If labctl is not the process executing the run (for example the run belongs to
@@ -234,7 +234,7 @@ a server you are not attached to), use the API or the UI instead.`,
 			rec, err := st.GetRun(ctx, id)
 			if err != nil {
 				if errors.Is(err, store.ErrRunNotFound) {
-					return fmt.Errorf("no run with ID %q — list them with: labctl runs list", id)
+					return fmt.Errorf("no run with ID %q - list them with: labctl runs list", id)
 				}
 				return err
 			}

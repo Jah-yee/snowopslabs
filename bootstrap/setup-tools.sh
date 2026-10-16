@@ -47,7 +47,7 @@ esac
 # Helpers
 # ---------------------------------------------------------------------------
 
-# is_wsl — succeeds when running under the Windows Subsystem for Linux.
+# is_wsl - succeeds when running under the Windows Subsystem for Linux.
 #
 # Kept pure (reads only WSL_DISTRO_NAME and the two kernel files) so it can be
 # sourced and exercised in isolation by bats. WSL only exists on Linux; the
@@ -65,7 +65,7 @@ is_wsl() {
   return 1
 }
 
-# maybe_wsl_notice — when on WSL, say that the dashboard and lab URLs open in
+# maybe_wsl_notice - when on WSL, say that the dashboard and lab URLs open in
 # the Windows browser. `labctl ui` opens it through wslview or, without wslu,
 # powershell.exe, so nothing needs installing. Printed once at the end of
 # setup; never fails the run.
@@ -80,16 +80,16 @@ ensure_install_dir() {
   mkdir -p "$INSTALL_DIR"
 }
 
-# version_ge <have> <want> — succeeds when <have> >= <want> as a semver.
+# version_ge <have> <want> - succeeds when <have> >= <want> as a semver.
 #
 # The pinned versions in versions.env are MINIMUMS, not exact matches. A user
 # who brought their own newer helm (via brew, apt, whatever) should not have
-# their tool replaced by an older one — and on Apple Silicon that "replacement"
+# their tool replaced by an older one - and on Apple Silicon that "replacement"
 # would fail anyway because brew's /opt/homebrew/bin shadows /usr/local/bin.
 #
 # A leading 'v' is stripped from both sides, because tools disagree about it
 # ('helm version --short' emits it, 'kubectl' does not) and sort -V would
-# otherwise treat "v3.14.0" as textually greater than "4.2.3" — the leading 'v'
+# otherwise treat "v3.14.0" as textually greater than "4.2.3" - the leading 'v'
 # sorts after any digit.
 #
 # Uses sort -V, which is portable across macOS and modern Linux.
@@ -110,7 +110,7 @@ version_ge() {
 # Tool installers
 # ---------------------------------------------------------------------------
 
-# tool_version <name> — the installed version without a leading "v", or "".
+# tool_version <name> - the installed version without a leading "v", or "".
 tool_version() {
   # A missing tool must read as "" rather than fail: under pipefail the failed
   # pipeline would otherwise abort the whole script.
@@ -123,7 +123,7 @@ tool_version() {
   esac || true
 }
 
-# tool_min / tool_pin <name> — the lowest accepted version, and the version
+# tool_min / tool_pin <name> - the lowest accepted version, and the version
 # downloaded when the installed one is missing or older (config/versions.env).
 tool_min() {
   case "$1" in
@@ -142,7 +142,7 @@ tool_pin() {
   esac
 }
 
-# download_tool <name> <version> — fetch a static binary into INSTALL_DIR.
+# download_tool <name> <version> - fetch a static binary into INSTALL_DIR.
 download_tool() {
   local name="$1" v="$2" tmp
   tmp="$(mktemp -d)"
@@ -162,7 +162,7 @@ download_tool() {
   rm -rf "$tmp"
 }
 
-# ensure_tool <name> — leave a new-enough tool alone; otherwise install one
+# ensure_tool <name> - leave a new-enough tool alone; otherwise install one
 # (Homebrew on macOS, a pinned download into INSTALL_DIR elsewhere) and verify
 # the one now on PATH is new enough.
 ensure_tool() {
@@ -176,7 +176,7 @@ ensure_tool() {
     return 0
   fi
   if [ -n "$have" ]; then
-    echo -e "${YELLOW}${name} v${have} is older than v${min} — installing a newer one${NC}"
+    echo -e "${YELLOW}${name} v${have} is older than v${min} - installing a newer one${NC}"
   fi
 
   if [ "$OS" = "darwin" ]; then
@@ -205,7 +205,7 @@ ensure_tool() {
   exit 1
 }
 
-# user_bin_notice — tell the user to add INSTALL_DIR to their shell's PATH when
+# user_bin_notice - tell the user to add INSTALL_DIR to their shell's PATH when
 # a tool landed there, so kubectl works in their own terminal too.
 user_bin_notice() {
   [ "$OS" = "darwin" ] && return 0
@@ -220,7 +220,7 @@ user_bin_notice() {
 }
 
 # ---------------------------------------------------------------------------
-# Container runtime — Colima (macOS) or Docker Engine (Linux)
+# Container runtime - Colima (macOS) or Docker Engine (Linux)
 # ---------------------------------------------------------------------------
 
 # macOS: ensure Homebrew is present.
@@ -232,7 +232,7 @@ _install_homebrew() {
   echo "Installing Homebrew (this may take a few minutes)..."
   NONINTERACTIVE=1 /bin/bash -c \
     "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  # Activate brew in the current shell — path differs between Apple Silicon and Intel.
+  # Activate brew in the current shell - path differs between Apple Silicon and Intel.
   if [ -x /opt/homebrew/bin/brew ]; then
     eval "$(/opt/homebrew/bin/brew shellenv)"
   elif [ -x /usr/local/bin/brew ]; then
@@ -284,7 +284,7 @@ _linux_distro() {
   fi
 }
 
-# Linux Debian/Ubuntu family — Docker's official apt repo.
+# Linux Debian/Ubuntu family - Docker's official apt repo.
 _docker_apt() {
   local distro="$1"
   echo "Installing Docker Engine via apt (${distro})..."
@@ -306,7 +306,7 @@ _docker_apt() {
     docker-buildx-plugin docker-compose-plugin
 }
 
-# Linux RHEL/CentOS/Fedora/Rocky/Alma family — Docker's official rpm repo.
+# Linux RHEL/CentOS/Fedora/Rocky/Alma family - Docker's official rpm repo.
 _docker_rpm() {
   local repo_distro="$1" # centos | fedora | rhel
   echo "Installing Docker Engine via dnf/yum (${repo_distro})..."
@@ -416,7 +416,7 @@ install_docker_linux() {
   echo -e "${GREEN}Docker Engine installed and running${NC}"
 }
 
-# Public entry point — routes to the right runtime for the current OS.
+# Public entry point - routes to the right runtime for the current OS.
 install_docker() {
   if [ "$OS" = "darwin" ]; then
     install_colima
@@ -464,7 +464,7 @@ Usage: setup-tools.sh [PROFILE]
 Detected: OS=${OS}, ARCH=${ARCH}
 
 Profiles:
-  k3d     kubectl + colima/docker + k3d + helm    (local cluster — the golden path)
+  k3d     kubectl + colima/docker + k3d + helm    (local cluster - the golden path)
   kind    kubectl + colima/docker + kind + helm   (headless; used by CI)
   common  kubectl only
   all     all of the above
@@ -484,7 +484,7 @@ main() {
   local profile="${1:-k3d}"
 
   printf "${GREEN}╔════════════════════════════════════════════╗\n"
-  printf "║  Setup Tools — Profile: %-6s (%s/%s)\n" "$profile" "$OS" "$ARCH"
+  printf "║  Setup Tools - Profile: %-6s (%s/%s)\n" "$profile" "$OS" "$ARCH"
   printf "╚════════════════════════════════════════════╝\n\n${NC}"
 
   case "$profile" in

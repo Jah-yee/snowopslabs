@@ -49,7 +49,7 @@ fi
 PROXY_PORT="$(kubectl -n "$NAMESPACE" get svc "$PROXY_SVC" \
   -o jsonpath='{.spec.ports[0].port}')"
 
-# Create Ingress for dashboard access (HTTP — Kong TLS is disabled in values.yaml)
+# Create Ingress for dashboard access (HTTP - Kong TLS is disabled in values.yaml)
 cat <<EOF | kubectl apply -f -
 apiVersion: networking.k8s.io/v1
 kind: Ingress

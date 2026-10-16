@@ -1,8 +1,8 @@
-# Incidents — Fault Library
+# Incidents: Fault Library
 
 Realistic, **reversible** production faults for game days, on-call practice,
 and (later) graded challenges. Inject one, watch the lab break, practice
-diagnosing it, fix it — and let the detection check confirm you actually
+diagnosing it, fix it, and let the detection check confirm you actually
 fixed it. The commands are in the
 [CLI reference](../docs/reference/cli/incidents.md).
 
@@ -16,7 +16,7 @@ Every fault is a directory `incidents/<name>/` with:
 | `inject.sh` | Breaks the lab. Idempotent: re-running while injected is a no-op. |
 | `resolve.sh` | The escape hatch. Always restores the lab, even after a partial manual fix. Also runs after a hand fix passes `status`, to remove the alert rule and the fault's record, so it must change nothing that is already fixed. |
 | `hints.md` | Progressive hints, one `## Hint N` section each (revealed by `labctl incident hint`) |
-| `solution.md` | Full diagnosis + fix walkthrough (spoiler — `labctl incident solution`) |
+| `solution.md` | Full diagnosis + fix walkthrough (spoiler - `labctl incident solution`) |
 | `alerts/rule.yaml` | Required iff `expectAlert` is set: the PrometheusRule that fires the page (armed by `inject.sh`, disarmed by `resolve.sh`) |
 | `manifests/`, `checks/` | Optional supporting files |
 
@@ -33,7 +33,7 @@ displayName: "CrashLoop: a bad config value takes the app down"
 description: "What the victim experiences, not how it's injected"
 category: workload                # workload | network | resources | storage | config
 severity: high                    # low | medium | high
-target:                           # templatable — see "Targeting a workload"
+target:                           # templatable - see "Targeting a workload"
   namespace: "{{.WorkloadNamespace}}"
   workload: "{{.WorkloadName}}"
 prerequisites:
@@ -46,7 +46,7 @@ detection:                        # same schema as scenario checks
 expectAlert: LabFaultCrashLoop    # optional: this alert should page
 
 references:                       # optional: upstream docs for the fix
-  - label: "Kubernetes — Debug a CrashLooping pod"
+  - label: "Kubernetes - Debug a CrashLooping pod"
     url: "https://kubernetes.io/docs/tasks/debug/debug-application/"
     note: "Optional context."
 snippets:                         # optional: applyable diagnose/remediate manifests
@@ -75,15 +75,15 @@ DEPLOY="${TARGET_WORKLOAD:-go-api}"
 ```
 
 `DOMAIN_SUFFIX` and `MONITORING_NAMESPACE` travel with them, to all three. A
-detection check needs the suffix as much as inject and resolve do — the checks
-that matter probe the workload through its own ingress — and a script check runs
+detection check needs the suffix as much as inject and resolve do, the checks
+that matter probe the workload through its own ingress, and a script check runs
 on the checks runner, which does not inherit the executor's environment.
 
 Both fields are template-resolved. A fault whose target reads
 `{{.WorkloadNamespace}}` / `{{.WorkloadName}}` follows whatever app the lab is
 bound to, so the same fault can be injected against a built-in app or a user's
 own (see [ADR-0014](../docs/adr/0014-workload-binding-and-app-contract.md)). A
-fault that pins a literal keeps breaking exactly the workload it names — correct
+fault that pins a literal keeps breaking exactly the workload it names - correct
 when the fault only makes sense for that one app.
 
 ### Scripts, and the shared library
@@ -110,7 +110,7 @@ render_targeted "$SCRIPT_DIR/alerts/rule.yaml" | kubectl apply -n "$MON_NS" -f -
 expr: max(kube_pod_container_status_last_terminated_reason{namespace="${TARGET_NAMESPACE}"}) > 0
 ```
 
-Directories under `incidents/` beginning with `_` are not faults — `_lib` holds
+Directories under `incidents/` beginning with `_` are not faults - `_lib` holds
 these shared helpers.
 
 **Calibrate against the binding, not a fixed app.** A fault that hardcodes an
@@ -129,10 +129,10 @@ blocks trimmed from the body. `labctl validate` fails on a dangling snippet `pat
 
 ### Paging (`expectAlert`, on-call drills)
 
-A fault that sets `expectAlert` must ship `alerts/rule.yaml` — a
+A fault that sets `expectAlert` must ship `alerts/rule.yaml`, a
 PrometheusRule labeled `release: prometheus` (so kube-prometheus-stack
 loads it) whose alert carries `labfault: "true"` (so Alertmanager routes it
-to the pager — see `platform/monitoring/metrics/prometheus/values.yaml`).
+to the pager, see `platform/monitoring/metrics/prometheus/values.yaml`).
 `inject.sh` arms the rule (tolerating a missing monitoring stack),
 `resolve.sh` disarms it, and `labctl incident status` reports whether the
 page fired by querying the Alertmanager API
@@ -143,7 +143,7 @@ Pages land in the in-cluster **pager** (`labctl service up pager`) unless
 ## Rules for fault authors
 
 1. **Target only the demo apps** (`go-api`, `echo-server`) or a dedicated
-   fault namespace — never platform components or `kube-system`.
+   fault namespace, never platform components or `kube-system`.
 2. **Record what you change, away from what you break.** Save the original
    values with `fault_state_save` from `incidents/_lib/state.sh`; `resolve.sh`
    reads them with `fault_state_get` and ends with `fault_state_clear`. The
@@ -153,9 +153,9 @@ Pages land in the in-cluster **pager** (`labctl service up pager`) unless
 3. **`resolve.sh` must never fail the user.** It runs after any amount of
    manual fixing; every step tolerates "already fixed" (`--ignore-not-found`,
    guards, `|| true` where safe).
-4. **Portable shell** (CONTRIBUTING.md golden rules 1) — these scripts are
+4. **Portable shell** (CONTRIBUTING.md golden rules 1) - these scripts are
    shellcheck'd and portability-linted in CI.
-5. **Write the detection check as "what must be true when healthy"** — it
+5. **Write the detection check as "what must be true when healthy"**: it
    doubles as the resolution detector and the challenge grader.
 6. Hints go from gentle nudge to near-answer; the last hint may name the
    resource, the solution names the command.
@@ -213,11 +213,11 @@ hatch from every state a learner can leave behind, and scores the result out of
 
 | Fault | Category | Severity | What breaks |
 |-------|----------|----------|-------------|
-| `crashloop-bad-config` | workload | high | a config change sets the workload's `PORT` to a port that cannot exist and no old pod is left serving — every pod crash-loops with the error in its logs, and every request fails |
-| `bad-deploy-rollout` | workload | medium | the workload is "deployed" with a tag that was never pushed — rollout sticks in ImagePullBackOff |
-| `oom-kill` | resources | high | the workload's memory limit is cut just below what it needs under load, and k6 traffic is started — the pod idles fine and is OOMKilled once requests arrive |
-| `network-blackhole` | network | high | a deny-all-ingress NetworkPolicy lands in the workload's namespace — the service goes dark through the ingress |
-| `service-selector-broken` | config | medium | the workload's Service selector stops matching its pods — endpoints empty, pods perfectly healthy (sneaky) |
+| `crashloop-bad-config` | workload | high | a config change sets the workload's `PORT` to a port that cannot exist and no old pod is left serving - every pod crash-loops with the error in its logs, and every request fails |
+| `bad-deploy-rollout` | workload | medium | the workload is "deployed" with a tag that was never pushed - rollout sticks in ImagePullBackOff |
+| `oom-kill` | resources | high | the workload's memory limit is cut just below what it needs under load, and k6 traffic is started - the pod idles fine and is OOMKilled once requests arrive |
+| `network-blackhole` | network | high | a deny-all-ingress NetworkPolicy lands in the workload's namespace - the service goes dark through the ingress |
+| `service-selector-broken` | config | medium | the workload's Service selector stops matching its pods - endpoints empty, pods perfectly healthy (sneaky) |
 | `noisy-neighbor` | resources | low | a batch tenant lands on the workload's node with big CPU requests and no limits, and takes the machine |
 
 `dns-blackhole` and `pvc-full` were considered and dropped: DNS exec probes

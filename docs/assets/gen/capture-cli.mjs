@@ -43,9 +43,9 @@ const GIFS = {
   'demo-cli': {
     cols: 108, rows: 34, width: 1000,
     scenes: [
-      note('# 1. See the scenario catalog — real production-shaped playgrounds'),
+      note('# 1. See the scenario catalog - real production-shaped playgrounds'),
       cmd('labctl scenario list'), out(run(['scenario', 'list'])), hold(20),
-      note('# 2. Break something on purpose — reversible, realistic faults'),
+      note('# 2. Break something on purpose - reversible, realistic faults'),
       cmd('labctl incident list'), out(run(['incident', 'list'])), hold(20),
       note('# 3. Every declarative file is machine-checked'),
       cmd('labctl validate'), out(run(['validate'])), hold(28),
@@ -119,7 +119,7 @@ function pageHtml(cols, rows, frames) {
   .err{color:#f87171}.key{color:#93a4c4}.cmd2{color:#a5b4fc}`
   return `<!doctype html><meta charset="utf-8"><style>${css}</style>
 <div class="win"><div class="bar"><span class="dot r"></span><span class="dot y"></span>
-<span class="dot g"></span><span class="title">labctl — SnowOps Labs</span></div>
+<span class="dot g"></span><span class="title">labctl - SnowOps Labs</span></div>
 <div class="body"><pre id="scr"></pre></div></div>
 <script>const FR=${JSON.stringify(frames)};window.TOTAL=FR.length;
 const scr=document.getElementById('scr'),body=document.querySelector('.body');

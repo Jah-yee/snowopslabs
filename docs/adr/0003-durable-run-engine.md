@@ -1,4 +1,4 @@
-# ADR 0003 — A durable run engine over shell scripts, not a Kubernetes operator
+# ADR 0003: A durable run engine over shell scripts, not a Kubernetes operator
 
 **Status:** Accepted
 **Date:** 2026-07-26
@@ -23,7 +23,7 @@ work; the engine wraps them with:
 
 - a `context.Context` on every run, with a per-kind timeout,
 - **process-group execution** (`Setpgid`), so cancellation reaches `helm`'s
-  children — `SIGTERM` to the group, grace period, then `SIGKILL`,
+  children: `SIGTERM` to the group, grace period, then `SIGKILL`,
 - durable run records and **every output line persisted with a monotonic
   sequence number**, streamed to consumers from a cursor,
 - structured step tracking parsed from script-emitted markers,
@@ -34,7 +34,7 @@ work; the engine wraps them with:
 | Alternative | Why rejected |
 |---|---|
 | Patch the existing executor | Cancellation, durability and locking are cross-cutting; bolting them on leaves the same shape with more edge cases |
-| Add a declarative desired-state reconciler | Real value, but a large design surface. We take the 80% — a `components` inventory table — and skip drift correction (see Consequences) |
+| Add a declarative desired-state reconciler | Real value, but a large design surface. We take the 80%, a `components` inventory table, and skip drift correction (see Consequences) |
 | Kubernetes operator with CRDs | Most "K8s-native", but a near-total rewrite, requires a cluster to do anything at all, and makes the laptop-first golden path heavier. Rejected on those grounds |
 
 ## Consequences

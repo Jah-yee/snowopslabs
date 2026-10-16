@@ -1,4 +1,4 @@
-# R02 — Doctor & Preflight
+# R02: Doctor & Preflight
 
 **Wave:** W1 · **Time:** ~15 minutes · **Cluster needed:** no
 
@@ -8,7 +8,7 @@ if the messages are actually good, which is a judgement a person has to make.
 
 **Read this runbook as a reviewer, not just a tester.** For every message you
 see, ask: *if I hit this at 3am, would it tell me what to do?* Note anything you
-would reword — that feedback is the point of the exercise.
+would reword - that feedback is the point of the exercise.
 
 ---
 
@@ -56,7 +56,7 @@ than colima, is a problem; its line ends with the command that fixes it.
 
 ## 2. A missing required tool
 
-Shadow `helm` with an empty directory entry — we do this by pointing `PATH` at a
+Shadow `helm` with an empty directory entry - we do this by pointing `PATH` at a
 directory that contains everything *except* helm.
 
 ```bash
@@ -133,8 +133,8 @@ $ PATH="$R02_DIR/bin:$PATH" ./bin/labctl doctor 2>&1 | grep -A3 'Notes:'
 **Expect:** if `k3d` or `kind` is absent on your machine, each appears under
 `Notes:` rather than `Problems to fix`, and each hint mentions the alternative
 ("or use PROFILE=kind"). `jq` behaves the same way: the lab builds and runs
-without it, and only scenario tooling that scrubs manifests — the backup/restore
-drill — needs it.
+without it, and only scenario tooling that scrubs manifests, the backup/restore
+drill, needs it.
 
 🔍 Confirm the exit code is driven only by *required* tools.
 
@@ -159,14 +159,14 @@ $ ./bin/labctl doctor
 $ sudo systemctl start docker   # restore when done
 ```
 
-**Expect:** doctor still completes and renders its table — it must not hang or
+**Expect:** doctor still completes and renders its table - it must not hang or
 crash. Docker's client version is usually still reported even with the daemon
 down.
 
 🔍 **This is a known gap worth your judgement.** Preflight currently checks that
 binaries exist and are current; it does not yet probe daemon or cluster
 reachability. Does the output leave you misled into thinking everything is fine?
-If so, say so — that becomes a W3 task (`lab status --live` is the planned
+If so, say so - that becomes a W3 task (`lab status --live` is the planned
 home for reachability checks).
 
 ---
@@ -178,7 +178,7 @@ $ PATH=/nonexistent ./bin/labctl doctor ; echo "exit=$?"
 ```
 
 **Expect:** the table renders with everything missing, and a non-zero exit.
-**A crash, a panic, or a config-loading error is a blocking finding** — the
+**A crash, a panic, or a config-loading error is a blocking finding**: the
 command that diagnoses a broken environment must not need a working one.
 
 ---
@@ -189,7 +189,7 @@ command that diagnoses a broken environment must not need a working one.
 $ go test -run 'TestRunDoctor|TestRequirements' ./internal/cli/ ./internal/toolchain/ -v
 ```
 
-**Expect:** all `PASS`. These assert on message *content* — that a missing tool
+**Expect:** all `PASS`. These assert on message *content*: that a missing tool
 names the reason and the fix, that the bash minimum still accommodates the 3.2
 macOS ships, and that no cloud CLI is required after ADR-0001.
 
@@ -223,5 +223,5 @@ Confirm Docker/Colima is running again if you stopped it in step 6.
 **Environment:** OS + version ______ · Arch ______
 
 Step 7 is **blocking**. Steps 2–4 are judged on message quality as much as on
-pass/fail — a low score there is worth reporting even when the step technically
+pass/fail - a low score there is worth reporting even when the step technically
 passes.

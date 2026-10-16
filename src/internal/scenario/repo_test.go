@@ -58,7 +58,7 @@ func TestRepoScenarios_AllLoadAndValidate(t *testing.T) {
 		t.Errorf("scenario %q failed to load: %v", dir, err)
 	}
 
-	// Every directory under scenarios/ must produce a loaded scenario —
+	// Every directory under scenarios/ must produce a loaded scenario -
 	// catches scenarios silently skipped for any reason.
 	entries, err := os.ReadDir(filepath.Join(root, "scenarios"))
 	if err != nil {

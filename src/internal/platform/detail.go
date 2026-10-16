@@ -45,7 +45,7 @@ type rawInterface struct {
 // Meta reads and parses the provider's _interface.yaml. It looks in the
 // provider's own directory first, then the category directory above it (some
 // categories describe all their providers in one shared file). A missing or
-// unparseable file yields a zero InterfaceMeta, never an error — the details
+// unparseable file yields a zero InterfaceMeta, never an error - the details
 // page degrades gracefully.
 func (p *Provider) Meta() InterfaceMeta {
 	for _, path := range []string{
@@ -79,7 +79,7 @@ func (p *Provider) Meta() InterfaceMeta {
 // InstallCommands extracts the helm/kubectl commands from the provider's
 // install.sh so the details page shows how the tool actually reaches the
 // cluster. Backslash line-continuations are joined into one command, and shell
-// plumbing (repo adds, waits, variables) is left out — only the install verbs a
+// plumbing (repo adds, waits, variables) is left out - only the install verbs a
 // learner would recognise are returned.
 func (p *Provider) InstallCommands() []string {
 	f, err := os.Open(filepath.Join(p.Path, "install.sh"))

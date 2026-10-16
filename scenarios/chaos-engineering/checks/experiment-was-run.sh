@@ -5,7 +5,7 @@ set -eu
 # Objective: run an experiment against the workload.
 #
 # Chaos Mesh's gauge counts experiments that CURRENTLY EXIST, so grading it
-# directly punishes the learner for following the drill's own last step —
+# directly punishes the learner for following the drill's own last step -
 # "clean up every experiment" sets it back to zero and turns the check red. It is
 # also satisfied by an object a previous session left behind, which is why
 # activation now clears those first.
@@ -42,7 +42,7 @@ if [ -n "$FIRST" ]; then
 fi
 
 echo "PENDING: no chaos experiment has been seen in ${NS}." >&2
-echo "  Put load on the service first — an experiment against an idle service proves nothing:" >&2
+echo "  Put load on the service first - an experiment against an idle service proves nothing:" >&2
 echo "    labctl traffic start --app ${WORKLOAD_NAME} --profile browse --rps 20 --duration 30m" >&2
 echo "  Then inject exactly one failure and watch the blast radius:" >&2
 echo "    bash ${PROJECT_ROOT:-.}/scenarios/chaos-engineering/scripts/inject.sh pod-kill --app ${WORKLOAD_NAME} --namespace ${WORKLOAD_NAMESPACE}" >&2

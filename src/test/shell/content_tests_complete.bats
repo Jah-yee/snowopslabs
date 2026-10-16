@@ -11,7 +11,7 @@ setup() {
   TESTS="$ROOT/src/test/shell"
 }
 
-# tested <owner> <script-name> — a bats file names both the scenario or fault
+# tested <owner> <script-name> - a bats file names both the scenario or fault
 # and the script.
 tested() {
   grep -l -- "$1" "$TESTS"/*.bats 2>/dev/null | xargs grep -l -- "$2" >/dev/null 2>&1

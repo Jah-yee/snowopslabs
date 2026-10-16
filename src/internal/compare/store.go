@@ -128,7 +128,7 @@ func (s *Store) Get(id string) (*Report, error) {
 	case matches == 1:
 		return found, nil
 	case matches > 1:
-		return nil, fmt.Errorf("comparison %q is ambiguous — %d runs share that prefix", id, matches)
+		return nil, fmt.Errorf("comparison %q is ambiguous - %d runs share that prefix", id, matches)
 	}
 	return nil, fmt.Errorf("no comparison %q (see 'labctl compare list')", id)
 }

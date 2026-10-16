@@ -23,7 +23,7 @@ if helm status tempo -n "$NAMESPACE" 2>/dev/null | grep -q "pending-"; then
 fi
 
 # Render with the real monitoring namespace, the same way grafana's install does
-# — values.yaml names in-cluster services that move with the namespace.
+# - values.yaml names in-cluster services that move with the namespace.
 sed "s/\.monitoring\.svc/.${NAMESPACE}.svc/g" "$SCRIPT_DIR/values.yaml" >"$VALUES_FILE"
 
 helm_upgrade_install tempo "$NAMESPACE" grafana-community/tempo \

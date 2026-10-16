@@ -1,17 +1,17 @@
-# R04 — Lab lifecycle reliability
+# R04: Lab lifecycle reliability
 
 **Wave:** W3 (reliability-first slice) · **Time:** ~20 minutes · **Cluster needed:** yes (k3d)
 
 Before first delivery, the one thing a reviewer must be able to trust is the
-core loop: bring a lab up, and tear it down cleanly — repeatedly, and after an
-interruption — without it hanging or wedging. This runbook proves those
+core loop: bring a lab up, and tear it down cleanly (repeatedly, and after an
+interruption) without it hanging or wedging. This runbook proves those
 properties end-to-end on a real cluster. The script-level guarantees behind them
 are also enforced hermetically in CI (`test/shell/platform_uninstall.bats`,
 `platform_install.bats`, `runtime_lifecycle.bats`).
 
 > **Update (W3-T01/T08):** the durable lab service (`internal/service/lab`) now
 > runs bring-up/teardown/status through the recorded, cancellable run engine,
-> and `labctl lab up|down|status` (W3-T08) drives it — see steps 6–7 below. The
+> and `labctl lab up|down|status` (W3-T08) drives it - see steps 6–7 below. The
 > web run console reads the same runs (W6-T05). Still deferred: store-backed
 > component tracking and exact "what could not be removed" teardown (W3-T04),
 > and porting `labctl platform` onto a platform service (W3-T03). Steps 1–5
@@ -48,7 +48,7 @@ Run it again on the already-up lab:
 $ make init
 ```
 
-**Expect:** exit 0, and it is *fast* — the cluster is skipped
+**Expect:** exit 0, and it is *fast* - the cluster is skipped
 (`Cluster '…' already exists, skipping creation.`) and every Helm release is
 `upgrade --install`, so nothing is recreated or errors. This is the property a
 reviewer relies on after a Ctrl-C or a flaky step.
@@ -88,7 +88,7 @@ nothing; nothing errors. Re-running teardown must always be safe.
 $ make reset
 ```
 
-**Expect:** a full teardown followed by a clean bring-up, exit 0 — proving the
+**Expect:** a full teardown followed by a clean bring-up, exit 0 - proving the
 loop is repeatable, which is exactly what a reviewer doing multiple sessions
 will do.
 
@@ -98,8 +98,8 @@ will do.
 
 The cluster lifecycle now has a service on the run engine
 (`src/internal/service/lab`). It is the root of the W3/W4 service layer and
-unblocks the W6-T05 run console. Its guarantees are proven hermetically — no
-cluster, no network, no real binaries — with `toolchain.Fake`:
+unblocks the W6-T05 run console. Its guarantees are proven hermetically (no
+cluster, no network, no real binaries) with `toolchain.Fake`:
 
 ```bash
 $ cd src && go test -race ./internal/service/lab/
@@ -110,9 +110,9 @@ verifies by hand at the script level, now at the service level:
 
 - **`Up`/`Down` are recorded runs** under the exclusive `lab` lock key, with the
   cluster name passed as argv and the right per-kind timeout.
-- **Conflicting operations are refused, not raced** — a second lab op while one
+- **Conflicting operations are refused, not raced**: a second lab op while one
   is in flight returns `*run.LockConflictError` naming the holder (the 409).
-- **A cancelled `lab up` leaves nothing in flight and frees the lock** — the run
+- **A cancelled `lab up` leaves nothing in flight and frees the lock**: the run
   reaches a terminal `cancelled` state (the engine cancels the whole process
   group, ADR-0003) and a fresh operation is immediately accepted.
 - **`lab status` is answered from the store** (well under the 200ms budget) and
@@ -120,7 +120,7 @@ verifies by hand at the script level, now at the service level:
   `--live` additionally attaches a cluster probe without ever failing the read.
 
 **Reviewer check:** the run history the service writes is visible in the same
-store the CLI reads — `labctl runs list` shows `lab.up`/`lab.down` entries with
+store the CLI reads: `labctl runs list` shows `lab.up`/`lab.down` entries with
 status, duration, and logs.
 
 ---
@@ -153,7 +153,7 @@ traps bite every time, and both look like "the lab is broken" rather than like a
 cause. `scenarios/cluster-upgrade-drill/scripts/roll-node.sh` handles both; any
 other code path that adds a node must too.
 
-**The new node never goes Ready — containerd's CRI plugin failed to load.**
+**The new node never goes Ready - containerd's CRI plugin failed to load.**
 The colima/Docker VM defaults `fs.inotify.max_user_instances` to 128, which is
 too low for containerd's CNI watcher. The node comes up, k3s runs, and
 `containerd.log` says:
@@ -165,7 +165,7 @@ failed to create fsnotify watcher: too many open files
 
 `runtimes/k3d/up.sh` raises the limit to 512 via `raise_inotify_limits` at
 cluster-create time only, so a node created later never gets it. Raise the
-sysctl on the cluster's node containers, then restart the new node — containerd
+sysctl on the cluster's node containers, then restart the new node - containerd
 has already failed by the time the sysctl lands:
 
 ```sh
@@ -188,7 +188,7 @@ k3d image import go-api:v1.2.0 -c snowops
 carry node affinity. When the node goes, the data goes with it, but the PV and
 its claim survive, so the pod sits `Pending` forever with "didn't match
 PersistentVolume's node affinity". In this lab that routinely strands
-Prometheus, Alertmanager and Loki — which means a scenario graded from
+Prometheus, Alertmanager and Loki, which means a scenario graded from
 Prometheus can no longer be graded at all. Release the dead claims so their
 StatefulSets rebind:
 
@@ -207,8 +207,8 @@ discovered by diffing `kubectl get nodes` rather than assumed.
 
 Stopping and restarting Docker (on macOS: restarting the laptop, which stops
 colima) leaves the cluster in a state that looks like a broken lab and never
-recovers on its own. `kubectl get nodes` shows the agents — sometimes the server
-too — stuck `NotReady` with "Kubelet stopped posting node status", while
+recovers on its own. `kubectl get nodes` shows the agents, sometimes the server
+too, stuck `NotReady` with "Kubelet stopped posting node status", while
 `docker ps` shows every node container `Up`.
 
 The cause is one line in each node's log:
@@ -223,7 +223,7 @@ Docker hands the node containers their bridge addresses in whatever order they
 start, so after a restart the nodes have swapped IPs. k3s resolves the node's
 recorded address, finds no local interface holding it, and exits. It exits into
 k3d's entrypoint, which has already moved on to `until kubectl uncordon
-"$HOSTNAME"; do sleep 3; done` — a loop that can never succeed on a node with no
+"$HOSTNAME"; do sleep 3; done` - a loop that can never succeed on a node with no
 kubeconfig. The container therefore stays `Up` with no k3s inside it, Docker's
 restart policy never fires, and the node stays `NotReady` until someone
 restarts the container by hand. The second start works: by then the Node object

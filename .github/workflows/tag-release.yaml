@@ -1,4 +1,4 @@
-# Tag release — tag the release commit a merge to main brings in, then build it.
+# Tag release - tag the release commit a merge to main brings in, then build it.
 #
 # `make release` opens a pull request whose first commit sets LAB_VERSION to
 # X.Y.Z. When it merges, scripts/release-tag.sh tags that commit vX.Y.Z, and

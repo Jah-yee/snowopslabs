@@ -83,7 +83,7 @@ func resolveTarget(arg string) (category, provider string, err error) {
 		p, e := resolveProvider(arg)
 		return arg, p, e
 	}
-	// 2. The arg is "category/provider" — split at the last slash.
+	// 2. The arg is "category/provider" - split at the last slash.
 	if i := strings.LastIndex(arg, "/"); i > 0 {
 		cat, prov := arg[:i], arg[i+1:]
 		if _, e := reg.GetProvider(cat, prov); e == nil {
@@ -130,7 +130,7 @@ func platformUpRun(cmd *cobra.Command, args []string) error {
 
 	if err := errors.Join(errs...); err != nil {
 		return fmt.Errorf("the platform did not install cleanly:\n%w\n"+
-			"A \"TLS handshake timeout\" or pods stuck Pending mean Docker is short of memory — check with 'labctl doctor'.\n"+
+			"A \"TLS handshake timeout\" or pods stuck Pending mean Docker is short of memory - check with 'labctl doctor'.\n"+
 			"Installs are safe to repeat: re-run 'labctl platform up' (or 'labctl init')", err)
 	}
 	fmt.Println("\nPlatform installed successfully.")

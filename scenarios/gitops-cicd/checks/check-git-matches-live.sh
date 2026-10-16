@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # The GitOps invariant, graded end to end: what the repo declares is what the
-# cluster runs. Read the image and replica count out of Git itself — not out of
-# the Application's status, which only reports what ArgoCD believes — and
+# cluster runs. Read the image and replica count out of Git itself - not out of
+# the Application's status, which only reports what ArgoCD believes - and
 # compare against the live Deployment.
 #
 # This fails for drift in either direction: someone edited the cluster and
@@ -56,11 +56,11 @@ if [ "$want_replicas" != "$live_replicas" ]; then
 fi
 
 if [ "$fail" -ne 0 ]; then
-  echo "      Git is the source of truth — do not fix this with kubectl." >&2
+  echo "      Git is the source of truth - do not fix this with kubectl." >&2
   echo "      Push the value you want, then let ArgoCD converge:" >&2
   echo "        kubectl -n argocd patch application gitops-demo --type merge \\" >&2
   echo "          -p '{\"operation\":{\"initiatedBy\":{\"username\":\"admin\"},\"sync\":{\"revision\":\"main\"}}}'" >&2
   exit 1
 fi
 
-echo "OK: Git and the cluster agree — image=${want_image}, replicas=${want_replicas}."
+echo "OK: Git and the cluster agree - image=${want_image}, replicas=${want_replicas}."

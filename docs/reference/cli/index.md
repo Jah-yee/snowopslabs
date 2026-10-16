@@ -22,7 +22,7 @@ scenarios and faults, history, progress, snapshots, users) is kept per cluster
 in `~/.snowops/state/<cluster>/` (`SNOWOPS_HOME` moves `~/.snowops`). State an
 older labctl kept in the clone's `.labctl/` is moved there on first use.
 
-**Build from source** (contributors) — needs Go 1.25+ and Node 22+; see
+**Build from source** (contributors) - needs Go 1.25+ and Node 22+; see
 [CONTRIBUTING](../../../CONTRIBUTING.md#development-setup):
 
 ```bash
@@ -36,7 +36,7 @@ make cli-build        # builds bin/labctl with the UI embedded
 | `--project-dir` | auto-detected | The lab (a snowopslabs clone) to use; see [Install](#install) for how it is found otherwise |
 | `-v, --verbose` | `false` | Debug logging: config load, script exec, API calls |
 | `--app` | `APP_NAME` | The application scenarios and faults act on for this command. Challenges and learning paths refuse it: they are graded against the default app |
-| `--version` | — | Print the build version |
+| `--version` | - | Print the build version |
 
 ## Configuration
 
@@ -166,4 +166,4 @@ and a unified status view.
 | Platform status | `labctl platform status` | `make platform-status` |
 | Activate a scenario | `labctl scenario up observability-sre` | CLI only |
 | Web dashboard | `labctl ui` | CLI only |
-| Deploy every app | — | `make deploy-all` |
+| Deploy every app | - | `make deploy-all` |

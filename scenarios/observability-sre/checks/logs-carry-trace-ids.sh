@@ -33,7 +33,7 @@ if printf '%s' "$RESULT" | grep -q 'trace_id'; then
   exit 0
 fi
 
-# Distinguish "no logs at all" from "logs without trace ids" — they have
+# Distinguish "no logs at all" from "logs without trace ids" - they have
 # completely different causes and the learner should not have to guess which.
 ANY="$(ds_get loki "/loki/api/v1/query_range" \
   --get --data-urlencode "query={namespace=\"${NS}\"}" \

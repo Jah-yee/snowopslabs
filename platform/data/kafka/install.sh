@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Kafka via the Strimzi operator (KRaft, single combined node — k3d-minimal).
+# Kafka via the Strimzi operator (KRaft, single combined node - k3d-minimal).
 # Sub-component of the `data` category: install/remove independently of postgres.
 # Portable + idempotent.
 #
-# Config (env, with defaults — scripts never source .env themselves):
+# Config (env, with defaults - scripts never source .env themselves):
 #   STRIMZI_VERSION   pinned strimzi-kafka-operator chart version (config/versions.env)
 #   KAFKA_VERSION     Kafka broker version the operator should run
 #   KAFKA_NAMESPACE   namespace for the operator + Kafka CR (default: kafka)
@@ -15,7 +15,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 NAMESPACE="${KAFKA_NAMESPACE:-kafka}"
 CLUSTER="${KAFKA_CLUSTER:-lab-kafka}"
 # Strimzi 1.x is KRaft-only (ZooKeeper support is gone), which suits the CRs
-# below — they already use KRaft + KafkaNodePool. The broker version MUST be one
+# below - they already use KRaft + KafkaNodePool. The broker version MUST be one
 # the operator ships an image for: 1.2.0 supports Kafka 4.2.0-4.3.1 only, so a
 # 3.x KAFKA_VERSION is rejected. Verify before bumping either:
 #   helm template strimzi/strimzi-kafka-operator --version "$STRIMZI_VERSION" \
@@ -28,7 +28,7 @@ echo "Installing Strimzi Kafka operator ${STRIMZI_VERSION} (Kafka ${KAFKA_VERSIO
 helm repo add strimzi https://strimzi.io/charts/ --force-update
 helm repo update strimzi
 
-# Helm installs a chart's CRDs on FIRST install only — `helm upgrade` never
+# Helm installs a chart's CRDs on FIRST install only - `helm upgrade` never
 # touches them. Strimzi 1.x serves StrimziPodSet at core.strimzi.io/v1 while
 # 0.x served v1beta2, so upgrading the operator without this leaves it querying
 # an API version the cluster does not have, and it crash-loops with
@@ -36,7 +36,7 @@ helm repo update strimzi
 # unreconciled. Server-side apply is required: these CRDs exceed the annotation
 # size limit that client-side apply uses.
 # On a FIRST install Helm installs the crds/ directory itself and owns those
-# fields, so leave them alone — applying them here first makes Helm's own install
+# fields, so leave them alone - applying them here first makes Helm's own install
 # fail with a field-manager conflict on .spec.versions. Only an upgrade needs
 # this, because `helm upgrade` never touches CRDs.
 CRD_ERR="$(mktemp "${TMPDIR:-/tmp}/strimzi-crds.XXXXXX")"
@@ -89,13 +89,13 @@ echo "Waiting for the Strimzi operator to be ready..."
 kubectl rollout status deployment/strimzi-cluster-operator -n "$NAMESPACE" --timeout=180s
 
 # Broker metrics. A Kafka CR without spec.kafka.metricsConfig exposes NOTHING to
-# Prometheus — the kafka-exporter only covers consumer-group lag and topic
+# Prometheus - the kafka-exporter only covers consumer-group lag and topic
 # offsets, not broker health, throughput or under-replicated partitions.
 echo "Applying the JMX Prometheus exporter rules for the broker..."
 kubectl apply -n "$NAMESPACE" -f "$SCRIPT_DIR/jmx-exporter-config.yaml"
 
 # Kafka cluster: KRaft mode, one dual-role node, ephemeral storage (fits k3d).
-# apiVersion is kafka.strimzi.io/v1 — Strimzi 1.x dropped v1beta2 entirely.
+# apiVersion is kafka.strimzi.io/v1 - Strimzi 1.x dropped v1beta2 entirely.
 echo "Applying Kafka cluster '$CLUSTER' (KRaft, 1 node, ephemeral)..."
 cat <<EOF | kubectl apply -f -
 apiVersion: kafka.strimzi.io/v1
@@ -165,4 +165,4 @@ echo ""
 echo "Kafka installed successfully."
 echo "    Cluster: '$CLUSTER' in namespace '$NAMESPACE'"
 echo "    Bootstrap (in-cluster): ${CLUSTER}-kafka-bootstrap.${NAMESPACE}.svc:9092"
-echo "    Smoke test (produce/consume) — see docs/runbooks/10-stack-expansion.md"
+echo "    Smoke test (produce/consume) - see docs/runbooks/10-stack-expansion.md"

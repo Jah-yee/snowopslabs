@@ -12,7 +12,7 @@ run:
 
 linters:
   enable:
-    - errcheck        # unchecked errors — the #1 source of silent failure here
+    - errcheck        # unchecked errors - the #1 source of silent failure here
     - govet
     - staticcheck
     - ineffassign

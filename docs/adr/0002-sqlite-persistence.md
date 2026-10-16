@@ -1,4 +1,4 @@
-# ADR 0002 — SQLite (pure Go) for persistence
+# ADR 0002: SQLite (pure Go) for persistence
 
 **Status:** Accepted
 **Date:** 2026-07-26
@@ -12,7 +12,7 @@ writes to the JSON files were unsynchronised, and there was no way to query
 anything ("show me every failed check for this scenario").
 
 v2 needs durable runs, replayable logs, component inventory, sessions and an
-audit trail — with transactional integrity, since a half-written component
+audit trail, with transactional integrity, since a half-written component
 record makes teardown wrong.
 
 ## Decision
@@ -37,7 +37,7 @@ best-effort read.
 
 - **Easier:** real queries for results, leaderboards and audit; atomic writes;
   a single file to back up or mount on a PVC in server mode.
-- **Harder:** writes serialise. Acceptable — this is a single-cluster tool, not
+- **Harder:** writes serialise. Acceptable - this is a single-cluster tool, not
   an OLTP system. WAL mode and a bounded connection pool keep it comfortable.
 - **Testing:** tests open a database in `t.TempDir()`, so every store test is
   hermetic and parallel-safe.

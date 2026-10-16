@@ -1,7 +1,7 @@
 # java-api
 
 A second technology stack, so the workload contract can be validated against
-something that is not Go — and so a scenario can be run twice and compared.
+something that is not Go, and so a scenario can be run twice and compared.
 
 Its value is precisely that it behaves differently: slow start, GC pauses, and a
 memory floor roughly 25× the Go services'. Those differences are what make a
@@ -15,7 +15,7 @@ scenario grade the language rather than the engineer (see
 | `/health` | GET | Liveness probe (always 200) |
 | `/ready` | GET | Readiness probe (503 once toggled) |
 | `/version` | GET | Name and version |
-| `/toggle-failure` | POST | Flip readiness to failing — the `readiness-toggle` capability |
+| `/toggle-failure` | POST | Flip readiness to failing - the `readiness-toggle` capability |
 | `/metrics` | GET | Prometheus exposition |
 
 ## The contract
@@ -31,7 +31,7 @@ APP_CAPABILITIES=prometheus-metrics,readiness-toggle
 It does not claim `otlp-tracing`, so a scenario needing traces refuses it by
 name rather than failing halfway through.
 
-It has **no Helm chart of its own** — the shared workload chart deploys it from
+It has **no Helm chart of its own** - the shared workload chart deploys it from
 that contract, which is the same path a user's own application takes.
 
 ## No build tool, no dependencies
@@ -39,7 +39,7 @@ that contract, which is the same path a user's own application takes.
 The app compiles with `javac` alone. A Maven or Gradle build would resolve a
 dependency tree on first build, which breaks the lab's "activate offline in
 seconds" property. The trade is that the Prometheus exposition is written by
-hand, in `Metrics` — about sixty lines.
+hand, in `Metrics` - about sixty lines.
 
 **A real service would use Micrometer.** The mapping is direct: register a
 `Timer` named `http.server.request.duration` with tags `http.request.method`,

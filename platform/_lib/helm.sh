@@ -13,7 +13,7 @@
 #   Forbidden: updates to statefulset spec for fields other than 'replicas',
 #   'ordinals', 'template', ... are forbidden
 #
-# Deleting the StatefulSet with --cascade=orphan removes only the controller —
+# Deleting the StatefulSet with --cascade=orphan removes only the controller -
 # the pods and their PVCs keep running and are re-adopted by the new spec, so no
 # data is lost. Any other failure is returned unchanged.
 helm_upgrade_install() {

@@ -1,6 +1,6 @@
 # Kyverno ClusterPolicies for the security-compliance scenario.
 #
-# Every policy ships with validate.failureAction: Audit — the mode a real team
+# Every policy ships with validate.failureAction: Audit - the mode a real team
 # starts in. Audit records violations in policy reports without rejecting
 # anything, so turning policy on cannot take production down. Moving a policy to
 # Enforce once its violations are cleared is the drill this scenario grades.

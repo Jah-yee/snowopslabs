@@ -1,4 +1,4 @@
-# Challenges — Timed, Auto-graded Skills Assessments
+# Challenges: Timed, Auto-graded Skills Assessments
 
 Challenges wrap real production faults and scenarios into timed
 assessments: start the clock, diagnose and fix the problem, submit for
@@ -60,7 +60,7 @@ labctl challenge history                         # past runs
 ```
 
 `labctl incident hint` and `labctl incident solution` cost score too, and the
-solution costs what every remaining hint would — the fault's own hint ladder is
+solution costs what every remaining hint would - the fault's own hint ladder is
 the only one a challenge has, so reading it there rather than here cannot be
 free.
 
@@ -68,7 +68,7 @@ free.
 what is still failing and leaves the run open, so you can fix and submit again;
 the clock keeps running, which is the pressure. Ending the run takes either a
 passing submit or `challenge abort`. A passing submit also tears down the setup
-it injected, the same way `abort` does — so the lab is clean and the next
+it injected, the same way `abort` does, so the lab is clean and the next
 challenge can start.
 
 ## Reviewing a challenge
@@ -82,11 +82,11 @@ to calibrate `parTime`, checks each term of the score formula, and confirms
 
 ## Rules for challenge authors
 
-1. The challenge must be completable — test it end-to-end on a fresh lab.
+1. The challenge must be completable - test it end-to-end on a fresh lab.
 2. `setup.ref` must name an existing fault or scenario.
-3. `grading.useDetectionCheck: true` is preferred for incident challenges —
+3. `grading.useDetectionCheck: true` is preferred for incident challenges -
    it reuses the same detection check that the incident engine uses, so
    the grade is consistent with `labctl incident status`.
-4. Set a `parTime` that's achievable with one or two lookups — not so tight
+4. Set a `parTime` that's achievable with one or two lookups, not so tight
    that it punishes beginners or so loose that it doesn't reward speed.
-5. One active challenge at a time — `challenge abort` cleanly undoes the setup.
+5. One active challenge at a time - `challenge abort` cleanly undoes the setup.

@@ -3,7 +3,7 @@
 #
 # A rebuild under a mutable tag (:latest, or a tag reused while iterating) leaves
 # the Deployment spec byte-identical, so `helm upgrade` is a no-op, no new
-# ReplicaSet appears, and the running pods keep serving the previous build —
+# ReplicaSet appears, and the running pods keep serving the previous build -
 # while deploy reports success. Verified live before this was fixed: the node
 # held the new image, the pod held the old one, and /version still reported the
 # previous build.
@@ -55,7 +55,7 @@ teardown() {
 }
 
 @test "an unresolvable image leaves the annotation empty rather than failing the deploy" {
-  # docker cannot resolve the reference — a remote-only build, or an image
+  # docker cannot resolve the reference - a remote-only build, or an image
   # already in the cluster but not in the local daemon. Deploy must still work.
   stub_when docker "image inspect" 1 ""
 

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //
-// TrendChart — a small, dependency-free SVG line chart for the Results view
+// TrendChart - a small, dependency-free SVG line chart for the Results view
 // (W7-T04). It has to read correctly at three very different scales, which the
 // exit criteria call out explicitly:
 //
@@ -14,7 +14,7 @@
 // Points are ordered oldest→newest by the caller. The y-axis is auto-scaled to
 // the combined range of every series with a little headroom; the x-axis is
 // positional (evenly spaced by index), which is what a "trend over runs" reads
-// as — we are not claiming a true time axis.
+// as - we are not claiming a true time axis.
 
 export interface TrendPoint {
   /** Value plotted on the y-axis. */
@@ -53,7 +53,7 @@ export function TrendChart({ series, formatValue = String, height = 160, ariaLab
 
   if (nonEmpty.length === 0 || maxLen === 0) {
     return (
-      <div className="empty-state" style={{ padding: '24px 0' }} role="img" aria-label={`${ariaLabel} — no data yet`}>
+      <div className="empty-state" style={{ padding: '24px 0' }} role="img" aria-label={`${ariaLabel} - no data yet`}>
         Not enough data to chart yet.
       </div>
     )
@@ -125,7 +125,7 @@ export function TrendChart({ series, formatValue = String, height = 160, ariaLab
         })}
       </svg>
 
-      {/* Legend — only when more than one series shares the plot. */}
+      {/* Legend - only when more than one series shares the plot. */}
       {nonEmpty.length > 1 && (
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 6, fontSize: 12, color: 'var(--muted)' }}>
           {nonEmpty.map(s => (

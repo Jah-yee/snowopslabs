@@ -4,7 +4,7 @@ import { api } from '../api/client'
 import type { AppInfo } from '../types'
 
 interface WorkloadPickerProps {
-  /** The app selected when the dialog opens — the lab's current binding. */
+  /** The app selected when the dialog opens - the lab's current binding. */
   value: string
   onChange: (app: string) => void
   /** Capabilities the content needs the app to declare, from its prerequisites.
@@ -58,7 +58,7 @@ export function WorkloadPicker({ value, onChange, requiredCapabilities = [], pin
   return (
     <div className="field">
       <label className="field-label" htmlFor="workload-picker">Application to {verb}</label>
-      {error && <span className="field-help field-error">Could not load the app list ({error}) — continuing with {value}.</span>}
+      {error && <span className="field-help field-error">Could not load the app list ({error}) - continuing with {value}.</span>}
       <select
         id="workload-picker"
         className="select"
@@ -70,8 +70,8 @@ export function WorkloadPicker({ value, onChange, requiredCapabilities = [], pin
         {(apps ?? []).map(a => (
           <option key={a.name} value={a.name} disabled={missing(a).length > 0}>
             {a.name}
-            {a.deployed ? '' : ' — not deployed'}
-            {missing(a).length > 0 ? ` — cannot run this: no ${missing(a).join(', ')}` : ''}
+            {a.deployed ? '' : ' - not deployed'}
+            {missing(a).length > 0 ? ` - cannot run this: no ${missing(a).join(', ')}` : ''}
           </option>
         ))}
       </select>
@@ -81,11 +81,11 @@ export function WorkloadPicker({ value, onChange, requiredCapabilities = [], pin
           Pick an app that does, or add the capability to <code>apps/{value}/app.env</code> once {value} truly provides it.
         </span>
       ) : selected && !selected.deployed ? (
-        <span className="field-help field-warn">{value} is not deployed yet — deploy it from the Apps tab first.</span>
+        <span className="field-help field-warn">{value} is not deployed yet - deploy it from the Apps tab first.</span>
       ) : (
         <span className="field-help">
           {requiredCapabilities.length > 0
-            ? <>Needs {requiredCapabilities.join(', ')} — {eligible} of {apps?.length ?? 0} apps qualify. Namespace, port and metric come from the app itself.</>
+            ? <>Needs {requiredCapabilities.join(', ')} - {eligible} of {apps?.length ?? 0} apps qualify. Namespace, port and metric come from the app itself.</>
             : <>The same content runs against any app that meets the contract. Namespace, port and metric come from the app itself.</>}
         </span>
       )}

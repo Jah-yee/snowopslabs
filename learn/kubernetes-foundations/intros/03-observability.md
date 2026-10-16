@@ -1,4 +1,4 @@
-# Module 3 — Enable observability
+# Module 3: Enable observability
 
 ## What you'll do
 

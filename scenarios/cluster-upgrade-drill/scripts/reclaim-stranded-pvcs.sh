@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# reclaim-stranded-pvcs.sh — recover workloads left Pending after a node roll.
+# reclaim-stranded-pvcs.sh - recover workloads left Pending after a node roll.
 #
 # local-path PersistentVolumes carry node affinity, and a node roll strands them
 # in one of two ways. Both are handled here, because in practice the second is
@@ -11,7 +11,7 @@ set -euo pipefail
 #      no longer exists, so the pod schedules nowhere and sits Pending with
 #      "didn't match PersistentVolume's node affinity".
 #
-#   2. The replacement node REUSES THE NAME — which is what k3d does whenever it
+#   2. The replacement node REUSES THE NAME - which is what k3d does whenever it
 #      can. The affinity still matches, so the pod schedules happily and then
 #      cannot mount, because the directory the volume lived in went with the old
 #      container: "MountVolume.NewMounter initialization failed ... path ...
@@ -19,7 +19,7 @@ set -euo pipefail
 #      reports success while the pod is stuck for ever.
 #
 # This deletes only volumes whose data is already gone, so nothing recoverable is
-# discarded — but it is still a destructive operation, which is why it is a step
+# discarded - but it is still a destructive operation, which is why it is a step
 # you run deliberately rather than something the roll does behind your back.
 #
 # On a real cluster the lesson is the same one, learned earlier: workloads that
@@ -41,7 +41,7 @@ $(kubectl get pv -o jsonpath="{range .items[?(@.spec.nodeAffinity)]}{.metadata.n
 EOF
 
 # Case 2: the kubelet is telling us the backing directory is gone. This is the
-# only reliable signal for a name-reusing roll — the PV, the claim and the node
+# only reliable signal for a name-reusing roll - the PV, the claim and the node
 # all look perfectly healthy.
 GONE_PATHS="$(kubectl get events --all-namespaces --field-selector reason=FailedMount \
   -o jsonpath='{range .items[*]}{.message}{"\n"}{end}' 2>/dev/null |
@@ -69,7 +69,7 @@ echo "$STRANDED" | sed '/^$/d' | awk '{print "  "$2"  (was on "$3")"}'
 echo ""
 
 if [ "$DRY_RUN" = "true" ]; then
-  echo "DRY_RUN=true — nothing deleted."
+  echo "DRY_RUN=true - nothing deleted."
   exit 0
 fi
 

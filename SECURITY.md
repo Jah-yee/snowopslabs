@@ -6,9 +6,8 @@
 
 Instead, use one of:
 
-- **GitHub Private Vulnerability Reporting** — the "Report a vulnerability" button
-  under this repository's **Security** tab (preferred). _Maintainer: enable this
-  in repo settings — manual action E2._
+- **GitHub Private Vulnerability Reporting**: the "Report a vulnerability" button
+  under this repository's **Security** tab (preferred).
 - Email **admin@snowops.net** with details.
 
 Please include: a description, reproduction steps, affected version/commit, and
@@ -27,11 +26,11 @@ In scope: the SnowOps Labs engine, the `labctl` CLI, the SDK (`pkg/`), and
 first-party platform modules/scenarios in this repository.
 
 Out of scope: vulnerabilities in the third-party tools SnowOps Labs orchestrates
-(kubectl, helm, Istio, Vault, Prometheus, etc.) — report those upstream. Also out
+(kubectl, helm, Istio, Vault, Prometheus, etc.) - report those upstream. Also out
 of scope: issues that require a pre-compromised cluster or that are inherent to
 running attacker-supplied content. Scenarios and incidents run shell scripts
 against your cluster by design, so content loaded from an external root
-(`SNOWOPS_CONTENT_PATH`) is trusted code — only point it at sources you
+(`SNOWOPS_CONTENT_PATH`) is trusted code, only point it at sources you
 trust. See `docs/adr/0008-content-extensibility-seam.md`.
 
 ## Supported versions

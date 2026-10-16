@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# OpenCost — real-time Kubernetes cost monitoring backed by Prometheus.
+# OpenCost - real-time Kubernetes cost monitoring backed by Prometheus.
 # Deploys as a standalone Deployment + service exposing a UI on port 9090
 # (proxied through the cluster ingress). OpenCost reads resource usage from
 # the existing Prometheus and applies on-prem pricing defaults when no cloud
 # billing API is configured (suitable for k3d/lab use).
 #
-# Config (env, with defaults — scripts never source .env themselves):
+# Config (env, with defaults - scripts never source .env themselves):
 #   OPENCOST_CHART_VERSION  pinned Helm chart version (config/versions.env)
 #   MONITORING_NAMESPACE    namespace where Prometheus runs (default: monitoring)
 #   PROMETHEUS_SVC          Prometheus service address for OpenCost to query
@@ -29,8 +29,8 @@ helm repo update opencost
 
 # Point OpenCost at the in-cluster Prometheus. Setting external.url ALONE is not
 # enough: the opencost chart only honours external.url when external.enabled=true
-# (otherwise it builds PROMETHEUS_SERVER_ENDPOINT from its internal defaults —
-# prometheus-server.prometheus-system — which does not exist in this lab and
+# (otherwise it builds PROMETHEUS_SERVER_ENDPOINT from its internal defaults -
+# prometheus-server.prometheus-system - which does not exist in this lab and
 # leaves OpenCost unable to compute any allocation). Enable external and disable
 # internal so the endpoint we pass is the one the pod actually queries.
 helm upgrade --install opencost opencost/opencost \
@@ -53,4 +53,4 @@ kubectl rollout status deployment/opencost -n "$NAMESPACE" --timeout=120s
 echo ""
 echo "OpenCost installed."
 echo "  UI: http://opencost.${INGRESS_URL_SUFFIX:-${DOMAIN_SUFFIX}}"
-echo "  NOTE: k3d has no real billing — OpenCost uses on-prem default pricing (~\$0.048/CPU-hr)."
+echo "  NOTE: k3d has no real billing - OpenCost uses on-prem default pricing (~\$0.048/CPU-hr)."

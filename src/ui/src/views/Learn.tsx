@@ -57,7 +57,7 @@ export function Learn({ notify, requestConfirm }: LearnProps) {
   }
 
   // Reset a path's progress back to the beginning. Deliberately separate from a
-  // lab reset — the cluster and your progress are independent.
+  // lab reset - the cluster and your progress are independent.
   function resetPath(name: string) {
     requestConfirm({
       title: `Reset progress for "${name}"?`,
@@ -67,7 +67,7 @@ export function Learn({ notify, requestConfirm }: LearnProps) {
         setResetting(name)
         try {
           const progress = await api.resetLearnPath(name)
-          notify('success', `Reset "${name}"`, 'Progress cleared — start again from the first module.')
+          notify('success', `Reset "${name}"`, 'Progress cleared - start again from the first module.')
           if (selected?.path.name === name) {
             setSelected(prev => prev ? { ...prev, progress } : null)
           }
@@ -133,7 +133,7 @@ export function Learn({ notify, requestConfirm }: LearnProps) {
       {loadError && (
         <div className="banner banner-warn" role="alert">
           <Icon name="alert-triangle" size={16} className="banner-icon" />
-          <span className="banner-body">Refresh failed ({loadError}) — showing last known data.</span>
+          <span className="banner-body">Refresh failed ({loadError}) - showing last known data.</span>
           <span className="banner-actions">
             <button className="btn btn-sm" onClick={load} disabled={refreshing}>Retry</button>
           </span>

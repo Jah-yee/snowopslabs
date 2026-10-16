@@ -65,7 +65,7 @@ export function Compare(_props: CompareProps) {
       {loadError && (
         <div className="banner banner-warn" role="alert">
           <Icon name="alert-triangle" size={16} className="banner-icon" />
-          <span className="banner-body">Refresh failed ({loadError}) — showing last known data.</span>
+          <span className="banner-body">Refresh failed ({loadError}) - showing last known data.</span>
           <span className="banner-actions">
             <button className="btn btn-sm" onClick={load} disabled={refreshing}>Retry</button>
           </span>
@@ -80,7 +80,7 @@ export function Compare(_props: CompareProps) {
           A comparison runs one scenario against two or more applications under identical load and reports
           the same metrics for each, so a difference in the table is a difference between the apps rather
           than between two runs. Only one app is under load at a time, the warmup is excluded from the
-          measured window, and the scenario is torn down between apps — a run where any app fails is not
+          measured window, and the scenario is torn down between apps - a run where any app fails is not
           reported at all.
         </p>
         <p className="page-intro">
@@ -90,7 +90,7 @@ export function Compare(_props: CompareProps) {
         <dl className="cli-recipe">
           <dt>Compare two apps under the autoscaling scenario</dt>
           <dd><code>labctl compare run autoscaling-under-load --apps go-api,java-api</code></dd>
-          <dt>Longer window, higher rate (the window has a 2m floor — a rate needs two scrapes)</dt>
+          <dt>Longer window, higher rate (the window has a 2m floor - a rate needs two scrapes)</dt>
           <dd><code>labctl compare run autoscaling-under-load --apps go-api,java-api --rps 80 --window 5m</code></dd>
           <dt>List past runs, or print one as a table</dt>
           <dd><code>labctl compare list</code><br /><code>labctl compare show &lt;id&gt;</code></dd>
@@ -194,7 +194,7 @@ function ComparisonTable({ c }: { c: Comparison }) {
                   {c.measurements.map((m, i) => {
                     const v = m.values[metric.key]
                     if (typeof v !== 'number') {
-                      return <td key={m.app} className="tnum">—<span className="sr-only"> not measurable</span></td>
+                      return <td key={m.app} className="tnum">-<span className="sr-only"> not measurable</span></td>
                     }
                     const { verdict, pct } = i === 0
                       ? { verdict: 'none' as Verdict, pct: 0 }
@@ -228,7 +228,7 @@ function ComparisonTable({ c }: { c: Comparison }) {
       </div>
 
       <p className="card-footnote">
-        These are measurements, not a grade — the scenario's own checks decide pass and fail.
+        These are measurements, not a grade - the scenario's own checks decide pass and fail.
         A dash means the cluster exported no series for that metric.
       </p>
     </div>

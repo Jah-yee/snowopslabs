@@ -1,7 +1,7 @@
-# SnowOps Labs — brand assets
+# SnowOps Labs: brand assets
 
 The logo, icon mark, favicon, and social image. All are generated from a single
-source of truth — `docs/assets/gen/brand.mjs` — so they stay consistent with the
+source of truth, `docs/assets/gen/brand.mjs`, so they stay consistent with the
 web UI's design tokens (`src/ui/src/index.css`). Edit the generator, never the
 individual SVGs by hand.
 
@@ -30,8 +30,8 @@ The README picks the light/dark lockup automatically with a `<picture>` element.
 
 | Token | Hex | Role |
 |---|---|---|
-| `--accent` | `#38bdf8` | Primary (sky) — "SnowOps", links, focus |
-| `--accent-2` | `#818cf8` | Secondary (indigo) — gradient end |
+| `--accent` | `#38bdf8` | Primary (sky): "SnowOps", links, focus |
+| `--accent-2` | `#818cf8` | Secondary (indigo) - gradient end |
 | `--text-strong` | `#f8fafc` | Wordmark & crystal on dark |
 | `--on-accent` / ink | `#0f172a` | Wordmark on light |
 | background | `#05070d`→`#0f1729` | App / banner ground |

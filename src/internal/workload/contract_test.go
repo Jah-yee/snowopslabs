@@ -10,7 +10,7 @@ import (
 
 func TestParseContractDefaults(t *testing.T) {
 	// An app that declares nothing still has a usable base interface, but claims
-	// no capability — a claim must be explicit.
+	// no capability - a claim must be explicit.
 	got, err := ParseContract(nil)
 	if err != nil {
 		t.Fatalf("ParseContract(nil): %v", err)

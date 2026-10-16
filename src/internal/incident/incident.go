@@ -581,7 +581,7 @@ func (e *Engine) PickRandom(seed int64, category string) (*Fault, error) {
 		}
 	}
 	if len(pool) == 0 {
-		return nil, fmt.Errorf("no eligible faults%s — are the demo apps deployed?", catSuffix(category))
+		return nil, fmt.Errorf("no eligible faults%s - are the demo apps deployed?", catSuffix(category))
 	}
 	if seed == 0 {
 		seed = time.Now().UnixNano()

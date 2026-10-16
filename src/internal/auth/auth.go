@@ -7,8 +7,8 @@
 // When enabled, users live in users.yaml in the lab state directory, with one
 // of two roles:
 //
-//	operator    — full control (platform, runtime, lab, apps, services, …)
-//	participant — run challenges/incidents/learn + read status; may NOT mutate
+//	operator - full control (platform, runtime, lab, apps, services, …)
+//	participant - run challenges/incidents/learn + read status; may NOT mutate
 //	              platform/runtime/lab/apps/services.
 //
 // New passwords are hashed with Argon2id. VerifyPassword also accepts

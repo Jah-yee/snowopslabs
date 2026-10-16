@@ -1,4 +1,4 @@
-# Stable — move the `stable` branch to each published release.
+# Stable - move the `stable` branch to each published release.
 #
 # Users clone `--branch stable` and upgrade by merging origin/stable, so the
 # branch must always be the latest published (non-pre-)release. It moves when a

@@ -1,4 +1,4 @@
-# R13 — Observability pipeline: metrics, logs and traces
+# R13: Observability pipeline: metrics, logs and traces
 
 **Wave:** W4 · **Time:** ~30 minutes · **Cluster needed:** yes (k3d)
 
@@ -43,7 +43,7 @@ directly. A test fails on any labctl template there.
 **A legend that does not name its grouping label hides the data.** A query
 grouped `by (namespace)` with a legend of `available` draws one line per
 environment, all called "available". A legend naming a label the query does not
-return — `{{code}}` after the semconv rename to `http_response_status_code` —
+return, `{{code}}` after the semconv rename to `http_response_status_code`,
 renders empty. `labctl validate` lints both; see
 [the schema](../reference/scenario-schema.md).
 
@@ -138,10 +138,10 @@ CLI output being in ms. A panel labelled `ms` is wrong by 1000×.
 `otelhttp.WithFilter`. They run on a timer forever and bury the real traces.
 
 **Apps export OTLP to Grafana Alloy, never straight to the backend.** Alloy
-forwards to Tempo — see [ADR-0012](../adr/0012-alloy-as-trace-collector.md).
+forwards to Tempo - see [ADR-0012](../adr/0012-alloy-as-trace-collector.md).
 
 **Chaos Mesh ships no ServiceMonitor**, and its `prometheus.serviceMonitor`
-values key does not exist in the chart — setting it is silently ignored, so the
+values key does not exist in the chart - setting it is silently ignored, so the
 chaos panels stay blank forever. Declare the scrape yourself against
 `chaos-mesh-controller-manager`, whose metrics port is named `http` (10080), not
 `metrics`.
@@ -157,7 +157,7 @@ panel rather than an error.
 
 ---
 
-## §1 — Server-side metrics cover every route
+## §1: Server-side metrics cover every route
 
 The bug this catches: metrics recorded per handler, so a route added later is
 served but never counted.
@@ -176,12 +176,12 @@ kubectl -n go-api exec deploy/go-api -- wget -qO- 'localhost:8080/nonsense-XYZ' 
 kubectl -n go-api exec deploy/go-api -- wget -qO- localhost:8080/metrics | grep 'path="other"'
 ```
 
-**Expect:** `path="other"`. Unknown paths must collapse into one bucket — if the
+**Expect:** `path="other"`. Unknown paths must collapse into one bucket - if the
 raw path appears, any client can create unbounded series.
 
 ---
 
-## §2 — Load generation, and both sides of it
+## §2: Load generation, and both sides of it
 
 ```bash
 labctl traffic start --app go-api --profile steady --rps 25 --duration 15m
@@ -201,7 +201,7 @@ first row, the left column is the server's view and the right column is k6's.
 "Offered vs served" the k6 offered line and the app line sit on top of each
 other. A red region on every panel is the *No available pods* annotation: no
 pod of the app was Ready then. A
-persistent gap means requests are being lost before reaching the app — that is a
+persistent gap means requests are being lost before reaching the app - that is a
 finding, not noise.
 
 > **Failure signature:** request rate flat at ~0.3 req/s. That is kubelet probe
@@ -212,7 +212,7 @@ finding, not noise.
 
 ---
 
-## §3 — Logs reach Loki with the labels queries rely on
+## §3: Logs reach Loki with the labels queries rely on
 
 ```bash
 labctl scenario up observability-sre
@@ -230,12 +230,12 @@ In **Grafana → Explore → Loki**:
 ```
 
 **Expect:** both return lines. `{app="go-api"}` only works because Promtail
-relabels the pod's `app` label — if the first query works and the second does
+relabels the pod's `app` label - if the first query works and the second does
 not, the relabel config is missing.
 
 ---
 
-## §4 — Traces, through the collector
+## §4: Traces, through the collector
 
 ```bash
 kubectl -n monitoring get deploy alloy
@@ -258,7 +258,7 @@ In **Grafana → Explore → Tempo**, search `service.name=go-api`.
 **Expect:** traces, each with a server span and a child span.
 
 > **Failure signature:** every Tempo query errors or returns nothing while Alloy
-> logs look healthy. Check the datasource URL — Tempo's HTTP API is on **3200**.
+> logs look healthy. Check the datasource URL - Tempo's HTTP API is on **3200**.
 > A datasource on 3100 fails identically to "nothing was traced".
 >
 > **Failure signature:** every Prometheus, Loki and Tempo query answers
@@ -275,7 +275,7 @@ In **Grafana → Explore → Tempo**, search `service.name=go-api`.
 
 ---
 
-## §5 — Correlation: log → trace → log
+## §5: Correlation: log → trace → log
 
 In **Explore → Loki**, run `{namespace="go-api"} | json`, expand one line.
 
@@ -284,12 +284,12 @@ Tempo. From that trace, the span links back to the pod's logs.
 
 > **Failure signature:** logs stop entirely the moment tracing is enabled. That
 > is the tracing middleware replacing the access-log middleware instead of
-> wrapping it — `make test-apps` covers this
+> wrapping it - `make test-apps` covers this
 > (`TestAccessLog_LogsRequestsAndSkipsProbes`).
 
 ---
 
-## §6 — Alerts are actually loaded
+## §6: Alerts are actually loaded
 
 ```bash
 kubectl -n monitoring get prometheusrules
@@ -319,7 +319,7 @@ alert moves to Pending then Firing. Toggle it back afterwards.
 
 ---
 
-## §7 — Idempotency over an existing platform install
+## §7: Idempotency over an existing platform install
 
 The regression this covers: re-running the scenario when Loki and Tempo are
 already installed by the platform.
@@ -331,7 +331,7 @@ labctl scenario up observability-sre    # again
 ```
 
 **Expect:** both runs succeed. The second reports
-`loki: release already installed in monitoring — adopting it instead of
+`loki: release already installed in monitoring - adopting it instead of
 re-installing.`
 
 > **Failure signature:** `UPGRADE FAILED: ... updates to statefulset spec for
@@ -340,7 +340,7 @@ re-installing.`
 
 ---
 
-## §8 — Verify grades the pipeline, not just the pods
+## §8: Verify grades the pipeline, not just the pods
 
 ```bash
 labctl scenario verify observability-sre
@@ -360,7 +360,7 @@ suite that stays green with tracing off and no traffic is not grading anything.
 
 ---
 
-## §9 — Kafka metrics (event-driven-arch)
+## §9: Kafka metrics (event-driven-arch)
 
 The bug this catches: a dashboard that renders with every panel empty because
 nothing is being scraped.
@@ -378,7 +378,7 @@ curl -s 'http://prometheus.snowops.localhost/api/v1/targets?state=active' \
   | grep -o 'podMonitor/kafka/[a-z-]*' | sort -u
 ```
 
-**Expect:** both pools present and `up` — one target each. If `kafka-broker`
+**Expect:** both pools present and `up` - one target each. If `kafka-broker`
 also lists the exporter pod, its selector is matching `strimzi.io/kind`, which
 every Strimzi pod carries.
 
@@ -396,10 +396,10 @@ partitions, request latency) come from the JMX exporter configured by
 `spec.kafka.metricsConfig`; lag and offset panels come from kafka-exporter.
 
 > **Failure signature:** lag panels populated, broker panels empty. The Kafka CR
-> is missing `spec.kafka.metricsConfig` — the exporter alone publishes no broker
+> is missing `spec.kafka.metricsConfig` - the exporter alone publishes no broker
 > metrics.
 
-### §9a — Upgrading Strimzi across a major version
+### §9a: Upgrading Strimzi across a major version
 
 `helm upgrade` never touches CRDs, and Strimzi 1.x serves `v1` only. Attempting
 an in-place 0.x → 1.x upgrade must fail with an explanation, not a wall of CRD
@@ -428,7 +428,7 @@ Kafka 4.3.1 on Strimzi 1.2.0.
 
 ---
 
-## §10 — env-promotion drift detection
+## §10: env-promotion drift detection
 
 Uses the `env-promotion` scenario. The point is that the check grades live state,
 not a bookkeeping record.
@@ -450,7 +450,7 @@ kubectl -n env-staging set image deployment/go-api go-api=go-api:v9.9.9
 kubectl -n env-staging patch cm env-metadata --type=merge -p '{"data":{"declared_tag":"v9.9.9"}}'
 ```
 
-**Expect:** all three fail. The third is the important one — `declared_tag` and
+**Expect:** all three fail. The third is the important one - `declared_tag` and
 the Deployment spec now *agree*, and only looking at the running pods reveals
 that they are still serving the old image. A check that compared the record to
 the spec alone would call this a success.
@@ -483,7 +483,7 @@ labctl lab down
 `scenario down` must run `disable-tracing.sh`: confirm with
 `kubectl -n go-api get deploy go-api -o yaml | grep OTEL` returning nothing.
 
-It must also **leave the platform's releases installed** — Loki, Tempo and
+It must also **leave the platform's releases installed**: Loki, Tempo and
 Promtail are adopted, not owned:
 
 ```bash
@@ -504,14 +504,14 @@ First run: k3d `snowops` (k3s v1.33.6), 2026-09-04.
 | 1 | Every route metered, unknown paths bucketed | **PASS** | `/`, `/version` metered; unknown → `path="other"`; `/metrics` not self-metered |
 | 2 | k6 load visible client- and server-side | **PASS** | 25.3 req/s server vs 25.0 client. Found: k6 remote-write reports **seconds**, panel unit corrected |
 | 3 | Logs in Loki with `app` and `namespace` labels | **PASS** | both `{namespace="go-api"}` and `{app="go-api"}` return data |
-| 4 | Traces reach Tempo via Alloy | **PASS** | traces with `service.name=go-api`. Found: `/metrics` scrapes were being traced — now filtered |
+| 4 | Traces reach Tempo via Alloy | **PASS** | traces with `service.name=go-api`. Found: `/metrics` scrapes were being traced - now filtered |
 | 5 | log → trace → log correlation | **PASS** | `trace_id` from a log line resolved to a trace with parent + child spans |
 | 6 | Alert rules loaded and firing | **PASS** | 6 rules in 3 groups loaded (previously never loaded); `PodNotReady` + `HighErrorRate` fired on the injected failure |
 | 7 | Scenario idempotent over platform install | **PASS** | second activation adopts loki/promtail/tempo, 16s, no Forbidden error. Found: platform installs needed the same recovery → `platform/_lib/helm.sh`; adopt must also skip teardown |
 | 8 | Verify fails when the pipeline is broken | **PASS** | tracing off → 1 of 8 fails with runnable remediation. Found: remediation was not template-resolved; `alerting-rules-installed` was a tautology |
 | 9 | Kafka broker + lag metrics scraped, dashboards populated | **PASS** | both PodMonitors up; all 14 Kafka Overview queries return data. Found: broker selector matched the exporter too |
-| 9a | Strimzi major upgrade refuses in place and recovers via teardown | **PASS** | three separate walls found and handled — see ADR-0011 |
-| 10 | env-promotion drift check catches all three failure modes | **PASS** | fake promotion, wedged rollout, and spec==declared-but-stale-pods all caught. Found: `.status.containerStatuses[].image` reports a tag alias when tags share a digest — the check uses pod `.spec` instead |
+| 9a | Strimzi major upgrade refuses in place and recovers via teardown | **PASS** | three separate walls found and handled - see ADR-0011 |
+| 10 | env-promotion drift check catches all three failure modes | **PASS** | fake promotion, wedged rollout, and spec==declared-but-stale-pods all caught. Found: `.status.containerStatuses[].image` reports a tag alias when tags share a digest - the check uses pod `.spec` instead |
 
 Upgrades exercised in place on a live cluster: loki 6.6.2 → 18.12.0 (PVC
 preserved), tempo 1.10.3 → 2.3.0, grafana 10.5.15 → 13.2.0,

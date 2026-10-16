@@ -50,8 +50,8 @@ type AppStatus struct {
 	Deployed  bool      `json:"deployed"`
 }
 
-// HPAStatus holds the live autoscaler state for a Deployment — replica counts,
-// bounds, and the driving metric vs its target — the same info `kubectl get hpa`
+// HPAStatus holds the live autoscaler state for a Deployment - replica counts,
+// bounds, and the driving metric vs its target - the same info `kubectl get hpa`
 // prints, structured for the UI. Present is false when no HPA targets the
 // Deployment (KEDA-created HPAs count; KEDA renders a normal HPA underneath).
 type HPAStatus struct {
@@ -75,7 +75,7 @@ func GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 
 	ctxOut, err := kubectl(ctx, "config", "current-context")
 	if err != nil {
-		return info, nil //nolint:nilerr // no current-context means not connected — report empty info, not an error
+		return info, nil //nolint:nilerr // no current-context means not connected - report empty info, not an error
 	}
 	info.Context = ctxOut
 	if err := Reachable(ctx); err != nil {
@@ -199,7 +199,7 @@ func GetAppStatus(ctx context.Context, appName, namespace string) (*AppStatus, e
 }
 
 // GetHPAStatus returns the HPA state for a Deployment, or Present=false when
-// none targets it. "No HPA" is never an error — it just means "not autoscaled".
+// none targets it. "No HPA" is never an error - it just means "not autoscaled".
 func GetHPAStatus(ctx context.Context, namespace, deploymentName string) (*HPAStatus, error) {
 	out, err := kubectl(ctx, "get", "hpa", "-n", namespace, "-o", "json")
 	if err != nil {
@@ -287,7 +287,7 @@ func parseHPAList(raw, deploymentName string) (*HPAStatus, error) {
 	return &HPAStatus{Present: false}, nil
 }
 
-// metricNameAndValue extracts a v2 HPA metric's name and rendered value —
+// metricNameAndValue extracts a v2 HPA metric's name and rendered value -
 // target when target is true, else current. Handles External (KEDA/Prometheus)
 // and Resource (cpu/memory) metrics, the two kinds this lab produces. Values are
 // humanized (300m → 0.3) and KEDA's "s0-" scaler prefix is stripped from names.

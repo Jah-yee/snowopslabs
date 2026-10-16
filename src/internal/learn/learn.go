@@ -19,7 +19,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Check mirrors the scenario checks schema — reused for module completion.
+// Check mirrors the scenario checks schema - reused for module completion.
 type Check struct {
 	Name string `yaml:"name"`
 	Type string `yaml:"type"` // http | script | promql

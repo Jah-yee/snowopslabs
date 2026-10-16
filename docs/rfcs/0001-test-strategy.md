@@ -1,4 +1,4 @@
-# RFC 0001 — Tests that find the bugs before a learner does
+# RFC 0001: Tests that find the bugs before a learner does
 
 **Status:** Accepted
 **Author:** @sagar2395
@@ -168,7 +168,7 @@ The table for `TESTING.md`:
 | A user journey | A Playwright journey against the real binary |
 | A bug fix | The failing test first, named in the commit message |
 
-### Phase 0 — Make the gates honest (2–3 days)
+### Phase 0: Make the gates honest (2–3 days)
 
 Nothing here writes product tests; it stops the suite from getting worse and
 makes the documents true.
@@ -198,7 +198,7 @@ makes the documents true.
 **Done when:** CI fails a pull request that lowers any package's coverage,
 adds untested lines, or changes code without a test.
 
-### Phase 1 — Content: every check proves it can fail (6–9 days)
+### Phase 1: Content: every check proves it can fail (6–9 days)
 
 The largest source of bugs gets a hermetic harness.
 
@@ -230,7 +230,7 @@ Order by fix history: `security-compliance`, `secrets-management`,
 **Done when:** every verified item has `untouched` and `solved` fixtures, and
 a check that passes with no work done fails `make test`.
 
-### Phase 2 — CLI and API contracts (7–10 days)
+### Phase 2: CLI and API contracts (7–10 days)
 
 1. **API route table.** One table-driven suite walks the router and fails for
    any route without a row. A row asserts the success body, one error
@@ -260,7 +260,7 @@ the move cannot change a response unnoticed.
 (`k8s`, `runtime`, `services`, `lab`, `learn`, `pkg/extension`) are over 80%
 and off it.
 
-### Phase 3 — UI (6–8 days)
+### Phase 3: UI (6–8 days)
 
 1. Replace `vi.mock('../api/client')` in the eight view tests with MSW
    handlers that serve the contract goldens.
@@ -278,7 +278,7 @@ and off it.
 **Done when:** no path is excluded from the UI gate, all seven journeys run on
 every pull request, and no view test stubs a module.
 
-### Phase 4 — The cluster suite (5–8 days, plus CI time)
+### Phase 4: The cluster suite (5–8 days, plus CI time)
 
 Some bugs exist only on a cluster: an alert that cannot fire on k3s, a
 NetworkPolicy the CNI does not enforce, an operator's backoff.
@@ -299,7 +299,7 @@ NetworkPolicy the CNI does not enforce, an operator's backoff.
 **Done when:** all 19 verified items pass nightly, and `verified: true` is
 set only by that job's result.
 
-### Phase 5 — Keeping it true (1–2 days)
+### Phase 5: Keeping it true (1–2 days)
 
 - A weekly mutation run on the core packages with a floor on the kill rate.
 - A nightly `go test -count=3 -shuffle=on` and three Playwright repeats to
@@ -311,14 +311,14 @@ set only by that job's result.
 
 | Order | Phase | Effort (days) | Catches |
 |---|---|---|---|
-| 1 | 0 — Honest gates | 2–3 | Regressions and untested new code |
-| 2 | 1 — Content fixtures | 6–9 | Checks that pass with no work or a wrong fix; leaked answers; raw templates |
-| 3 | 2 — API routes and goldens (items 1–2) | 3–4 | Wrong or missing API responses |
-| 4 | 3 — MSW and journeys (items 1, 4) | 3–4 | Go and UI drifting apart; broken flows |
-| 5 | 2 — CLI, cancellation, fuzz (items 3–5) | 4–6 | Wrong CLI output and exit codes; orphaned work |
-| 6 | 4 — Cluster suite | 5–8 | Anything only a cluster shows |
-| 7 | 3 — Remaining views and components | 3–4 | UI state bugs |
-| 8 | 5 — Mutation, flakes, time budget | 1–2 | Tests that stop meaning anything |
+| 1 | 0 - Honest gates | 2–3 | Regressions and untested new code |
+| 2 | 1 - Content fixtures | 6–9 | Checks that pass with no work or a wrong fix; leaked answers; raw templates |
+| 3 | 2 - API routes and goldens (items 1–2) | 3–4 | Wrong or missing API responses |
+| 4 | 3 - MSW and journeys (items 1, 4) | 3–4 | Go and UI drifting apart; broken flows |
+| 5 | 2: CLI, cancellation, fuzz (items 3–5) | 4–6 | Wrong CLI output and exit codes; orphaned work |
+| 6 | 4 - Cluster suite | 5–8 | Anything only a cluster shows |
+| 7 | 3 - Remaining views and components | 3–4 | UI state bugs |
+| 8 | 5: Mutation, flakes, time budget | 1–2 | Tests that stop meaning anything |
 
 Total 27 to 40 days. Each phase is independent pull requests of a day or two.
 

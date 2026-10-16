@@ -16,7 +16,7 @@ import (
 )
 
 // ErrNoMoreHints is returned when every hint has been revealed.
-var ErrNoMoreHints = errors.New("no more hints — you've seen them all")
+var ErrNoMoreHints = errors.New("no more hints - you've seen them all")
 
 var hintHeading = regexp.MustCompile(`(?m)^## Hint \d+\s*$`)
 

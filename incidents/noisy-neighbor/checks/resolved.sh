@@ -3,7 +3,7 @@
 # monopolise the node's CPU.
 #
 # It deliberately does NOT require the deployment to be deleted. The hints and
-# the solution both offer capping it — a CPU limit, a LimitRange, a quota — as
+# the solution both offer capping it - a CPU limit, a LimitRange, a quota - as
 # the grown-up answer, and an existence check fails a learner who took exactly
 # that advice. Grade the contention, not the object.
 set -euo pipefail
@@ -22,7 +22,7 @@ if [ "${REPLICAS:-0}" -eq 0 ]; then
   exit 0
 fi
 
-# millicores <quantity> — "500m", "2", "1500m" all become an integer of millicores.
+# millicores <quantity> - "500m", "2", "1500m" all become an integer of millicores.
 millicores() {
   awk -v q="$1" 'BEGIN {
     if (q == "") { print 0 }
@@ -36,7 +36,7 @@ millicores() {
 # Reading every pod in the namespace looks equivalent and is not: for a minute
 # after a rollout the old pods are still there, still in phase Running, still
 # carrying the old resources. Judged against those, a learner who has just
-# applied the correct fix is told they have not fixed it — and the next thing
+# applied the correct fix is told they have not fixed it - and the next thing
 # they do is distrust the grader.
 #
 # The pods have to be read rather than the Deployment's template, because a
@@ -65,7 +65,7 @@ fi
 
 # A limit is only a fix if it is small enough to leave the node usable. Capping
 # the workload at the size of the whole machine satisfies "has a limit" while
-# the contention continues unchanged — the check would grade the letter of the
+# the contention continues unchanged - the check would grade the letter of the
 # fix and miss its point.
 BIGGEST=0
 for lim in $LIMITS; do
@@ -84,10 +84,10 @@ if [ "$ALLOC" -gt 0 ] && [ "$TOTAL" -gt "$BUDGET" ]; then
   exit 1
 fi
 
-echo "OK: all ${REPLICAS} pod(s) are capped at ${BIGGEST}m, ${TOTAL}m in total on a ${ALLOC}m node —"
+echo "OK: all ${REPLICAS} pod(s) are capped at ${BIGGEST}m, ${TOTAL}m in total on a ${ALLOC}m node -"
 echo "    they can no longer starve their neighbours."
 # Capping is the production answer, so the tenant is still on the node once the
-# incident closes — and `incident resolve` with no argument refuses, because
+# incident closes - and `incident resolve` with no argument refuses, because
 # there is no longer an active incident to resolve. Say so here: this is the
 # last thing the learner reads.
 echo "    The tenant is still running, capped. Evict it with:"

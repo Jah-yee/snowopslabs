@@ -1,10 +1,10 @@
 # Developer Certificate of Origin
 
-SnowOps Labs uses the Developer Certificate of Origin (DCO) — the same
+SnowOps Labs uses the Developer Certificate of Origin (DCO) - the same
 lightweight mechanism the Linux kernel and many CNCF projects use. It replaces a
 CLA: there is no separate agreement to sign and no bot account to authorize.
 
-To contribute, add a `Signed-off-by` line to every commit — Git does this for
+To contribute, add a `Signed-off-by` line to every commit - Git does this for
 you with the `-s` flag:
 
 ```bash

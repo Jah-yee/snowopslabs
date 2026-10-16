@@ -10,7 +10,7 @@ interface LeaderboardProps {
 }
 
 function formatMttr(seconds: number) {
-  if (seconds <= 0) return '—'
+  if (seconds <= 0) return '-'
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
   return `${m}:${String(s).padStart(2, '0')}`
@@ -37,7 +37,7 @@ export function Leaderboard(_props: LeaderboardProps) {
       {loadError && (
         <div className="banner banner-warn" role="alert">
           <Icon name="alert-triangle" size={16} className="banner-icon" />
-          <span className="banner-body">Refresh failed ({loadError}) — showing last known data.</span>
+          <span className="banner-body">Refresh failed ({loadError}) - showing last known data.</span>
           <span className="banner-actions">
             <button className="btn btn-sm" onClick={load} disabled={refreshing}>Retry</button>
           </span>
@@ -55,7 +55,7 @@ export function Leaderboard(_props: LeaderboardProps) {
         {entries.length === 0 ? (
           <div className="empty-state">
             <span className="empty-icon"><Icon name="leaderboard" size={24} /></span>
-            <div>No results yet — run a challenge or incident.</div>
+            <div>No results yet - run a challenge or incident.</div>
           </div>
         ) : (
           <div className="table-scroll">

@@ -1,4 +1,4 @@
-# Helm Chart Validation — runs on every PR to main.
+# Helm Chart Validation - runs on every PR to main.
 #
 # Its jobs ("Discover charts", "Validate (…)") are REQUIRED status checks in the
 # protect-main ruleset. A required check must never be path-filtered: on a PR

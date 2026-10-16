@@ -2,7 +2,7 @@
 # Shared access to the lab's in-cluster Git repository.
 #
 # Every check that grades GitOps has to read what Git actually declares, not
-# what ArgoCD believes it declares — the gap between those two is the whole
+# what ArgoCD believes it declares - the gap between those two is the whole
 # subject. One helper so no two checks can disagree about how to look.
 
 GIT_NS="gitops"
@@ -13,7 +13,7 @@ git_pod() {
     -o jsonpath='{.items[?(@.status.phase=="Running")].metadata.name}' 2>/dev/null | awk '{print $1}'
 }
 
-# git_repo <git args...> — run git inside the server against the bare repo.
+# git_repo <git args...> - run git inside the server against the bare repo.
 git_repo() {
   pod="$(git_pod)"
   [ -n "${pod:-}" ] || return 1

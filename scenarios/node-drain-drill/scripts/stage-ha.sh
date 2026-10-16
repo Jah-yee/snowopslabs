@@ -2,7 +2,7 @@
 set -euo pipefail
 . "$(dirname "$0")/../../_lib/workload.sh"
 
-# stage-ha.sh — put the workload into the shape the drill needs: enough replicas
+# stage-ha.sh - put the workload into the shape the drill needs: enough replicas
 # that a PodDisruptionBudget has something to protect.
 #
 # Staging only. The PDB and the drain itself are the learner's work: a drill that
@@ -32,7 +32,7 @@ kubectl -n "$APP_NAMESPACE" scale deployment "$WORKLOAD" --replicas="$REPLICAS"
 # would fail on a lab with fewer schedulable nodes than replicas.
 # Record which nodes hold the workload before the drain.
 #
-# The drill is graded on pods having moved, read from the cluster — not from a
+# The drill is graded on pods having moved, read from the cluster - not from a
 # metric. Draining a node takes Prometheus down with it whenever that node holds
 # its local-path volume, so a Prometheus-based "was a node cordoned" check has a
 # hole exactly where the drill happens: the observer is evicted by the event it
@@ -51,7 +51,7 @@ for _ in $(seq 1 60); do
   ready="$(kubectl -n "$APP_NAMESPACE" get deployment "$WORKLOAD" \
     -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo 0)"
   if [ "${ready:-0}" -ge 2 ]; then
-    echo "${WORKLOAD} has ${ready} ready replicas — staged."
+    echo "${WORKLOAD} has ${ready} ready replicas - staged."
     record_baseline
     exit 0
   fi

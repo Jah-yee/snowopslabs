@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sagar2395/snowopslabs/internal/executor"
 	"github.com/sagar2395/snowopslabs/internal/labtest"
 	"github.com/sagar2395/snowopslabs/internal/platform"
 )
@@ -170,4 +171,25 @@ func TestStatus_ClusterDown(t *testing.T) {
 		t.Errorf("status does not report the cluster as unreachable with kubectl's reason:\n%s", r.stdout)
 	}
 	l.golden("status_cluster_down", r)
+}
+
+// With --deploy-prereqs a missing component is installed, and the learner is
+// told which one and why before its install script runs.
+func TestEnsurePlatformPrereqs_AutoInstall(t *testing.T) {
+	root := t.TempDir()
+	writeProvider(t, root, "cost/opencost")
+	oldReg, oldExec := reg, scriptExec
+	t.Cleanup(func() { reg, scriptExec = oldReg, oldExec })
+	reg = platform.NewRegistry(root)
+	scriptExec = executor.New(root)
+	stubKubectl(t)
+
+	var out bytes.Buffer
+	if err := ensurePlatformPrereqs(t.Context(), &out, []string{"cost/opencost"}, true); err != nil {
+		t.Fatalf("ensurePlatformPrereqs: %v", err)
+	}
+	want := "Platform prerequisite cost/opencost is not installed - installing cost/opencost..."
+	if !strings.Contains(out.String(), want) {
+		t.Errorf("output does not say %q:\n%s", want, out.String())
+	}
 }

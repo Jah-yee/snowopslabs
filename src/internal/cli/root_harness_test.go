@@ -187,7 +187,7 @@ var (
 	portRe     = regexp.MustCompile(`(127\.0\.0\.1|localhost):\d{4,5}`)
 	// A followed run's header shows its state when printed, which depends on
 	// whether the engine has picked it up yet; the summary line pins the outcome.
-	runStateRe = regexp.MustCompile(`(?m)^(Run <run> — .+) \((queued|running|succeeded|failed|cancelled|timed_out)\)$`)
+	runStateRe = regexp.MustCompile(`(?m)^(Run <run> - .+) \((queued|running|succeeded|failed|cancelled|timed_out)\)$`)
 	trailingWS = regexp.MustCompile(`[ \t]+\n`)
 )
 

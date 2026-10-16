@@ -1,6 +1,6 @@
 # KEDA ScaledObject: scale {{.WorkloadName}} on its Prometheus request rate (RPS).
 # The Prometheus server address reads the monitoring namespace from the engine
-# template ({{.MonitoringNamespace}}) — no hardcoded namespace (rule 3/4).
+# template ({{.MonitoringNamespace}}), no hardcoded namespace (rule 3/4).
 #
 # Threshold is RPS-per-replica: desiredReplicas = ceil(totalRPS / threshold),
 # clamped to [minReplicaCount, maxReplicaCount]. With the spike profile holding

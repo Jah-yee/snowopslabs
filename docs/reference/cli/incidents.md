@@ -36,7 +36,7 @@ labctl incident inject oom-kill --app java-api
 
 The app is **recorded with the incident**. `status`, `hint` and `resolve` read it
 back, so they act on the workload that was broken rather than on whatever
-`APP_NAME` says — a detection check pointed at the wrong namespace passes, and a
+`APP_NAME` says - a detection check pointed at the wrong namespace passes, and a
 passing check clears the incident and scores it solved.
 
 The UI asks the same question in its inject dialog.
@@ -54,9 +54,9 @@ labctl incident inject --random --category network
 | Flag | Default | Meaning |
 |---|---|---|
 | `--random` | off | pick a random eligible fault |
-| `--seed` | — | seed for `--random`, for reproducible team exercises |
-| `--category` | — | restrict `--random` to `workload`, `network`, `resources`, `storage` or `config` |
-| `--silent` | off | do not reveal which fault was injected: the inject prints neither the fault's name nor its script's output, `incident list` does not mark the active fault, `incident status` shows `(hidden — silent mode)` until the check passes, and the run history records the inject with the target `(hidden)` and withholds its output (`labctl runs logs` and `GET /runs/{id}/logs` refuse it) |
+| `--seed` | - | seed for `--random`, for reproducible team exercises |
+| `--category` | - | restrict `--random` to `workload`, `network`, `resources`, `storage` or `config` |
+| `--silent` | off | do not reveal which fault was injected: the inject prints neither the fault's name nor its script's output, `incident list` does not mark the active fault, `incident status` shows `(hidden - silent mode)` until the check passes, and the run history records the inject with the target `(hidden)` and withholds its output (`labctl runs logs` and `GET /runs/{id}/logs` refuse it) |
 | `--force` | off | inject even when another incident is active |
 | `--deploy-prereqs` | off | install the platform components the fault needs, and build and deploy the apps it lists under `prerequisites.apps` (and its target, when that is an app), if they are not running. Without it, a missing app stops the inject with the command that deploys it. |
 
@@ -69,7 +69,7 @@ labctl incident inject --random --category network
   deployed" because the cluster could not be asked.
 - `resolve.sh` always restores the lab, regardless of partial manual fixes.
 - The first `incident status` call timestamps *time-to-check*, the detection
-  proxy. Resolution — the detection check passing, or the escape hatch — closes
+  proxy. Resolution (the detection check passing, or the escape hatch) closes
   the run.
 - When a hand fix makes `incident status` pass, it then runs the fault's
   `resolve.sh` as a recorded resolve. That removes the armed alert rule and the
@@ -80,8 +80,8 @@ labctl incident inject --random --category network
 
 ## On-call drills
 
-Faults that declare an `expectAlert` — `oom-kill`, `crashloop-bad-config` and
-`bad-deploy-rollout` — arm a PrometheusRule when injected. Alertmanager routes
+Faults that declare an `expectAlert` - `oom-kill`, `crashloop-bad-config` and
+`bad-deploy-rollout`: arm a PrometheusRule when injected. Alertmanager routes
 the firing alert to the in-cluster pager (`labctl service up pager`), or to
 `ALERT_WEBHOOK_URL` if that was set when `monitoring/metrics` was installed.
 

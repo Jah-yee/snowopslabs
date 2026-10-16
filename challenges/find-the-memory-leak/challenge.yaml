@@ -3,7 +3,7 @@ displayName: "Find the memory leak"
 description: >
   The ticket says "memory leak in go-api". What is known: the workload came
   up clean, served fine for a minute, and then began restarting over and
-  over once traffic arrived. It is still restarting now. Stop it — and leave
+  over once traffic arrived. It is still restarting now. Stop it, and leave
   the workload able to serve the traffic it is getting.
 category: resources
 parTime: "8m"

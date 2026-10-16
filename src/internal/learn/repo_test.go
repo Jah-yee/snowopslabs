@@ -16,7 +16,7 @@ func TestRepo_AllPathsValid(t *testing.T) {
 
 	entries, err := os.ReadDir(learnDir)
 	if os.IsNotExist(err) {
-		t.Skip("learn/ directory not found — no paths to validate")
+		t.Skip("learn/ directory not found - no paths to validate")
 	}
 	if err != nil {
 		t.Fatalf("readdir learn/: %v", err)
@@ -49,7 +49,7 @@ func TestRepo_AllPathsValid(t *testing.T) {
 		})
 	}
 	if validated == 0 && len(entries) > 0 {
-		t.Error("no valid paths found — check learn/ directory structure")
+		t.Error("no valid paths found - check learn/ directory structure")
 	}
 }
 

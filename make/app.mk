@@ -9,7 +9,7 @@
 #
 # `filter %/` keeps only the trailing-slash (directory) entries: GNU make 3.81
 # that Apple ships returns files from `wildcard apps/*/` too, but only real
-# directories carry the trailing slash — so this is correct on make 3.81 and 4.x.
+# directories carry the trailing slash - so this is correct on make 3.81 and 4.x.
 APPS := $(notdir $(patsubst %/,%,$(filter %/,$(wildcard apps/*/))))
 
 
@@ -33,7 +33,7 @@ destroy-app:
 
 # Per-app helm/manifest lint via the app's deploy strategy. Named app-lint so
 # it does not collide with the repo-wide `lint` (static analysis) in the root
-# Makefile — `make app-lint APP_NAME=<name>`.
+# Makefile - `make app-lint APP_NAME=<name>`.
 app-lint:
 	@bash src/engine/deploy.sh lint $(APP_NAME)
 

@@ -1,12 +1,12 @@
 # SnowOps Labs Trademark Policy (DRAFT)
 
-> **Status: DRAFT — pending legal review and trademark registration** (manual
+> **Status: DRAFT - pending legal review and trademark registration** (manual
 > actions B3/B4). This policy takes effect once the wordmark is registered. Until
 > then it states intent.
 
 "**SnowOps Labs**", the SnowOps Labs logo, and related marks (the "Marks") are
 trademarks of the project owner. The Marks are **not** licensed under the
-[Apache-2.0 license](LICENSE) — Apache-2.0 covers the *code*, not the *brand*
+[Apache-2.0 license](LICENSE): Apache-2.0 covers the *code*, not the *brand*
 (see License §6).
 
 This policy exists so the community can use and build on SnowOps Labs freely while

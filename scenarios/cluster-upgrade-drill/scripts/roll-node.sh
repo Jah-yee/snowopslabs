@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# roll-node.sh — replace ONE already-drained worker node with a fresh one on the
+# roll-node.sh - replace ONE already-drained worker node with a fresh one on the
 # target k3s version.
 #
 # This script deliberately does NOT cordon or drain. Those are the transferable
@@ -58,7 +58,7 @@ fi
 if [ -n "$target_minor" ] && [ -n "$server_minor" ] && [ "$target_minor" -gt "$server_minor" ]; then
   echo "WARN: target ${TARGET_K3S_VERSION} is newer than the ${server_ver} control plane." >&2
   echo "      Real clusters upgrade the control plane FIRST. k3d cannot, so this" >&2
-  echo "      drill rolls workers only — see the scenario's honest-scope tip." >&2
+  echo "      drill rolls workers only - see the scenario's honest-scope tip." >&2
 fi
 
 # --- Refuse to run until the learner has cordoned and drained ----------------
@@ -73,7 +73,7 @@ remaining="$(kubectl get pods --all-namespaces --field-selector "spec.nodeName=$
   -o jsonpath='{range .items[*]}{.metadata.ownerReferences[0].kind}{" "}{.metadata.namespace}{"/"}{.metadata.name}{"\n"}{end}' \
   2>/dev/null | grep -v '^DaemonSet ' || true)"
 if [ -n "$remaining" ]; then
-  echo "ERROR: ${NODE} still hosts non-DaemonSet pods — it is not drained:" >&2
+  echo "ERROR: ${NODE} still hosts non-DaemonSet pods - it is not drained:" >&2
   echo "$remaining" >&2
   die "finish the drain first: kubectl drain ${NODE} --ignore-daemonsets --delete-emptydir-data"
 fi
@@ -94,8 +94,8 @@ if [ -n "$stranded" ]; then
   sleep 5
 fi
 
-# Identify nodes by UID, not by name. k3d reuses the name whenever it can — a
-# node already called agent-1-0 comes back as agent-1-0 — so a name diff finds
+# Identify nodes by UID, not by name. k3d reuses the name whenever it can - a
+# node already called agent-1-0 comes back as agent-1-0 - so a name diff finds
 # nothing and concludes the replacement never registered, when in fact it
 # registered perfectly. A recreated node always has a new UID.
 before="$(kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.uid}{"\n"}{end}' | sort)"
@@ -116,8 +116,8 @@ if ! k3d node create "${base}" \
   --role agent \
   --image "rancher/k3s:${TARGET_K3S_VERSION}" \
   --wait >"$create_log" 2>&1; then
-  # Do not swallow this. The failure that follows — "the replacement node did
-  # not register" — describes a symptom, and the cause is in here.
+  # Do not swallow this. The failure that follows - "the replacement node did
+  # not register" - describes a symptom, and the cause is in here.
   echo "ERROR: k3d could not create the replacement node:" >&2
   tail -5 "$create_log" >&2
   rm -f "$create_log"
@@ -135,7 +135,7 @@ for n in $(docker ps --filter "label=k3d.cluster=${CLUSTER_NAME}" --format '{{.N
 done
 
 # Registration lags container creation by several seconds, so poll rather than
-# read once — the single read raced the kubelet and reported a failure that had
+# read once - the single read raced the kubelet and reported a failure that had
 # not happened.
 NEW_NODE=""
 for _ in $(seq 1 30); do
@@ -184,7 +184,7 @@ for img in $LOCAL_IMAGES; do
 done
 
 # Silence here is expensive: an image a running pod needs, that is not in the
-# local daemon, cannot be imported and is in no registry either — so the pod
+# local daemon, cannot be imported and is in no registry either - so the pod
 # lands in ImagePullBackOff on the replacement node and the cause is three steps
 # back. Say so now, while the node roll is still on screen.
 if [ -n "${MISSING// /}" ]; then
@@ -192,14 +192,14 @@ if [ -n "${MISSING// /}" ]; then
   echo "WARNING: these images are in use but are no longer in the local Docker daemon," >&2
   echo "         so they could not be imported onto ${NEW_NODE}:" >&2
   printf '           %s\n' ${MISSING} >&2
-  echo "         Any pod that needs one will land in ImagePullBackOff — they are lab" >&2
+  echo "         Any pod that needs one will land in ImagePullBackOff - they are lab" >&2
   echo "         builds and exist in no registry. Rebuild before rescheduling, e.g.:" >&2
   echo "           DOCKER_IMAGE_TAG=<tag> bash ${PROJECT_ROOT:-$(cd "$(dirname "$0")/../../.." && pwd)}/src/engine/build/docker.sh <app> --import" >&2
 fi
 
 # k3d's load balancer holds its nginx upstreams as a fixed list of node names,
 # captured when the cluster was created. Replacing a node changes that name, and
-# nothing updates the list — so the LB keeps pointing at a container that no
+# nothing updates the list - so the LB keeps pointing at a container that no
 # longer exists.
 #
 # It is invisible while the cluster keeps running, because nginx is already up.
@@ -209,7 +209,7 @@ fi
 #   [emerg] host not found in upstream "k3d-snowops-agent-0:443"
 #
 # One dead upstream takes down the WHOLE listener set, including the 6443 mapping
-# the kubeconfig points at — so the entire lab, API server included, is
+# the kubeconfig points at - so the entire lab, API server included, is
 # unreachable until someone repairs it by hand.
 LB="k3d-${CLUSTER_NAME}-serverlb"
 if docker inspect "$LB" >/dev/null 2>&1; then

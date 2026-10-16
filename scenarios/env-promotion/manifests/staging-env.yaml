@@ -1,5 +1,5 @@
 ---
-# staging environment — namespace, release metadata, {{.WorkloadName}} deployment + service + ingress.
+# staging environment - namespace, release metadata, {{.WorkloadName}} deployment + service + ingress.
 apiVersion: v1
 kind: Namespace
 metadata:

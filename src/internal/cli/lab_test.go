@@ -5,7 +5,10 @@ package cli
 import (
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/sagar2395/snowopslabs/internal/config"
+	"github.com/sagar2395/snowopslabs/internal/lab"
 	"github.com/sagar2395/snowopslabs/internal/labtest"
 )
 
@@ -138,5 +141,25 @@ func TestLab_Failures(t *testing.T) {
 				t.Errorf("stderr = %q, want it to say %q", r.stderr, tt.wantErr)
 			}
 		})
+	}
+}
+
+// A snapshot with nothing in it restores nothing, and says so instead of
+// printing an empty plan.
+func TestLab_RestoreEmptySnapshot(t *testing.T) {
+	l := newTerminal(t)
+	stateDir, err := config.StateDir("clitest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := lab.NewStore(stateDir).Save(&lab.Snapshot{Name: "empty", TakenAt: time.Now()}); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	r := l.mustRun("lab", "restore", "empty")
+	if !strings.Contains(r.stdout, "Snapshot is empty - nothing to restore.") {
+		t.Errorf("restore of an empty snapshot does not say so:\n%s", r.stdout)
+	}
+	if strings.Contains(r.stdout, "Restoring") {
+		t.Errorf("restore of an empty snapshot started a plan:\n%s", r.stdout)
 	}
 }

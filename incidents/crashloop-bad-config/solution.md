@@ -1,4 +1,4 @@
-# Solution — crashloop-bad-config
+# Solution: crashloop-bad-config
 
 ## What happened
 

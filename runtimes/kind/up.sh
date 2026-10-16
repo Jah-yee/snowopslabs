@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Create a kind (Kubernetes IN Docker) cluster — a headless, CI-friendly local
+# Create a kind (Kubernetes IN Docker) cluster - a headless, CI-friendly local
 # runtime. Mirrors k3d's host-port exposure: the control-plane node
 # maps host 80/443 -> node 80/443 via extraPortMappings, and is labelled
 # `ingress-ready=true` so an ingress controller can bind those ports. This keeps
 # platform scripts runtime-agnostic.
 #
-# Config (env, with defaults — scripts never source .env themselves):
+# Config (env, with defaults - scripts never source .env themselves):
 #   CLUSTER_NAME     cluster name (default: snowops-kind)
 #   HTTP_PORT        host port mapped to node :80 (default: 80)
 #   HTTPS_PORT       host port mapped to node :443 (default: 443)
@@ -45,7 +45,7 @@ kind_reachable() {
     kubectl --request-timeout=20s get --raw=/healthz >/dev/null 2>&1
 }
 if kind get clusters 2>/dev/null | grep -qx "$CLUSTER_NAME"; then
-  echo "Cluster '$CLUSTER_NAME' already exists — checking it is healthy."
+  echo "Cluster '$CLUSTER_NAME' already exists - checking it is healthy."
   kind export kubeconfig --name "$CLUSTER_NAME" >/dev/null 2>&1 || true
   # A stopped Docker VM stops the node containers; start them again.
   for node in $(docker ps -a --filter "label=io.x-k8s.kind.cluster=${CLUSTER_NAME}" --format '{{.Names}}' 2>/dev/null); do
@@ -79,7 +79,7 @@ http_port="$(pick_port "$HTTP_PORT" 8080)" || exit 1
 https_port="$(pick_port "$HTTPS_PORT" 8443)" || exit 1
 if [ "$http_port" != "$HTTP_PORT" ] || [ "$https_port" != "$HTTPS_PORT" ]; then
   echo "Host ports ${HTTP_PORT}/${HTTPS_PORT} are already in use (another cluster or service)."
-  echo "Exposing ingress on ${http_port}/${https_port} instead — reach services at" \
+  echo "Exposing ingress on ${http_port}/${https_port} instead - reach services at" \
     "http://<name>.${DOMAIN_SUFFIX:-${CLUSTER_NAME}.localhost}:${http_port}"
   HTTP_PORT="$http_port"
   HTTPS_PORT="$https_port"

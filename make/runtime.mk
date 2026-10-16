@@ -1,4 +1,4 @@
-# Runtime management — dispatches to the correct runtime based on PROFILE
+# Runtime management - dispatches to the correct runtime based on PROFILE
 # Supported profiles: k3d (local), kind (headless/CI), incluster (shared server)
 
 runtime-up:

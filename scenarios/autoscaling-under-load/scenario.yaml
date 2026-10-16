@@ -29,7 +29,7 @@ objectives:
   - "Drive a traffic spike and watch replicas scale up on Prometheus RPS"
   - "Confirm the tail did not pull away from the typical request while scaled, then watch it scale back on cooldown"
 
-# Tunable knobs for experimentation — override at activation with
+# Tunable knobs for experimentation - override at activation with
 # `labctl scenario up autoscaling-under-load --set Threshold=15 --set MaxReplicas=4`
 parameters:
   - name: MinReplicas
@@ -42,7 +42,7 @@ parameters:
     notGreaterThan: MaxReplicas
   - name: MaxReplicas
     displayName: "Maximum replicas"
-    description: "Ceiling the autoscaler will not exceed no matter how high the load — try lowering it to watch the workload saturate at the cap."
+    description: "Ceiling the autoscaler will not exceed no matter how high the load - try lowering it to watch the workload saturate at the cap."
     default: "6"
     type: int
     min: 1
@@ -94,7 +94,7 @@ checks:
 
   - name: scaledobject-present
     pending: true
-    remediation: "You have not applied the ScaledObject yet — that is the exercise. Copy its apply command from the Implementation tab (marked 'You apply this'), or from 'labctl scenario info autoscaling-under-load', and run it."
+    remediation: "You have not applied the ScaledObject yet - that is the exercise. Copy its apply command from the Implementation tab (marked 'You apply this'), or from 'labctl scenario info autoscaling-under-load', and run it."
     type: kubectl
     resource: scaledobject/{{.WorkloadName}}
     namespace: "{{.WorkloadNamespace}}"
@@ -106,13 +106,13 @@ checks:
     resource: hpa/keda-hpa-{{.WorkloadName}}
     namespace: "{{.WorkloadNamespace}}"
 
-  # "It scaled" means it went above its own floor — not that it reached a
+  # "It scaled" means it went above its own floor, not that it reached a
   # particular replica count. A fixed number encodes how much traffic ONE
   # replica of one application can absorb, so it grades the language rather
   # than whether autoscaling was configured correctly.
   # Read the AUTOSCALER's own replica count, not the Deployment's. The
   # Deployment's says only "there are N pods", which a hand-run `kubectl scale`
-  # satisfies just as well — so it would grade a manual scale as autoscaling.
+  # satisfies just as well, so it would grade a manual scale as autoscaling.
   # This series exists only once the ScaledObject is accepted.
   - name: workload-scaled-above-floor
     pending: true
@@ -125,7 +125,7 @@ checks:
     remediation: "{{.WorkloadName}} has not scaled above its floor of {{.MinReplicas}}. Drive the spike and re-verify while it is held: labctl traffic start --app {{.WorkloadName}} --profile spike --rps 10. If it still does not scale, read the autoscaler's own view: kubectl -n {{.WorkloadNamespace}} describe scaledobject {{.WorkloadName}}"
 
   # Tail amplification, not absolute latency. p99/p50 asks "did the tail pull
-  # away from the typical request" — which is what saturation looks like — and
+  # away from the typical request", which is what saturation looks like, and
   # is the same question for a 2ms Go service and a 200ms JVM. An absolute p99
   # bound instead fails every slower runtime on arrival, however well the
   # engineer configured the autoscaler.
@@ -145,37 +145,37 @@ checks:
     query: '(sum(rate({{.WorkloadMetric}}_count{app="{{.WorkloadName}}",http_response_status_code=~"5.."}[{{.SinceActivation}}])) or vector(0)) / clamp_min(sum(rate({{.WorkloadMetric}}_count{app="{{.WorkloadName}}"}[{{.SinceActivation}}])), 0.001)'
     operator: "<"
     value: "0.01"
-    remediation: "More than 1% of requests are failing under load. The workload is saturated or unhealthy — check pod restarts and readiness: kubectl -n {{.WorkloadNamespace}} get pods"
+    remediation: "More than 1% of requests are failing under load. The workload is saturated or unhealthy - check pod restarts and readiness: kubectl -n {{.WorkloadNamespace}} get pods"
 
 references:
-  - label: "KEDA — ScaledObject specification"
+  - label: "KEDA - ScaledObject specification"
     url: "https://keda.sh/docs/latest/reference/scaledobject-spec/"
     note: "Every field in manifests/scaledobject.yaml (min/maxReplicaCount, cooldownPeriod, triggers) is documented here."
-  - label: "KEDA — Prometheus scaler"
+  - label: "KEDA - Prometheus scaler"
     url: "https://keda.sh/docs/latest/scalers/prometheus/"
     note: "How the RPS trigger queries Prometheus and computes desired replicas."
-  - label: "Kubernetes — Horizontal Pod Autoscaler walkthrough"
+  - label: "Kubernetes - Horizontal Pod Autoscaler walkthrough"
     url: "https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/"
 
 snippets:
   - label: "KEDA ScaledObject for {{.WorkloadName}}"
-    description: "The exercise. Apply it, then drive the spike. It scales {{.WorkloadName}} on its Prometheus request rate: desiredReplicas = ceil(total RPS ÷ threshold), clamped between minReplicaCount and maxReplicaCount. The defaults scale 1→6 at 25 RPS per replica — override the parameters at activation to change how aggressively it reacts."
+    description: "The exercise. Apply it, then drive the spike. It scales {{.WorkloadName}} on its Prometheus request rate: desiredReplicas = ceil(total RPS ÷ threshold), clamped between minReplicaCount and maxReplicaCount. The defaults scale 1→6 at 25 RPS per replica - override the parameters at activation to change how aggressively it reacts."
     path: manifests/scaledobject.yaml
     exercise: true
   - label: "Inspect the HPA KEDA created"
-    description: "Not a manifest to apply — a quick way to watch the desired/current replica maths live."
+    description: "Not a manifest to apply - a quick way to watch the desired/current replica maths live."
     yaml: |
       # kubectl -n {{.WorkloadNamespace}} get hpa keda-hpa-{{.WorkloadName}} \
       #   -o custom-columns=NAME:.metadata.name,MIN:.spec.minReplicas,MAX:.spec.maxReplicas,CUR:.status.currentReplicas,TARGET:.status.currentMetrics
 
 explore:
   urls:
-    - label: "Grafana — Autoscaling dashboard (replicas vs RPS)"
+    - label: "Grafana - Autoscaling dashboard (replicas vs RPS)"
       url: "http://grafana.{{.IngressURLSuffix}}/d/autoscaling-under-load"
     - label: "Prometheus"
       url: "http://prometheus.{{.IngressURLSuffix}}"
   commands:
-    - label: "1. Apply the autoscaler yourself — the snippet marked 'You apply this'"
+    - label: "1. Apply the autoscaler yourself - the snippet marked 'You apply this'"
       command: "labctl scenario info autoscaling-under-load   # copy the ScaledObject, then: kubectl apply -f -"
     - label: "2. Drive the spike (baseline 10 RPS -> 10x spike for ~2m)"
       command: "labctl traffic start --app {{.WorkloadName}} --profile spike --rps 10"
@@ -191,6 +191,6 @@ explore:
     - "KEDA targets ~25 RPS/replica (ScaledObject threshold); the ~100 RPS spike pushes {{.WorkloadName}} to ~4 replicas (max 6)."
     - "Replicas vs RPS is the dashboard story: the replica line should track the RPS line with a short lag."
     - "The dashboard appears a few seconds after activation, not instantly: `up` creates a ConfigMap and Grafana's sidecar imports it on its next poll. A 404 on the link immediately after `up` means wait, not broken."
-    - "cooldownPeriod is 60s — after the spike ends KEDA waits, then scales back to minReplicaCount (1)."
+    - "cooldownPeriod is 60s - after the spike ends KEDA waits, then scales back to minReplicaCount (1)."
     - "If {{.WorkloadName}} stays at 1, check the ScaledObject status: kubectl -n {{.WorkloadNamespace}} describe scaledobject {{.WorkloadName}}"
     - "Grading compares p99 to p50 on {{.WorkloadMetric}}, not p99 to a fixed number of seconds: a saturated service pulls its tail away from its typical request, and that reads the same whether the app normally answers in 2ms or 200ms."

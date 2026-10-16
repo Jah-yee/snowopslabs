@@ -26,7 +26,7 @@ RW_URL="${K6_PROMETHEUS_RW_SERVER_URL:-}"
 # k6's own client-side metrics (requests sent, latency as the CLIENT saw it,
 # failures) are the other half of evaluating traffic: the app's /metrics only
 # counts requests that arrived. Push them to Prometheus when a receiver is
-# actually there — enabling the output without one fails every flush.
+# actually there - enabling the output without one fails every flush.
 # Set TRAFFIC_METRICS=off to skip the probe, or pass the URL explicitly.
 PROM_NAMESPACE="${MONITORING_NAMESPACE:-monitoring}"
 PROM_SERVICE="${PROMETHEUS_SERVICE:-prometheus-kube-prometheus-prometheus}"
@@ -139,10 +139,10 @@ echo "Traffic generator applied. Verifying it actually starts..."
 if kubectl wait --for=condition=Ready pod -l app=traffic-k6 -n "$NAMESPACE" --timeout=90s 2>/dev/null; then
   echo "✓ k6 pod is running. First output (should show it hitting ${TARGET}):"
   echo "----------------------------------------------------------------------"
-  kubectl logs job/traffic-k6 -n "$NAMESPACE" --tail=20 2>/dev/null || echo "  (no logs yet — k6 is warming up)"
+  kubectl logs job/traffic-k6 -n "$NAMESPACE" --tail=20 2>/dev/null || echo "  (no logs yet - k6 is warming up)"
   echo "----------------------------------------------------------------------"
   echo "If you see 'dial: connection refused' or timeouts above, the TARGET is"
-  echo "not reachable from the cluster — check the service exists and the URL."
+  echo "not reachable from the cluster - check the service exists and the URL."
 else
   echo "⚠ k6 pod did NOT become Ready within 90s. Diagnosis:"
   kubectl get pods -n "$NAMESPACE" -l app=traffic-k6 -o wide 2>/dev/null || true

@@ -2,7 +2,7 @@
 # Passes once the restore marker has been seen missing at least once.
 #
 # A drill has to be performed, not merely survived. Live state cannot tell
-# "restored the marker" from "never deleted it" — both look identical — so the
+# "restored the marker" from "never deleted it" - both look identical - so the
 # loss has to be witnessed while it is happening. Every verify that finds the
 # marker gone records it here, which is why the drill asks the learner to verify
 # straight after the delete: that run is the evidence.
@@ -24,7 +24,7 @@ if ! kubectl -n "$NS" get configmap restore-marker >/dev/null 2>&1; then
 fi
 
 if [ -s "$LOG" ]; then
-  echo "OK: the marker was observed missing $(grep -c . "$LOG") time(s) — the loss was real, not simulated on paper."
+  echo "OK: the marker was observed missing $(grep -c . "$LOG") time(s) - the loss was real, not simulated on paper."
   exit 0
 fi
 

@@ -1,4 +1,4 @@
-# Release — cut cross-platform labctl binaries for a version tag.
+# Release - cut cross-platform labctl binaries for a version tag.
 #
 # Runs when a vX.Y.Z tag is pushed, and when the Tag release workflow calls it
 # with the tag it created (a workflow's own tag push starts no workflow).

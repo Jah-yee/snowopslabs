@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# PostgreSQL via the CloudNativePG (CNPG) operator — a small 2-instance HA
+# PostgreSQL via the CloudNativePG (CNPG) operator - a small 2-instance HA
 # cluster whose built-in failover is a ready-made day-2 drill.
 # Sub-component of the `data` category: install/remove independently of kafka.
 # Portable + idempotent.
 #
-# Config (env, with defaults — scripts never source .env themselves):
+# Config (env, with defaults - scripts never source .env themselves):
 #   CNPG_CHART_VERSION  pinned cloudnative-pg chart version (config/versions.env)
 #   POSTGRES_NAMESPACE  namespace for the Postgres Cluster CR (default: postgres)
 #   POSTGRES_CLUSTER    Cluster CR name (default: lab-postgres)
-#   POSTGRES_INSTANCES  number of instances (default: 2 — 1 primary + 1 replica)
+#   POSTGRES_INSTANCES  number of instances (default: 2 - 1 primary + 1 replica)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 NAMESPACE="${POSTGRES_NAMESPACE:-postgres}"
@@ -74,4 +74,4 @@ echo "Postgres installed successfully."
 echo "    Cluster: '$CLUSTER' in namespace '$NAMESPACE' (${INSTANCES} instances)"
 echo "    Service (read-write/primary): ${CLUSTER}-rw.${NAMESPACE}.svc:5432"
 echo "    App credentials secret: ${CLUSTER}-app (keys: username, password, dbname)"
-echo "    Failover drill — see docs/runbooks/10-stack-expansion.md"
+echo "    Failover drill - see docs/runbooks/10-stack-expansion.md"

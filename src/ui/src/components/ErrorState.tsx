@@ -7,7 +7,7 @@ interface ErrorStateProps {
   retrying?: boolean
 }
 
-/** Inline error display with a retry affordance — used when a view's primary
+/** Inline error display with a retry affordance - used when a view's primary
  *  data fails to load, instead of leaving a misleading empty state. */
 export function ErrorState({ title = 'Something went wrong', message, onRetry, retrying }: ErrorStateProps) {
   return (

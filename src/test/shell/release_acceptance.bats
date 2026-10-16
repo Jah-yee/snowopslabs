@@ -52,7 +52,7 @@ teardown() {
 }
 
 @test "an incident already active is left alone" {
-  stub_when labctl "incident status" 0 "NOT RESOLVED — detection check fails"
+  stub_when labctl "incident status" 0 "NOT RESOLVED - detection check fails"
   run bash "$ROOT/scripts/release-acceptance.sh" --only incident
   [ "$status" -eq 0 ]
   refute_called labctl "incident inject"

@@ -15,7 +15,7 @@ import (
 
 func TestParseHints(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "hints.md"), []byte(`# Hints — something
+	os.WriteFile(filepath.Join(dir, "hints.md"), []byte(`# Hints - something
 
 Preamble text that is not a hint.
 

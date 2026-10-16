@@ -276,10 +276,10 @@ func TestRequirements(t *testing.T) {
 			seen[r.Binary] = true
 
 			if r.Why == "" {
-				t.Error("Why is empty — the user needs to know what breaks without it")
+				t.Error("Why is empty - the user needs to know what breaks without it")
 			}
 			if r.InstallHint == nil {
-				t.Error("InstallHint is nil — 'install it' is not actionable")
+				t.Error("InstallHint is nil - 'install it' is not actionable")
 				return
 			}
 			for _, goos := range []string{"darwin", "linux"} {

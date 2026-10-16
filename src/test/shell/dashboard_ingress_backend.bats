@@ -5,7 +5,7 @@
 # The chart ships kong.proxy.http.enabled=false, so turning TLS off without
 # turning HTTP on leaves Kong with no listener and the chart renders no proxy
 # Service. The Ingress then names a Service that does not exist, and traefik
-# retries it in a hot loop until it fails its own liveness probe — taking every
+# retries it in a hot loop until it fails its own liveness probe - taking every
 # other ingress in the lab down with it.
 
 load 'helpers/stub'

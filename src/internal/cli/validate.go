@@ -86,7 +86,7 @@ func writeValidationReport(w io.Writer, c *catalog.Catalog, asJSON bool) error {
 	}
 
 	if c.IsValid() {
-		_, err := fmt.Fprintf(w, "✓ all content valid — %s\n", summarize(counts))
+		_, err := fmt.Fprintf(w, "✓ all content valid - %s\n", summarize(counts))
 		return err
 	}
 

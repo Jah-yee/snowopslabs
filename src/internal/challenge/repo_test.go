@@ -38,7 +38,7 @@ func TestRepo_AllChallengesValid(t *testing.T) {
 		})
 	}
 	if validated == 0 && len(entries) > 0 {
-		t.Error("no valid challenges found — check challenges/ directory structure")
+		t.Error("no valid challenges found - check challenges/ directory structure")
 	}
 }
 

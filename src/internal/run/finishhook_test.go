@@ -49,7 +49,7 @@ func TestFinishHook_FiresWithTerminalRecord(t *testing.T) {
 		t.Errorf("hook record = %+v, want %s succeeded", rec, id)
 	}
 	// The hook must receive the FULL record, including fields finish() does not
-	// carry directly — target and lock key — so a recorder can act on them.
+	// carry directly - target and lock key - so a recorder can act on them.
 	if rec.Target != "k3d" || rec.LockKey != "lab" {
 		t.Errorf("hook record missing target/lockkey: %+v", rec)
 	}

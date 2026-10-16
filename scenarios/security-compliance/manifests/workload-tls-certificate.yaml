@@ -1,4 +1,4 @@
-# The certificate the LAB EXERCISE asks you to issue — this file is a snippet,
+# The certificate the LAB EXERCISE asks you to issue - this file is a snippet,
 # not something `scenario up` applies. Apply it yourself:
 #
 #   paste it from `labctl scenario info security-compliance`, which fills in the domain
@@ -15,8 +15,8 @@ metadata:
   namespace: "{{.WorkloadNamespace}}"
 spec:
   secretName: "{{.WorkloadName}}-tls-secret"
-  duration: 2160h # 90d — the shape a real leaf certificate has
-  renewBefore: 360h # 15d — cert-manager rotates it before it expires
+  duration: 2160h # 90d - the shape a real leaf certificate has
+  renewBefore: 360h # 15d - cert-manager rotates it before it expires
   commonName: "{{.WorkloadName}}.{{.DomainSuffix}}"
   dnsNames:
     - "{{.WorkloadName}}.{{.DomainSuffix}}"

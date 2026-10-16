@@ -6,7 +6,7 @@ set -euo pipefail
 # and the ones you cannot fix must be exempted NARROWLY.
 #
 # Three assertions, and the third is the one that matters:
-#   1. legacy-reporter is actually running — an exemption that leaves the
+#   1. legacy-reporter is actually running - an exemption that leaves the
 #      workload down solved nothing.
 #   2. A Pod carrying the exemption label is ADMITTED even though it runs as
 #      root with no limits, so the exception really covers the workload.
@@ -34,7 +34,7 @@ if [ "${ready:-0}" -lt 1 ] 2>/dev/null || [ -z "$ready" ]; then
   exit 1
 fi
 
-# Nothing here is meaningful while the policies are still in Audit — no Pod is
+# Nothing here is meaningful while the policies are still in Audit - no Pod is
 # rejected, so "the exemption is too wide" would be a misleading way to say
 # "you have not promoted yet". Say the true thing instead.
 audit=""
@@ -45,7 +45,7 @@ done
 if [ -n "$audit" ]; then
   echo "FAIL: an exemption only means something once something is being enforced," >&2
   echo "      and these are still in Audit:$audit" >&2
-  echo "      Do the promotion step first — 'policies-enforcing' grades it — then come back" >&2
+  echo "      Do the promotion step first - 'policies-enforcing' grades it - then come back" >&2
   echo "      to exempting $DEPLOY." >&2
   exit 1
 fi
@@ -81,7 +81,7 @@ if ! probe exception-probe-labelled "    $LABEL_KEY: $LABEL_VAL"; then
 fi
 
 if probe exception-probe-bare ""; then
-  echo "FAIL: the exemption is too wide — a Pod with NO exemption label was also" >&2
+  echo "FAIL: the exemption is too wide - a Pod with NO exemption label was also" >&2
   echo "      admitted while running as root with allowPrivilegeEscalation: true." >&2
   echo "      Enforcement is off for the whole namespace, not just for $DEPLOY. Check for:" >&2
   echo "        - a PolicyException matching the namespace instead of the label" >&2

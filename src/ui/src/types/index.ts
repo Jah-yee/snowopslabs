@@ -40,7 +40,7 @@ export interface PlatformStatus {
   [key: string]: PlatformComponent | undefined
 }
 
-/** One provider entry from GET /api/v2/platform — the full registry view
+/** One provider entry from GET /api/v2/platform - the full registry view
  *  (every provider per category, e.g. ingress → traefik AND nginx). */
 export interface PlatformProviderEntry {
   name: string
@@ -62,7 +62,7 @@ export interface ScenarioRef {
   displayName: string
 }
 
-/** GET /api/v2/platform/component/:cat/:name — the per-tool details page. */
+/** GET /api/v2/platform/component/:cat/:name - the per-tool details page. */
 export interface PlatformComponentDetail {
   category: string
   name: string
@@ -95,7 +95,7 @@ export interface AppFileRef {
   truncated?: boolean
 }
 
-/** GET /api/v2/apps/:name/detail — how an app is built and deployed. */
+/** GET /api/v2/apps/:name/detail - how an app is built and deployed. */
 export interface AppDetail {
   name: string
   description: string
@@ -135,7 +135,7 @@ export interface AppInfo {
   namespace?: string
   /** Ingress URL (http://<app>.<domainSuffix>), set once deployed. */
   url?: string
-  /** In-cluster base URL from the app's declared contract — the traffic target. */
+  /** In-cluster base URL from the app's declared contract - the traffic target. */
   serviceUrl?: string
   /** Capabilities the app declares (ADR-0014). */
   capabilities?: string[]
@@ -148,7 +148,7 @@ export interface StatusResponse {
   platform: PlatformStatus
   apps: AppInfo[] | null
   domainSuffix: string
-  /** domainSuffix plus the ingress port when it is not 80 — build URLs from this. */
+  /** domainSuffix plus the ingress port when it is not 80 - build URLs from this. */
   ingressUrlSuffix?: string
 }
 
@@ -255,7 +255,7 @@ export interface Scenario {
   objectives?: string[]
   checks?: ScenarioCheck[]
   snippets?: ContentSnippet[]
-  /** Apps the scenario names literally — the only app prerequisites a user has
+  /** Apps the scenario names literally - the only app prerequisites a user has
    *  to satisfy. An app that came from the binding is in `workload`, not here. */
   pinnedApps?: string[]
   /** The workload this scenario will run (or is running) against. */
@@ -309,7 +309,7 @@ export interface ActionAccepted {
   status: string
 }
 
-/** One entry from GET /api/v2/jobs — recorded action history, newest first. */
+/** One entry from GET /api/v2/jobs - recorded action history, newest first. */
 export interface JobInfo {
   id: string
   action: string
@@ -346,7 +346,7 @@ export interface RunStep {
   endedAt?: string
 }
 
-/** GET /api/v2/runs/{id} — a run plus its step timeline. */
+/** GET /api/v2/runs/{id} - a run plus its step timeline. */
 export interface RunDetail extends RunSummary {
   steps: RunStep[]
 }
@@ -358,7 +358,7 @@ export interface RunLogLine {
   text: string
 }
 
-/** GET /api/v2/runs/{id}/logs?after= — a cursor-forward slice of the transcript. */
+/** GET /api/v2/runs/{id}/logs?after= - a cursor-forward slice of the transcript. */
 export interface RunLogs {
   runId: string
   status: RunStatus
@@ -534,7 +534,7 @@ export interface Fault {
   prerequisites?: { platform?: string[]; apps?: string[]; capabilities?: string[] }
   references?: ContentReference[]
   snippets?: ContentSnippet[]
-  /** Apps the fault names literally — the only app prerequisites a user has to
+  /** Apps the fault names literally - the only app prerequisites a user has to
    *  satisfy. An app that came from the binding is in `workload`, not here. */
   pinnedApps?: string[]
   /** The workload this fault will be (or was) injected into. */
@@ -571,13 +571,13 @@ export interface IncidentCheck {
   error?: string
 }
 
-/** GET /api/v2/incidents — catalog plus the current active state. */
+/** GET /api/v2/incidents - catalog plus the current active state. */
 export interface IncidentList {
   faults: Fault[]
   active: IncidentActive | null
 }
 
-/** GET /api/v2/incidents/status — active incident + live detection check.
+/** GET /api/v2/incidents/status - active incident + live detection check.
  *  `active` is null when nothing is injected. */
 export interface IncidentStatus {
   active: IncidentActive | null
@@ -632,7 +632,7 @@ export interface ComparisonMetric {
 }
 
 /** One workload's numbers. A metric with no series is absent from `values`
- *  rather than zero — "used none" and "not measurable here" differ. */
+ *  rather than zero - "used none" and "not measurable here" differ. */
 export interface ComparisonMeasurement {
   app: string
   values: Record<string, number>

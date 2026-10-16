@@ -37,7 +37,7 @@ kubectl -n "$NS" delete job "$JOB" --ignore-not-found --wait=true >/dev/null 2>&
 # no identity to present.
 #
 # The probe is wget, not k6: k6's client is reset by the sidecar even under
-# PERMISSIVE, so a k6-based probe passes whether or not STRICT is in force —
+# PERMISSIVE, so a k6-based probe passes whether or not STRICT is in force -
 # a check that cannot fail. wget is served under PERMISSIVE and refused under
 # STRICT, which is the distinction being graded. The image is the one the load
 # client already pulls, so this adds no new dependency.
@@ -85,4 +85,4 @@ if ! kubectl -n "$NS" wait --for=condition=complete "job/${JOB}" --timeout=90s >
   exit 1
 fi
 
-echo "OK: an unmeshed plaintext client was refused — STRICT mTLS is enforced."
+echo "OK: an unmeshed plaintext client was refused - STRICT mTLS is enforced."

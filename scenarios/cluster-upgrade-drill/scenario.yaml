@@ -27,7 +27,7 @@ objectives:
 parameters:
   - name: AvailabilitySLO
     displayName: "Availability SLO across the upgrade (fraction of non-5xx requests)"
-    description: "The share of requests that must keep succeeding across the node roll. A runtime that starts slowly needs either more replicas or a longer readiness gate to hold this — which is the lesson, not a reason to exempt it."
+    description: "The share of requests that must keep succeeding across the node roll. A runtime that starts slowly needs either more replicas or a longer readiness gate to hold this, which is the lesson, not a reason to exempt it."
     default: "0.99"
     type: string
 
@@ -57,7 +57,7 @@ checks:
     jsonpath: "{.status.currentHealthy}"
     operator: ">="
     value: "2"
-    remediation: "The PDB exists but is tracking fewer than 2 healthy pods, so it will not block an eviction. A PDB whose selector matches nothing reports currentHealthy: 0 — check 'kubectl -n {{.WorkloadNamespace}} get pdb {{.WorkloadName}}-upgrade-pdb -o yaml' against the pod labels from 'kubectl -n {{.WorkloadNamespace}} get pods --show-labels'."
+    remediation: "The PDB exists but is tracking fewer than 2 healthy pods, so it will not block an eviction. A PDB whose selector matches nothing reports currentHealthy: 0 - check 'kubectl -n {{.WorkloadNamespace}} get pdb {{.WorkloadName}}-upgrade-pdb -o yaml' against the pod labels from 'kubectl -n {{.WorkloadNamespace}} get pods --show-labels'."
 
   - name: workload-highly-available
     type: kubectl
@@ -71,29 +71,29 @@ checks:
   - name: all-nodes-ready
     type: script
     script: checks/check-nodes-ready.sh
-    remediation: "A node is NotReady or still cordoned. If you are mid-roll this is expected — finish the node. If a replacement node never went Ready, check containerd on it: docker exec <node> tail -20 /var/lib/rancher/k3s/agent/containerd/containerd.log"
+    remediation: "A node is NotReady or still cordoned. If you are mid-roll this is expected - finish the node. If a replacement node never went Ready, check containerd on it: docker exec <node> tail -20 /var/lib/rancher/k3s/agent/containerd/containerd.log"
 
   - name: no-node-left-behind
     type: script
     script: checks/check-node-versions.sh
     pending: true
-    remediation: "Roll every worker the drill started with — the check names the ones still outstanding. A cluster nobody has touched also has one version everywhere, which is why this is graded against the node names recorded at activation rather than against version uniformity alone."
+    remediation: "Roll every worker the drill started with - the check names the ones still outstanding. A cluster nobody has touched also has one version everywhere, which is why this is graded against the node names recorded at activation rather than against version uniformity alone."
 
   - name: workload-survived-the-roll
     type: script
     script: checks/check-workload-healthy.sh
     pending: true
-    remediation: "{{.WorkloadName}} is unhealthy or has collapsed onto a single node. If pods are in ImagePullBackOff the replacement node has an empty image store — re-import the lab images with 'k3d image import {{.WorkloadName}}:v1.2.0 -c snowops'."
+    remediation: "{{.WorkloadName}} is unhealthy or has collapsed onto a single node. If pods are in ImagePullBackOff the replacement node has an empty image store - re-import the lab images with 'k3d image import {{.WorkloadName}}:v1.2.0 -c snowops'."
 
   - name: traffic-is-flowing
     type: promql
     query: 'sum(rate({{.WorkloadMetric}}_count{app="{{.WorkloadName}}"}[10m]))'
     operator: ">"
     value: "0.5"
-    remediation: "Prometheus sees almost no requests to {{.WorkloadName}}, so the availability grade below would be meaningless. The usual cause is that a drain evicted the k6 Job — check 'labctl traffic status', then restart it and let it run a couple of minutes: labctl traffic start --app {{.WorkloadName}} --profile steady --rps 20"
+    remediation: "Prometheus sees almost no requests to {{.WorkloadName}}, so the availability grade below would be meaningless. The usual cause is that a drain evicted the k6 Job - check 'labctl traffic status', then restart it and let it run a couple of minutes: labctl traffic start --app {{.WorkloadName}} --profile steady --rps 20"
 
   # A ratio of two rates reports a perfect 1.00 on an idle cluster, so this was
-  # green before the drill began — next to a traffic check correctly reporting
+  # green before the drill began - next to a traffic check correctly reporting
   # there was nothing to measure. It is now a script: it requires a roll to have
   # started, requires real load, and measures from the roll rather than a fixed
   # ten minutes back.
@@ -102,19 +102,19 @@ checks:
     script: checks/check-availability.sh
     timeoutSeconds: 90
     pending: true
-    remediation: "The grade is the measured success rate across the upgrade window, so it needs load flowing while you roll: labctl traffic start --app {{.WorkloadName}} --profile steady --rps 20. If it reports a low number rather than no data, the usual cause is draining while the PDB still allowed the last healthy replica to go — apply the PDB BEFORE the first drain. If Prometheus itself lost its volume to the roll, run scripts/reclaim-stranded-pvcs.sh first."
+    remediation: "The grade is the measured success rate across the upgrade window, so it needs load flowing while you roll: labctl traffic start --app {{.WorkloadName}} --profile steady --rps 20. If it reports a low number rather than no data, the usual cause is draining while the PDB still allowed the last healthy replica to go - apply the PDB BEFORE the first drain. If Prometheus itself lost its volume to the roll, run scripts/reclaim-stranded-pvcs.sh first."
 
 snippets:
   - label: "PodDisruptionBudget that keeps {{.WorkloadName}} up across the node roll"
-    description: "Apply this before the first drain. maxUnavailable: 1 makes each drain block until {{.WorkloadName}} has a Ready replica elsewhere — the mechanism that keeps the success rate up. Without it, a drain evicts every replica on the node at once."
+    description: "Apply this before the first drain. maxUnavailable: 1 makes each drain block until {{.WorkloadName}} has a Ready replica elsewhere - the mechanism that keeps the success rate up. Without it, a drain evicts every replica on the node at once."
     path: manifests/baseline.yaml
     exercise: true
 
 explore:
   urls:
-    - label: "Grafana — the roll itself: node versions, pod spread, PDB and success rate"
+    - label: "Grafana - the roll itself: node versions, pod spread, PDB and success rate"
       url: "http://grafana.{{.IngressURLSuffix}}/d/cluster-upgrade-drill"
-    - label: "Grafana — {{.WorkloadName}} request metrics in detail"
+    - label: "Grafana - {{.WorkloadName}} request metrics in detail"
       url: "http://grafana.{{.IngressURLSuffix}}/d/app-requests?var-app={{.WorkloadName}}"
   commands:
     - label: "1. Start steady background traffic (leave it running)"
@@ -125,7 +125,7 @@ explore:
       command: "kubectl get nodes -o custom-columns=NAME:.metadata.name,VERSION:.status.nodeInfo.kubeletVersion"
     - label: "4. Pick a worker from step 3 and cordon it (NODE is that node's name)"
       command: "NODE=$(kubectl get nodes -l '!node-role.kubernetes.io/control-plane' -o jsonpath='{.items[0].metadata.name}') && echo \"rolling ${NODE}\" && kubectl cordon \"${NODE}\""
-    - label: "5. Drain it — watch the PDB gate the evictions"
+    - label: "5. Drain it - watch the PDB gate the evictions"
       command: "kubectl drain \"${NODE}\" --ignore-daemonsets --delete-emptydir-data --timeout=120s"
     - label: "6. Replace the drained node with one on the target version"
       command: "TARGET_K3S_VERSION=v1.33.6-k3s1 bash {{.ProjectRoot}}/scenarios/cluster-upgrade-drill/scripts/roll-node.sh \"${NODE}\""
@@ -138,31 +138,31 @@ explore:
     - label: "10. Restart traffic if the roll evicted it, let it run ~2 minutes, then grade"
       command: "labctl traffic start --app {{.WorkloadName}} --profile steady --rps 20 && labctl scenario verify cluster-upgrade-drill"
   tips:
-    - "Start traffic FIRST. The availability grade reads {{.WorkloadMetric}}_count from Prometheus over a 10m window, and the 'traffic-is-flowing' check fails the drill if there was no load to measure — an upgrade nobody was using proves nothing."
+    - "Start traffic FIRST. The availability grade reads {{.WorkloadMetric}}_count from Prometheus over a 10m window, and the 'traffic-is-flowing' check fails the drill if there was no load to measure - an upgrade nobody was using proves nothing."
     - "Apply the PDB BEFORE the first drain. Applying it afterwards grades green while teaching the opposite lesson: the eviction it was meant to block has already happened."
     - "Open the 'Cluster Upgrade Drill' dashboard before you start and leave it up. 'Nodes by kubelet version' shows a second version appear and take over as you roll; '{{.WorkloadName}} pods per node' must never collapse to one node; and 'disruptions allowed' dropping to 0 is the PDB blocking an eviction in real time."
-    - "Watch the drain. With maxUnavailable: 1 you should see 'evicting pod ...' pause and retry while a replacement pod goes Ready elsewhere. That pause IS the PodDisruptionBudget working — it is the single most important thing to observe in this drill."
-    - "Node names change when you roll them: k3d cannot reuse a name in place, so k3d-snowops-agent-0 comes back as k3d-snowops-agent-0-0. Re-read 'kubectl get nodes' between rolls rather than reusing a name you typed earlier — the explore commands capture the name into $NODE for exactly this reason."
-    - "Roll ONE node at a time and wait for {{.WorkloadName}} to be Running on the replacement before starting the next. Draining both workers together leaves nowhere to run the app and tanks availability — the anti-pattern this drill teaches against."
+    - "Watch the drain. With maxUnavailable: 1 you should see 'evicting pod ...' pause and retry while a replacement pod goes Ready elsewhere. That pause IS the PodDisruptionBudget working - it is the single most important thing to observe in this drill."
+    - "Node names change when you roll them: k3d cannot reuse a name in place, so k3d-snowops-agent-0 comes back as k3d-snowops-agent-0-0. Re-read 'kubectl get nodes' between rolls rather than reusing a name you typed earlier - the explore commands capture the name into $NODE for exactly this reason."
+    - "Roll ONE node at a time and wait for {{.WorkloadName}} to be Running on the replacement before starting the next. Draining both workers together leaves nowhere to run the app and tanks availability - the anti-pattern this drill teaches against."
     - "HONEST SCOPE: k3d cannot upgrade a node in place, so roll-node.sh deletes the drained node and creates a replacement on the target k3s image. That is a faithful simulation of a rolling WORKER upgrade, which is exactly how managed node groups roll. The server/control-plane node is left alone; on EKS/AKS/GKE the provider upgrades the control plane first, then the nodes."
-    - "Pick a target that is the same as, or newer than, the control plane — never older. roll-node.sh refuses a downgrade and refuses a kubelet more than three minor versions behind the API server, because both are real outages. If the lab is already on the newest k3s the drill still works: rolling a node onto the same version is node rotation, which is the same operation with the same risks."
+    - "Pick a target that is the same as, or newer than, the control plane, never older. roll-node.sh refuses a downgrade and refuses a kubelet more than three minor versions behind the API server, because both are real outages. If the lab is already on the newest k3s the drill still works: rolling a node onto the same version is node rotation, which is the same operation with the same risks."
     - "Node replacement destroys local-path storage. Any PersistentVolume pinned to the node you replace is gone, and its claim sits Pending forever. roll-node.sh warns you before it deletes such a node. This is why stateful workloads need replicated storage before you roll a cluster."
     - "roll-node.sh refuses to touch a node you have not cordoned and drained yourself. Draining is the transferable skill; the delete-and-recreate is only how k3d stands in for a cloud provider."
-    - "Draining a node evicts the k6 traffic generator too, and its Job does not restart itself. Check 'labctl traffic status' after each roll and restart it if it Failed — then let it run a couple of minutes before grading, because the availability check averages over a 10m window."
+    - "Draining a node evicts the k6 traffic generator too, and its Job does not restart itself. Check 'labctl traffic status' after each roll and restart it if it Failed, then let it run a couple of minutes before grading, because the availability check averages over a 10m window."
     - "A drain can also block on someone else's PodDisruptionBudget. Single-replica platform components (istiod, for one) have PDBs that forbid the last pod being evicted, and the drain retries 'Cannot evict pod as it would violate the pod's disruption budget' forever. That is the drain working correctly, and it is the most common reason a real node roll stalls. Find the culprit with 'kubectl get pdb -A -o wide' and look for ALLOWED DISRUPTIONS 0, then either scale that component up ('kubectl -n <ns> scale deploy/<name> --replicas=2') or accept the disruption and delete its pod so it reschedules elsewhere."
     - "If Prometheus, Loki or Alertmanager come back Pending after a roll, their local-path volumes died with the node. Run scripts/reclaim-stranded-pvcs.sh (DRY_RUN=true first) to release the dead claims so their StatefulSets rebind. Grading needs Prometheus, so do this before you verify."
-    - "Tear down with 'labctl scenario down cluster-upgrade-drill' — removes the PDB and scales {{.WorkloadName}} back down. {{.WorkloadName}} itself stays running."
+    - "Tear down with 'labctl scenario down cluster-upgrade-drill' - removes the PDB and scales {{.WorkloadName}} back down. {{.WorkloadName}} itself stays running."
 
 references:
-  - label: "Kubernetes — Safely Drain a Node"
+  - label: "Kubernetes - Safely Drain a Node"
     url: "https://kubernetes.io/docs/tasks/administer-cluster/safely-drain-node/"
     note: "The eviction API and how a PodDisruptionBudget gates it."
-  - label: "Kubernetes — Specifying a Disruption Budget"
+  - label: "Kubernetes - Specifying a Disruption Budget"
     url: "https://kubernetes.io/docs/tasks/run-application/configure-pdb/"
     note: "minAvailable vs maxUnavailable, and why a PDB needs more than one replica to do anything."
-  - label: "Kubernetes — Version Skew Policy"
+  - label: "Kubernetes - Version Skew Policy"
     url: "https://kubernetes.io/releases/version-skew-policy/"
     note: "Why the kubelet may trail the API server by at most three minor versions."
-  - label: "k3d — Managing cluster nodes"
+  - label: "k3d - Managing cluster nodes"
     url: "https://k3d.io/stable/usage/commands/k3d_node/"
     note: "The node delete/create mechanics this drill uses to stand in for a node-group roll."

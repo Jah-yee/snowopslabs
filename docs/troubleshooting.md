@@ -44,10 +44,10 @@ page collects them by symptom. `labctl doctor` checks your machine, and
 
 ## Windows (WSL2)
 
-For a complete troubleshooting guide organized by symptom — covering browser
+For a complete troubleshooting guide organized by symptom (covering browser
 launching, DNS resolution (`*.localhost` vs `DOMAIN_SUFFIX=127.0.0.1.nip.io`),
 `/etc/wsl.conf` (`generateHosts`, `systemd`, `interop`), Docker Desktop WSL
-integration, line endings, and idle cluster recovery — see the
+integration, line endings, and idle cluster recovery) see the
 [WSL2 Troubleshooting guide](getting-started/wsl.md#troubleshooting).
 
 ## Still stuck

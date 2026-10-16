@@ -2,7 +2,7 @@
 # Passes when the live restore marker carries the same token as the archive.
 #
 # This is the round-trip itself, not a proxy for it. The token exists in exactly
-# two places — the cluster and the archive — so equality means the value in front
+# two places - the cluster and the archive - so equality means the value in front
 # of you came back from the backup. Re-staging the scenario mints a new token and
 # turns this red, which is the point: 'labctl scenario up --force' is not a
 # restore.
@@ -17,7 +17,7 @@ ARCHIVE="$(archive_path "$NS")"
 RESTORE_CMD="  bash ${PROJECT_ROOT:-.}/scenarios/backup-restore-drill/scripts/restore.sh ${NS}"
 
 if [ ! -f "$ARCHIVE" ]; then
-  echo "FAIL: no archive at ${ARCHIVE} — there is nothing to have restored from." >&2
+  echo "FAIL: no archive at ${ARCHIVE} - there is nothing to have restored from." >&2
   echo "  You cannot restore what you never captured. Back up first, then break something." >&2
   exit 1
 fi
@@ -49,4 +49,4 @@ if [ "$LIVE_TOKEN" != "$ARCHIVED_TOKEN" ] || [ "$CANARY" != "do-not-delete" ]; t
   exit 1
 fi
 
-echo "OK: the live marker carries the archive's token (${ARCHIVED_TOKEN}) — the objects round-tripped."
+echo "OK: the live marker carries the archive's token (${ARCHIVED_TOKEN}) - the objects round-tripped."

@@ -27,10 +27,10 @@ const scenarioYAML = `# yaml-language-server: $schema=https://labs.snowops.net/s
 apiVersion: scenario.snowops.net/v2
 name: {{.BareName}}
 displayName: {{.Title}}
-description: TODO — describe what this scenario demonstrates.
+description: TODO - describe what this scenario demonstrates.
 category: custom
 objectives:
-  - TODO — what the learner should take away
+  - TODO - what the learner should take away
 stages:
   - name: setup
     description: Deploy the scenario's components here.
@@ -42,7 +42,7 @@ checks:
 `
 
 const readyScript = `#!/usr/bin/env bash
-# Scaffolded readiness check — replace with a real assertion (exit 0 = pass).
+# Scaffolded readiness check - replace with a real assertion (exit 0 = pass).
 set -euo pipefail
 echo "scenario {{.BareName}} is ready"
 exit 0

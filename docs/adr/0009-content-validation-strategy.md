@@ -1,4 +1,4 @@
-# ADR 0009 — JSON Schemas for authoring, Go loaders for validation
+# ADR 0009: JSON Schemas for authoring, Go loaders for validation
 
 **Status:** Accepted
 **Date:** 2026-08-22
@@ -13,7 +13,7 @@ to be true at once:
 - **Authors and editors** want a machine-readable schema so VS Code (and any
   YAML language server) offers completion and inline errors while typing.
 - **`labctl validate` and CI** must fail a bad file with the *file, line and the
-  specific reference* that is wrong — not a generic "does not match schema" — and
+  specific reference* that is wrong, not a generic "does not match schema", and
   must check things a JSON Schema cannot express: that a path's `scenario` ref
   resolves to a real scenario, that a challenge's `useDetectionCheck` is only
   used with an incident, that an asset path stays inside its content directory.

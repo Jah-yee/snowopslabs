@@ -118,7 +118,7 @@ in_namespace_faults() {
   faults | grep -v -e '^noisy-neighbor'
 }
 
-# line_of <args> — the position in the call log of the first matching call.
+# line_of <args> - the position in the call log of the first matching call.
 line_of() {
   calls_for kubectl | grep -n -- "$1" | head -1 | cut -d: -f1
 }

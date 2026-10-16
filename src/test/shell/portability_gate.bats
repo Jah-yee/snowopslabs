@@ -1,11 +1,11 @@
 #!/usr/bin/env bats
 # SPDX-License-Identifier: Apache-2.0
 #
-# portability-gate: ignore-file — this file contains the GNU-only constructs it
+# portability-gate: ignore-file - this file contains the GNU-only constructs it
 # asserts against, as test data.
 #
 # The portability gate is the automated half of golden rule 1. These tests
-# assert it catches each GNU-only construct, and — just as important — that it
+# assert it catches each GNU-only construct, and - just as important - that it
 # does not fire on comments, so documenting a pitfall is not itself a violation.
 
 setup() {
@@ -18,7 +18,7 @@ teardown() {
   rm -rf "$WORK"
 }
 
-# scan <file-contents> — write a script into an isolated tree and run the gate
+# scan <file-contents> - write a script into an isolated tree and run the gate
 # over it. The gate always scans from its own repository root, so we copy it
 # into a scratch repo to keep the assertions hermetic.
 scan() {

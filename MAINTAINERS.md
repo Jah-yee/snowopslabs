@@ -7,14 +7,14 @@ This file lists the people who maintain SnowOps Labs and the areas they own. See
 
 | Name | GitHub | Areas |
 |------|--------|-------|
-| Sagar Chhabra | [@sagar2395](https://github.com/sagar2395) | Everything — final authority on architecture, SDK, schema, releases, licensing |
+| Sagar Chhabra | [@sagar2395](https://github.com/sagar2395) | Everything: final authority on architecture, SDK, schema, releases, licensing |
 
 ## Area maintainers
 
 _None yet. Area maintainers are invited by the lead maintainer as the community
 grows (see GOVERNANCE.md → "Becoming a maintainer")._
 
-Planned area teams (referenced by `.github/CODEOWNERS` once created — manual
+Planned area teams (referenced by `.github/CODEOWNERS` once created - manual
 action C3):
 
 | Team | Owns |

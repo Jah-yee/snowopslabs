@@ -54,7 +54,7 @@ normalize_apiserver_host() {
 
 # Return 0 only if the cluster's API server actually answers. This is what tells
 # a healthy existing cluster (skip creation) apart from a half-built one whose
-# containers linger but whose API never comes up — e.g. a load-balancer that
+# containers linger but whose API never comes up - e.g. a load-balancer that
 # failed to initialise, or a kubeconfig entry that was removed out from under it.
 cluster_reachable() {
   kubectl config use-context "k3d-$CLUSTER_NAME" >/dev/null 2>&1 || return 1
@@ -62,7 +62,7 @@ cluster_reachable() {
 }
 
 # Raise fs.inotify.max_user_instances on every node. The default (128) is quickly
-# exhausted by log/file watchers — most visibly promtail (observability-sre),
+# exhausted by log/file watchers - most visibly promtail (observability-sre),
 # which crash-loops with "too many open files: failed to make file target
 # manager". k3d nodes run privileged and share the colima/Docker VM kernel, so
 # setting the sysctl on each node container raises the effective limit for the
@@ -107,7 +107,7 @@ dead_nodes() {
   done
 }
 
-# wait_until_reachable <seconds> — succeed once the API answers through the
+# wait_until_reachable <seconds> - succeed once the API answers through the
 # host's kubeconfig, which goes through k3d's load balancer.
 wait_until_reachable() {
   local limit="$1" waited=0
@@ -127,7 +127,7 @@ server_kubectl() {
   docker exec "k3d-${CLUSTER_NAME}-server-0" kubectl --request-timeout=5s "$@"
 }
 
-# correct_node_address <node> — when the Node object records an address other
+# correct_node_address <node> - when the Node object records an address other
 # than the one the node's container has now, set the record to the current
 # address. After Docker or the colima VM restarts, containers can come back with
 # each other's addresses, and k3s's network policy controller reads the recorded
@@ -145,13 +145,13 @@ correct_node_address() {
     return 1
   fi
   [ "$have" = "$recorded" ] && return 0
-  echo "Node '$node' is recorded at ${recorded} but its container now has ${have} — correcting the record."
+  echo "Node '$node' is recorded at ${recorded} but its container now has ${have} - correcting the record."
   patch="[{\"op\":\"replace\",\"path\":\"/status/addresses\",\"value\":[{\"type\":\"InternalIP\",\"address\":\"${have}\"},{\"type\":\"Hostname\",\"address\":\"${node}\"}]}]"
   server_kubectl patch node "$node" --subresource=status --type=json -p "$patch" >/dev/null 2>&1 || return 1
   CORRECTED="$CORRECTED$node "
 }
 
-# correct_addresses <seconds> — while a server's recorded address is stale its
+# correct_addresses <seconds> - while a server's recorded address is stale its
 # API answers only for moments between k3s shutdowns, so keep checking every
 # node whenever it answers. Succeeds once one pass has read every node's record
 # and found each right; fails only if the API never answered within the time.
@@ -223,7 +223,7 @@ ensure_nodes_ready() {
         [ "$(printf '%s\n' $restarts | grep -cx "$node" || true)" -ge 2 ] && continue
         restarts="$restarts$node "
         correct_node_address "$node" || true
-        echo "Node '$node' is not healthy — restarting it."
+        echo "Node '$node' is not healthy - restarting it."
         docker restart "$node" >/dev/null 2>&1 || true
         need="$NODE_STABLE_CHECKS"
       done
@@ -263,7 +263,7 @@ create_cluster() {
   https_port="$(pick_port "$HTTPS_PORT" 8443)" || exit 1
   if [ "$http_port" != "$HTTP_PORT" ] || [ "$https_port" != "$HTTPS_PORT" ]; then
     echo "Host ports ${HTTP_PORT}/${HTTPS_PORT} are already in use (another cluster or service)."
-    echo "Exposing ingress on ${http_port}/${https_port} instead — reach services at" \
+    echo "Exposing ingress on ${http_port}/${https_port} instead - reach services at" \
       "http://<name>.${DOMAIN_SUFFIX:-${CLUSTER_NAME}.localhost}:${http_port}"
     HTTP_PORT="$http_port"
     HTTPS_PORT="$https_port"
@@ -294,7 +294,7 @@ create_cluster() {
   # --timeout rolls back a creation that never finishes; one retry covers a
   # transient failure without leaving a half-built cluster behind.
   if ! k3d cluster create "${create_args[@]}" --timeout 300s; then
-    echo "Cluster creation failed — cleaning up and retrying once..." >&2
+    echo "Cluster creation failed - cleaning up and retrying once..." >&2
     k3d cluster delete "$CLUSTER_NAME" >/dev/null 2>&1 || true
     k3d cluster create "${create_args[@]}" --timeout 300s || {
       echo "ERROR: k3d could not create the cluster. 'labctl doctor' checks Docker's resources." >&2
@@ -341,7 +341,7 @@ restart_in_order() {
 }
 
 if k3d cluster list "$CLUSTER_NAME" &>/dev/null; then
-  echo "Cluster '$CLUSTER_NAME' already exists — checking it is healthy."
+  echo "Cluster '$CLUSTER_NAME' already exists - checking it is healthy."
   # Rebuild the kubeconfig entry in case it was removed or points at a stale port.
   k3d kubeconfig merge "$CLUSTER_NAME" --kubeconfig-merge-default &>/dev/null || true
   normalize_apiserver_host

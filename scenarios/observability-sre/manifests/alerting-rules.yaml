@@ -5,7 +5,7 @@ metadata:
   namespace: "{{.MonitoringNamespace}}"
   labels:
     # Must match the kube-prometheus-stack release name ("prometheus"). A wrong
-    # value here does not error — Prometheus simply never loads the rules.
+    # value here does not error - Prometheus simply never loads the rules.
     release: prometheus
 spec:
   groups:

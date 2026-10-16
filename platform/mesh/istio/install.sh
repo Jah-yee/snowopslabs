@@ -4,7 +4,7 @@ set -euo pipefail
 # Istio service mesh (sidecar mode) installer.
 # Selected via MESH_PROVIDER=istio. Portable + idempotent.
 #
-# Config (env, with defaults — scripts never source .env themselves):
+# Config (env, with defaults - scripts never source .env themselves):
 #   ISTIO_VERSION   pinned chart/app version (see config/versions.env)
 #   MESH_NAMESPACE  workload namespace to enrol into the mesh
 #                   (default: the bound workload, else go-api)

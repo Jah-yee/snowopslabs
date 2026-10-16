@@ -63,7 +63,7 @@ test-apps:
 		( cd $$dir && go test ./... ) || exit 1; \
 	done
 
-## lint: every static-analysis gate — gofmt + shell (root) and Go/UI (src/)
+## lint: every static-analysis gate - gofmt + shell (root) and Go/UI (src/)
 lint: fmt-check lint-shell lint-go lint-ui sec vuln docs-check
 
 # ── Release ──────────────────────────────────────────────────────────────────
@@ -102,7 +102,7 @@ ui-dev:
 # ── Help ─────────────────────────────────────────────────────────────────────
 
 help:
-	@echo "SnowOps Labs — Kubernetes platform-engineering simulator"
+	@echo "SnowOps Labs - Kubernetes platform-engineering simulator"
 	@echo ""
 	@echo "  Quick start:"
 	@echo "    make cli-build           Build bin/labctl (UI embedded)"
@@ -127,7 +127,7 @@ help:
 	@echo "    make lint                every static-analysis gate"
 	@echo "    make fmt                 gofmt the tree"
 	@echo ""
-	@echo "  Release (maintainer — RELEASING.md):"
+	@echo "  Release (maintainer - RELEASING.md):"
 	@echo "    make release VERSION=X.Y.Z  Open the release pull request (NEXT=X.Y.Z-dev to override)"
 	@echo ""
 	@echo "  CLI (labctl):"
@@ -136,7 +136,7 @@ help:
 	@echo "    make cli-install         Build and install onto PATH"
 	@echo "    make cli-clean           Remove build outputs"
 	@echo ""
-	@echo "  Cluster (PROFILE=$(PROFILE) — k3d | kind | incluster):"
+	@echo "  Cluster (PROFILE=$(PROFILE) - k3d | kind | incluster):"
 	@echo "    make runtime-up          Create cluster '$(CLUSTER_NAME)'"
 	@echo "    make runtime-down        Destroy the current cluster"
 	@echo "    make runtime-status      Show cluster info and nodes"

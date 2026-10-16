@@ -8,7 +8,7 @@ set -euo pipefail
 
 # The engine moved under src/ (issue #7). App configuration (apps/<name>/app.env)
 # and app sources are still resolved from the working directory, which the
-# caller sets to the content root — but the strategy scripts are siblings of
+# caller sets to the content root - but the strategy scripts are siblings of
 # this file, so locate them relative to the script, not the CWD.
 ENGINE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 

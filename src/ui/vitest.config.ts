@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
-// Component-layer test config (test layer 4a — see docs/TESTING.md).
+// Component-layer test config (test layer 4a - see docs/TESTING.md).
 //
 // API calls are mocked at the network layer with MSW, never by stubbing
 // modules, so tests exercise the real fetch path and catch serialisation

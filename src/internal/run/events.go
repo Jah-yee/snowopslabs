@@ -53,8 +53,8 @@ const subscribeBuffer = 256
 // Subscribe returns a channel of events and a function to stop listening.
 // runID filters to one run; empty subscribes to everything.
 //
-// The unsubscribe function is safe to call more than once and must be called —
-// typically by defer — or the subscriber leaks.
+// The unsubscribe function is safe to call more than once and must be called -
+// typically by defer - or the subscriber leaks.
 func (e *Engine) Subscribe(runID string) (<-chan Event, func()) {
 	return e.subs.subscribe(runID)
 }

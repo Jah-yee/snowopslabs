@@ -21,7 +21,7 @@ EXISTING="$(kubectl -n "$NS" get networkpolicy "$POLICY" \
 case "$EXISTING" in
   "") ;;
   *Ingress*"|" | *Ingress*"|[]")
-    echo "Fault already injected — nothing to do."
+    echo "Fault already injected - nothing to do."
     exit 0
     ;;
   *)
@@ -35,10 +35,10 @@ case "$EXISTING" in
 esac
 
 # Arm the paging rule first so the on-call drill measures real detection.
-# Tolerate a missing prometheus operator — the fault still works unpaged.
+# Tolerate a missing prometheus operator - the fault still works unpaged.
 MON_NS="${MONITORING_NAMESPACE:-monitoring}"
 render_targeted "$SCRIPT_DIR/alerts/rule.yaml" | kubectl apply -n "$MON_NS" -f - >/dev/null 2>&1 ||
-  echo "Note: alert rule not installed (monitoring stack missing?) — continuing without paging."
+  echo "Note: alert rule not installed (monitoring stack missing?) - continuing without paging."
 
 # Nothing printed here names the fault: the brief is fault.yaml's description
 # and the page this armed.
@@ -48,7 +48,7 @@ render_targeted "$SCRIPT_DIR/manifests/deny-ingress.yaml" | kubectl apply -f - >
 
 # A NetworkPolicy only governs NEW connections. The ingress controller keeps a
 # keep-alive pool to the backend, and every one of those established connections
-# has a conntrack entry that keeps flowing — so with the policy applied and the
+# has a conntrack entry that keeps flowing - so with the policy applied and the
 # pods untouched the service answers 200 indefinitely, and the incident reports
 # itself resolved the moment it is injected. Measured: restarting the ingress
 # controller turned 200 into 502 immediately.
@@ -61,4 +61,4 @@ kubectl -n "$NS" rollout restart "deploy/$DEPLOY" >/dev/null
 kubectl -n "$NS" rollout status "deploy/$DEPLOY" --timeout=120s >/dev/null 2>&1 || true
 
 echo "Done."
-echo "Tip: run 'labctl traffic start --app ${TARGET_WORKLOAD:-go-api}' — the page needs requests to fail before it fires."
+echo "Tip: run 'labctl traffic start --app ${TARGET_WORKLOAD:-go-api}' - the page needs requests to fail before it fires."

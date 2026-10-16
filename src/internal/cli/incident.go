@@ -62,7 +62,7 @@ var incidentListCmd = &cobra.Command{
 		}
 		_ = w.Flush()
 		if hidden {
-			fmt.Println("\nAn incident is active (hidden — silent mode). Check it with: labctl incident status")
+			fmt.Println("\nAn incident is active (hidden - silent mode). Check it with: labctl incident status")
 		}
 
 		for key, err := range incEng.LoadErrors() {
@@ -156,7 +156,7 @@ a reproducible pick across a team.`,
 		fmt.Println("\nNext steps:")
 		fmt.Println("  labctl incident status    # check whether you've fixed it")
 		fmt.Println("  labctl incident hint      # progressive hints (recorded)")
-		fmt.Println("  labctl incident resolve   # escape hatch — undo the fault")
+		fmt.Println("  labctl incident resolve   # escape hatch - undo the fault")
 		return nil
 	},
 }
@@ -179,7 +179,7 @@ var incidentStatusCmd = &cobra.Command{
 
 		name := res.Fault.Name
 		if res.Active.Silent && !res.Resolved {
-			name = "(hidden — silent mode)"
+			name = "(hidden - silent mode)"
 		}
 		fmt.Printf("Incident:  %s\n", name)
 		fmt.Printf("Injected:  %s (%s ago)\n",
@@ -189,9 +189,9 @@ var incidentStatusCmd = &cobra.Command{
 		if res.Alert != nil {
 			switch {
 			case res.Alert.Error != "":
-				fmt.Printf("Alert:     %s — could not query Alertmanager (%s)\n", res.Alert.Expected, res.Alert.Error)
+				fmt.Printf("Alert:     %s - could not query Alertmanager (%s)\n", res.Alert.Expected, res.Alert.Error)
 			case res.Alert.Fired:
-				fmt.Printf("Alert:     %s FIRING since %s — the page went out\n",
+				fmt.Printf("Alert:     %s FIRING since %s - the page went out\n",
 					res.Alert.Expected, res.Alert.Since.Format(time.RFC3339))
 			default:
 				fmt.Printf("Alert:     %s not firing (rules evaluate within ~1-2 minutes of injection)\n", res.Alert.Expected)
@@ -199,8 +199,8 @@ var incidentStatusCmd = &cobra.Command{
 		}
 
 		if res.Resolved {
-			fmt.Printf("\nRESOLVED — detection check %q passes. Nice work.\n", res.Check.Name)
-			fmt.Printf("It was: %s — %s\n", res.Fault.Name, res.Fault.DisplayName)
+			fmt.Printf("\nRESOLVED - detection check %q passes. Nice work.\n", res.Check.Name)
+			fmt.Printf("It was: %s - %s\n", res.Fault.Name, res.Fault.DisplayName)
 			tidyAfterFix(cmd, res.Fault.Name, incsvc.Target(incEng.ResolvedTarget(res.Fault)))
 			return nil
 		}
@@ -208,7 +208,7 @@ var incidentStatusCmd = &cobra.Command{
 		if detail == "" {
 			detail = fmt.Sprintf("got: %s, want: %s", orDash(res.Check.Got), orDash(res.Check.Want))
 		}
-		fmt.Printf("\nNOT RESOLVED — detection check %q fails (%s)\n", res.Check.Name, detail)
+		fmt.Printf("\nNOT RESOLVED - detection check %q fails (%s)\n", res.Check.Name, detail)
 		fmt.Println("Keep digging, or: labctl incident hint")
 		return nil
 	},
@@ -270,7 +270,7 @@ var incidentResolveCmd = &cobra.Command{
 
 var incidentHintCmd = &cobra.Command{
 	Use:   "hint",
-	Short: "Reveal the next hint for the active incident (recorded — costs score in challenges)",
+	Short: "Reveal the next hint for the active incident (recorded - costs score in challenges)",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		h, err := incEng.NextHint()
 		if errors.Is(err, incident.ErrNoMoreHints) {

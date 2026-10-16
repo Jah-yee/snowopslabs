@@ -1,7 +1,7 @@
 # The steady state: one producer and one consumer on the 'orders' topic, built
 # from Kafka's own console tools so no application image is involved.
 #
-# The consumer does REAL WORK PER MESSAGE — a 50ms sleep standing in for the
+# The consumer does REAL WORK PER MESSAGE - a 50ms sleep standing in for the
 # database write or downstream call a real order processor makes. That cost is
 # the whole scenario: it caps one consumer at roughly 18 orders/second, so when
 # stage 2 ramps producers past that, the group falls behind and stays behind.

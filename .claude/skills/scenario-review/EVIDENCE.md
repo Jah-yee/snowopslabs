@@ -20,7 +20,7 @@ kubectl -n monitoring get secret grafana -o jsonpath='{.data.admin-password}' | 
 
 ---
 
-## P1 — static
+## P1: static
 
 ```sh
 ./bin/labctl validate
@@ -31,7 +31,7 @@ grep -n 'version:' "scenarios/$SCENARIO/scenario.yaml"
 grep -n -i "$SCENARIO" docs/scenarios.md          # catalog entry exists
 ```
 
-## P2 — cold activation
+## P2: cold activation
 
 ```sh
 ./bin/labctl scenario down "$SCENARIO" || true
@@ -42,7 +42,7 @@ time ./bin/labctl scenario up "$SCENARIO" --deploy-prereqs
 Record the wall time and every prompt, error or manual fix. A scenario that
 needs a step it never documents has a P2 defect even when it ends green.
 
-## P3 — signal and graph
+## P3: signal and graph
 
 Load first, or every panel is honestly empty:
 
@@ -61,7 +61,7 @@ curl -s --get "$PROM/api/v1/query" \
 
 An empty `result: []` is the finding. Read
 [R13](../../../docs/runbooks/R13-observability-pipeline.md) before blaming the
-scenario — an empty `kube-prometheus-stack` selector or a missed relabel is
+scenario - an empty `kube-prometheus-stack` selector or a missed relabel is
 usually the cause.
 
 Is it *plotted*, and is the panel populated? Pull the dashboard the scenario
@@ -74,11 +74,11 @@ curl -s -u admin:"$GRAFANA_PW" "$GRAF/api/dashboards/uid/$UID" \
 ```
 
 Substitute any `$variable` in an expression with a concrete value (or `.*`)
-before sending it to Prometheus — a template variable is not valid PromQL. Any
+before sending it to Prometheus - a template variable is not valid PromQL. Any
 panel query returning no series under the scenario's own traffic is a
 dimension-3 finding: the learner opens that dashboard and sees nothing.
 
-## P4 — the learner's walk
+## P4: the learner's walk
 
 Run every `explore.commands` entry exactly as printed and compare the output to
 its label:
@@ -88,9 +88,9 @@ its label:
 ```
 
 Then do the objectives with real tools. Note every moment you opened the
-repository to make progress — each is a dimension-8 finding.
+repository to make progress - each is a dimension-8 finding.
 
-## P5 — tamper test
+## P5: tamper test
 
 For each check, break its subject, re-run `verify`, then restore and re-verify.
 The pattern:
@@ -116,13 +116,13 @@ Two things the pattern gets wrong if you improvise it:
   `kubectl apply` rejects it with "the object has been modified". Keep the
   backup as the record of what the field was; restore with a patch.
 - **Index into a CR by content, not by position.** A JSON-patch path like
-  `/spec/http/0/route/1/weight` assumes an ordering the manifest may not have —
+  `/spec/http/0/route/1/weight` assumes an ordering the manifest may not have:
   in `mesh-traffic-management`, `spec.http[0]` is the fault rule and carries a
   single unweighted route, so that patch is rejected outright. Read the object
   first (`kubectl get vs <name> -o jsonpath='{.spec.http}' | jq .`) and patch
   the element you actually meant.
 
-Other sabotages worth having in the kit — always back up first, always restore:
+Other sabotages worth having in the kit - always back up first, always restore:
 
 | Claim | Sabotage |
 |---|---|
@@ -137,7 +137,7 @@ A check still green after its own subject is gone is the review's most important
 finding. Say which check, what you broke, and what the replacement `promql` or
 `script` check should assert.
 
-## P6 — teardown and leaks
+## P6: teardown and leaks
 
 ```sh
 ./bin/labctl scenario up "$SCENARIO"          # second run: converges, no error

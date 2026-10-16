@@ -22,7 +22,7 @@ var platformTeardownCmd = &cobra.Command{
 	Use:   "teardown",
 	Short: "Uninstall exactly the platform components the inventory records as installed",
 	Long: `Removes every component labctl recorded as installed, in reverse order,
-and reports anything it could not remove — instead of exiting 0 and hoping. Each
+and reports anything it could not remove - instead of exiting 0 and hoping. Each
 uninstall is a recorded, cancellable run. Components installed outside labctl are
 not in the inventory and are left untouched.`,
 	RunE: func(cmd *cobra.Command, _ []string) error {
@@ -164,7 +164,7 @@ func platformTeardown(cmd *cobra.Command) error {
 		return err
 	}
 	if len(installed) == 0 {
-		fmt.Fprintln(out, "Nothing to tear down — the inventory records no installed platform components.")
+		fmt.Fprintln(out, "Nothing to tear down - the inventory records no installed platform components.")
 		return nil
 	}
 

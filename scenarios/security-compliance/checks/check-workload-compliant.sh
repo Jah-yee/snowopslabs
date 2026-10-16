@@ -3,7 +3,7 @@ set -euo pipefail
 . "$(dirname "$0")/../../_lib/workload.sh"
 
 # Grades the remediation half of the drill: the workload's Deployment must satisfy
-# all four ClusterPolicies at the source — in the Deployment's pod template,
+# all four ClusterPolicies at the source - in the Deployment's pod template,
 # not by being excluded from the policy.
 #
 # This reads .spec.template.spec, not the running Pod, on purpose. A mesh
