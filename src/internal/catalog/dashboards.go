@@ -114,7 +114,7 @@ func lintLegend(title, expr, legend string) []string {
 	if len(varying) > 0 && len(named) == 0 {
 		slices.Sort(varying)
 		findings = append(findings, fmt.Sprintf(
-			"panel %q: one series per %s, but every line is labelled %q — name the label in the legend, e.g. {{%s}}",
+			"panel %q: one series per %s, but every line is labelled %q - name the label in the legend, e.g. {{%s}}",
 			title, strings.Join(varying, ", "), legend, varying[0]))
 	}
 	for _, m := range named {

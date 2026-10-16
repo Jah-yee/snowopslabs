@@ -52,7 +52,7 @@ type Spec struct {
 	// Script or Func is set.
 	Script string
 	// Func is an in-process operation to run as a durable, cancellable, recorded
-	// run — for work the engine orchestrates in Go rather than shelling out to a
+	// run - for work the engine orchestrates in Go rather than shelling out to a
 	// single script (a multi-component scenario activation, for instance). It
 	// receives the run's context (cancelled on Cancel/Shutdown/timeout) and a
 	// writer for its transcript. It is held in-process only, never persisted.
@@ -80,8 +80,8 @@ var (
 )
 
 // LockConflictError reports that another run holds the requested lock key.
-// It carries the holder so the message can name it — "platform up is already
-// running (run_abc, started 2m ago)" — instead of a bare refusal.
+// It carries the holder so the message can name it - "platform up is already
+// running (run_abc, started 2m ago)" - instead of a bare refusal.
 type LockConflictError struct {
 	LockKey string
 	Holder  store.Run
@@ -93,7 +93,7 @@ func (e *LockConflictError) Error() string {
 	if e.Holder.Target != "" {
 		what += " " + e.Holder.Target
 	}
-	return fmt.Sprintf("%s is already in progress (run %s, started %s ago) — "+
+	return fmt.Sprintf("%s is already in progress (run %s, started %s ago) - "+
 		"wait for it, or cancel it with: labctl runs cancel %s",
 		what, e.Holder.ID, e.Since.Round(time.Second), e.Holder.ID)
 }
@@ -166,7 +166,7 @@ type Engine struct {
 	metrics Metrics
 
 	// finishHooks receive a run's terminal record once it has finished, so a
-	// caller can react to outcomes without the engine knowing their domain — the
+	// caller can react to outcomes without the engine knowing their domain - the
 	// component inventory is recorded this way.
 	finishHooks []FinishHook
 
@@ -175,8 +175,8 @@ type Engine struct {
 }
 
 // FinishHook is called with a run's terminal record once it has reached a final
-// state. It runs synchronously in the worker before the run is considered done —
-// so Shutdown waits for it — which means it must be quick and must not block.
+// state. It runs synchronously in the worker before the run is considered done -
+// so Shutdown waits for it - which means it must be quick and must not block.
 // The engine stays domain-agnostic: a hook is how a caller learns that, say, a
 // platform.install succeeded and records the component it left behind.
 type FinishHook func(ctx context.Context, r store.Run)

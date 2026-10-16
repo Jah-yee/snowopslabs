@@ -29,7 +29,7 @@ fi
 
 # Portable field reads from the one snapshot: no jq, which the lab does not
 # require, and no second API call that could see different state.
-# Missing keys are normal — a job that has not finished has no "succeeded" —
+# Missing keys are normal - a job that has not finished has no "succeeded" -
 # so absence must read as empty, not as a failure that set -e turns fatal.
 field() {
   printf '%s' "$JOB" | tr ',' '\n' | grep -m1 "\"$1\"" 2>/dev/null | sed 's/.*: *//; s/["{} ]//g' || true

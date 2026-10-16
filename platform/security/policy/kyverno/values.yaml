@@ -50,7 +50,7 @@ features:
   policyExceptions:
     enabled: true
     # Which namespaces may hold a PolicyException. The chart default is '',
-    # which restricts exceptions to a single unnamed namespace — so the feature
+    # which restricts exceptions to a single unnamed namespace, so the feature
     # reads as enabled while every exception is silently ignored and the pod it
     # exempts is still rejected. '*' allows them wherever the workload lives.
     namespace: "*"

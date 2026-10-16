@@ -8,7 +8,7 @@ echo "==============="
 echo ""
 
 if ! kubectl get namespace $NAMESPACE &>/dev/null; then
-  echo "Namespace '$NAMESPACE' not found — Kyverno not installed"
+  echo "Namespace '$NAMESPACE' not found - Kyverno not installed"
   exit 1
 fi
 

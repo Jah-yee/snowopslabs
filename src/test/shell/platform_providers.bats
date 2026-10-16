@@ -8,7 +8,7 @@
 #
 # Invariants:
 #   - install/uninstall/status all run clean under stubbed tools (no cluster).
-#   - a helm-based install uses `helm upgrade --install` — the idempotent
+#   - a helm-based install uses `helm upgrade --install` - the idempotent
 #     primitive, so a re-run after an interrupted `labctl init` converges
 #     (golden rule 5).
 #   - an uninstall deletes safely (helm uninstall, or kubectl delete with
@@ -20,14 +20,14 @@ setup() {
   stub_setup
   # Stub every external tool a provider script might reach for, so nothing
   # touches a real cluster or the network. An unstubbed command would fall
-  # through to the real PATH and fail the run — which is the signal to add it
+  # through to the real PATH and fail the run - which is the signal to add it
   # here rather than let a script quietly shell out during tests.
   stub_command kubectl helm k3d kind docker jq kustomize curl istioctl linkerd vault argocd
 
   # The stubs stand in for a cluster where the install worked. The dashboard's
-  # install refuses to create an Ingress whose backend Service is missing — a
+  # install refuses to create an Ingress whose backend Service is missing - a
   # dangling backend puts traefik into a retry loop until it fails its own
-  # liveness probe — so the stub has to present that Service. Ordered: the port
+  # liveness probe - so the stub has to present that Service. Ordered: the port
   # lookup is also a "get svc" call and must match its own rule first.
   stub_when kubectl "jsonpath={.spec.ports[0].port}" 0 "80"
   stub_when kubectl "get svc" 0 "service/kubernetes-dashboard-kong-proxy"
@@ -116,5 +116,5 @@ teardown() {
     [ -f "$dir/uninstall.sh" ] || { echo "missing uninstall.sh in ${dir#"$ROOT"/}"; return 1; }
     [ -f "$dir/status.sh" ]    || { echo "missing status.sh in ${dir#"$ROOT"/}"; return 1; }
   done
-  [ "$count" -gt 0 ] || { echo "no provider install scripts discovered — glob or layout changed"; return 1; }
+  [ "$count" -gt 0 ] || { echo "no provider install scripts discovered - glob or layout changed"; return 1; }
 }

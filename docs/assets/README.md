@@ -2,7 +2,7 @@
 
 Screenshots and terminal GIFs used by the top-level [`README.md`](../../README.md).
 **Everything here is generated from the real `labctl` binary and the actual
-embedded web UI — there are no mockups or hand-drawn frames.** The catalog views
+embedded web UI: there are no mockups or hand-drawn frames.** The catalog views
 render content read straight from `scenarios/`, `incidents/`, `platform/` … so
 they are meaningful without a running cluster.
 
@@ -14,7 +14,7 @@ they are meaningful without a running cluster.
 | `ui-incidents.png` | Incident library | `gen/capture-ui.mjs` |
 | `ui-platform.png` | Platform components | `gen/capture-ui.mjs` |
 | `ui-dashboard.png` | Operate hub (shown pre-`init`, so the cluster reads *Disconnected*) | `gen/capture-ui.mjs` |
-| `brand/` | Logo, icon mark, favicon, social preview — see [`brand/README.md`](brand/README.md) | `gen/brand.mjs` |
+| `brand/` | Logo, icon mark, favicon, social preview - see [`brand/README.md`](brand/README.md) | `gen/brand.mjs` |
 
 ## Regenerating
 
@@ -25,12 +25,12 @@ them from the repository root.
 # 0. Build the binary (embeds the UI):
 make cli-build
 
-# 1. Terminal GIFs — runs labctl for real, records the output, encodes a GIF.
+# 1. Terminal GIFs - runs labctl for real, records the output, encodes a GIF.
 #    Two pure-JS, encode-only deps (no native build):
 npm --prefix docs/assets/gen install gifenc pngjs
 node docs/assets/gen/capture-cli.mjs
 
-# 2. UI screenshots — start the dashboard, then capture it in another shell:
+# 2. UI screenshots - start the dashboard, then capture it in another shell:
 ./bin/labctl ui &            # serves http://localhost:3939
 node docs/assets/gen/capture-ui.mjs
 ```

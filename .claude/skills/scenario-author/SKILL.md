@@ -1,6 +1,6 @@
 ---
 name: scenario-author
-description: "Write, edit, debug or review a SnowOps Labs scenario — scenario.yaml, stages, components, checks, parameters, values ownership and chart pinning. Use whenever a task involves anything under scenarios/, a scenario.yaml, `labctl scenario up|verify|new`, or a scenario check that fails or passes when it should not."
+description: "Write, edit, debug or review a SnowOps Labs scenario: scenario.yaml, stages, components, checks, parameters, values ownership and chart pinning. Use whenever a task involves anything under scenarios/, a scenario.yaml, `labctl scenario up|verify|new`, or a scenario check that fails or passes when it should not."
 user-invocable: true
 ---
 
@@ -8,16 +8,16 @@ user-invocable: true
 
 ## Read first, in this order
 
-1. **[docs/reference/scenario-schema.md](../../../docs/reference/scenario-schema.md)** — the
+1. **[docs/reference/scenario-schema.md](../../../docs/reference/scenario-schema.md)**: the
    complete field reference. Trust it; do not read `src/pkg/scenario/schema.go`
    to confirm a field exists.
-2. [docs/authoring/first-scenario.md](../../../docs/authoring/first-scenario.md)
-   — the walkthrough, if you are starting from nothing.
+2. [docs/authoring/first-scenario.md](../../../docs/authoring/first-scenario.md) -
+    the walkthrough, if you are starting from nothing.
 3. An existing scenario closest to the one you are writing. `observability-sre`
    is the richest example; `autoscaling-under-load` is the one with parameters.
 
 Read the engine (`src/internal/scenario/`) only if the schema doc cannot answer
-your question — and if that happens, fix the schema doc in the same change.
+your question, and if that happens, fix the schema doc in the same change.
 
 ## Start from the scaffold
 
@@ -37,7 +37,7 @@ scores exactly this.
 
 **The learner does the platform work; labctl stages it and grades it.** Every
 objective should be something they perform with `kubectl`, `helm`, `istioctl`,
-`kubectl rollout` — the commands that transfer to a real cluster. labctl's job
+`kubectl rollout`: the commands that transfer to a real cluster. labctl's job
 is to build the environment and grade the result. `env-promotion` is the shape
 to copy: there is deliberately no `labctl env promote`, because the skill being
 taught is `kubectl set image` and `kubectl rollout status`. If your objectives
@@ -47,7 +47,7 @@ are satisfied by typing `scenario up`, there is no scenario yet.
 split in mesh telemetry", a linked Grafana dashboard must plot that split and be
 populated under the scenario's own traffic. Ship the dashboard with the scenario
 (`type: grafana-dashboard`), tell the learner to start `labctl traffic`, and add
-a `promql` check that the metric exists — otherwise a broken scrape reads as an
+a `promql` check that the metric exists, otherwise a broken scrape reads as an
 empty panel the learner debugs alone.
 
 **Every check grades an outcome, so breaking the outcome turns it red.** Write
@@ -64,7 +64,7 @@ with this repository closed.
 **One values file per component.** A component's Helm values live once, at
 `platform/<category>/<component>/values.yaml`. Point at it with
 `platformValues:` and put only your differences in `valuesFile:`. Never copy the
-platform's values into the scenario — the copy drifts, and Helm reports the
+platform's values into the scenario - the copy drifts, and Helm reports the
 drift as a forbidden update to an immutable StatefulSet field (ADR-0010).
 
 **Every chart is pinned.** `version:` is required on every `helm` component, and
@@ -100,12 +100,12 @@ scenario is healthy", not "what did I just install".
   tags share a digest.
 - Avoid tautologies. A check that asserts a file you just applied exists proves
   nothing about the pipeline. The test is mechanical: break the thing the check
-  claims to grade — flip the weights to 100/0, delete the fault, set mTLS to
-  `PERMISSIVE` — and re-run `verify`. If it stays green, replace the check with
+  claims to grade: flip the weights to 100/0, delete the fault, set mTLS to
+  `PERMISSIVE`: and re-run `verify`. If it stays green, replace the check with
   a `promql` or `script` check on the observable outcome.
 - A `script` check ships with a bats test of its own:
   [Testing a check script](../../../docs/reference/scenario-schema.md#testing-a-check-script).
-  One test per lab state — as activated, solved, each shortcut that fakes the
+  One test per lab state: as activated, solved, each shortcut that fakes the
   result, the cluster unable to answer. An empty answer from a failed query is
   never a pass.
 
@@ -121,7 +121,7 @@ labctl scenario reset my-scenario     # fast retry, no lab teardown
 ```
 
 A scenario is not done until `up → verify → down` is clean on a fresh cluster.
-Only then is `verified: true` honest — and that flag is curation metadata for
+Only then is `verified: true` honest, and that flag is curation metadata for
 the nightly e2e job, not a user-facing badge.
 
 ## Then review it

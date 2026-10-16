@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# backup.sh <namespace> — capture a namespace's resources into a restorable
+# backup.sh <namespace> - capture a namespace's resources into a restorable
 # manifest archive (JSON). Server-managed fields (status, uid, resourceVersion,
 # managedFields, …) are stripped so the archive re-applies cleanly into the same
 # or a fresh namespace.
@@ -91,14 +91,14 @@ echo "  ${LATEST}  (latest pointer)"
 # Record the fingerprint of the data this backup does NOT contain. A manifest
 # export captures the PVC object; the bytes on the volume are outside it
 # entirely. Noting the boot-id is the honest thing a manifest-level backup tool
-# can do about that — and it is what makes the loss measurable afterwards,
+# can do about that - and it is what makes the loss measurable afterwards,
 # because a restored PVC binds to a brand-new volume with a different one.
 BOOT_ID="$(live_boot_id "$NS")"
 if [ -n "$BOOT_ID" ]; then
   echo "${TIMESTAMP} ${BOOT_ID}" >>"$(bootid_log "$NS")"
   echo ""
   echo "PV data fingerprint at backup time: boot-id ${BOOT_ID}"
-  echo "  NOT in the archive — a manifest backup captures the PVC object, not the volume's"
+  echo "  NOT in the archive - a manifest backup captures the PVC object, not the volume's"
   echo "  contents. Recorded in $(bootid_log "$NS") so you can see it change after a restore."
 fi
 

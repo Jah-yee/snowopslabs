@@ -60,7 +60,7 @@ func learnListCmd() *cobra.Command {
 				prog, _ := eng.Progress(p.Name)
 				status := progressSummary(p, prog)
 				fmt.Fprintf(cmd.OutOrStdout(), "%-30s %-8s  %s\n",
-					p.Name, status, truncate(p.DisplayName+" — "+p.Description, 60))
+					p.Name, status, truncate(p.DisplayName+" - "+p.Description, 60))
 			}
 			return nil
 		},
@@ -112,7 +112,7 @@ After completing the task, run this again to verify the check and advance.`,
 				return err
 			}
 			if prog == nil {
-				return fmt.Errorf("path %q not started — run `labctl learn start %s` first", name, name)
+				return fmt.Errorf("path %q not started - run `labctl learn start %s` first", name, name)
 			}
 
 			idx := learn.NextModuleIdx(p, prog)
@@ -153,7 +153,7 @@ After completing the task, run this again to verify the check and advance.`,
 						len(p.Modules), name)
 				} else {
 					next := p.Modules[remaining]
-					fmt.Fprintf(out, "Next: module %d — %s\n",
+					fmt.Fprintf(out, "Next: module %d - %s\n",
 						remaining+1, next.DisplayName)
 				}
 			} else {
@@ -211,7 +211,7 @@ func resolvePathArg(eng *learn.Engine, args []string) (string, error) {
 	if len(paths) == 1 {
 		return paths[0].Name, nil
 	}
-	return "", fmt.Errorf("multiple paths available — specify one: %s",
+	return "", fmt.Errorf("multiple paths available - specify one: %s",
 		strings.Join(pathNames(paths), ", "))
 }
 

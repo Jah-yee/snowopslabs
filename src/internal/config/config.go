@@ -87,7 +87,7 @@ type AppConfig struct {
 	HelmRelease    string
 	HelmValues     string
 	Namespace      string
-	// Contract is the runtime interface the app declares — the port, probe paths
+	// Contract is the runtime interface the app declares - the port, probe paths
 	// and capabilities a scenario binds to instead of naming the app (ADR-0014).
 	Contract workload.Contract
 }
@@ -418,7 +418,7 @@ func parseEnvData(dst map[string]string, data []byte) {
 
 // parseEnvLine splits one "KEY=VALUE" line and normalises the value. ok is false
 // for a line with no '='. The value is trimmed, unquoted if wrapped in a matching
-// pair of single or double quotes, and — only when unquoted — has a trailing
+// pair of single or double quotes, and - only when unquoted - has a trailing
 // " # inline comment" stripped. Quoting therefore preserves a literal '#' and
 // surrounding whitespace, matching the common .env convention.
 func parseEnvLine(line string) (key, val string, ok bool) {

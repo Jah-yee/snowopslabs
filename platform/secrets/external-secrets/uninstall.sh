@@ -9,7 +9,7 @@ TARGET_NS="${SECRETS_NAMESPACE:-go-api}"
 
 echo "Uninstalling External Secrets Operator..."
 
-# 1. Remove the sync wiring from the target namespace (leave the namespace — it
+# 1. Remove the sync wiring from the target namespace (leave the namespace - it
 #    is usually the app's own namespace, owned by something else).
 if kubectl get namespace "$TARGET_NS" >/dev/null 2>&1; then
   kubectl delete externalsecret go-api-secret -n "$TARGET_NS" --ignore-not-found || true

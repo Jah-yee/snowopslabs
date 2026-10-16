@@ -124,7 +124,7 @@ autoscaling:
 # Off by default: with no collector listening, the OTLP exporter retries every
 # batch and fills the log with export errors. The observability-sre scenario
 # turns it on once Grafana Alloy is running, pointing the app at the collector
-# rather than at Tempo directly — batching, retry and sampling belong in the
+# rather than at Tempo directly - batching, retry and sampling belong in the
 # collector, and the trace backend can then be swapped without redeploying.
 tracing:
   enabled: false

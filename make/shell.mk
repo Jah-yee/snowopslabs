@@ -1,6 +1,6 @@
 # Repo-wide shell and formatting gates.
 #
-# These run from the repository root because they scan the whole tree — the
+# These run from the repository root because they scan the whole tree - the
 # shell scripts under bootstrap/, platform/, runtimes/ and src/engine/,
 # src/services/ alike. The Go/UI build and test gates live in src/ (delegated
 # from the root Makefile); these stay here so the `find .` sweeps see every
@@ -28,7 +28,7 @@ lint-shell:
 	@find . -name '*.sh' -not -path './.git/*' -not -path '*/node_modules/*' -print0 \
 	  | xargs -0 shellcheck --severity=warning
 	@command -v shfmt >/dev/null 2>&1 && { echo "==> shfmt"; shfmt -d -i 2 -ci $$(find . -name '*.sh' -not -path './.git/*' -not -path '*/node_modules/*'); } || \
-	  echo "shfmt not found — skipping format check (install: go install mvdan.cc/sh/v3/cmd/shfmt@latest)"
+	  echo "shfmt not found - skipping format check (install: go install mvdan.cc/sh/v3/cmd/shfmt@latest)"
 	@$(MAKE) --no-print-directory lint-portability
 
 ## lint-portability: reject GNU-only constructs that break macOS

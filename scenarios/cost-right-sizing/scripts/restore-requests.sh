@@ -2,7 +2,7 @@
 set -euo pipefail
 . "$(dirname "$0")/../../_lib/workload.sh"
 
-# restore-requests.sh — the inverse of inflate.sh, run by `scenario down`.
+# restore-requests.sh - the inverse of inflate.sh, run by `scenario down`.
 #
 # inflate.sh mutates a Deployment that every other scenario shares. Without this
 # teardown, `down` leaves the workload over-provisioned (or at whatever the

@@ -18,7 +18,7 @@ export function LogPanel({ entries, onClear }: LogPanelProps) {
   const dragStart = useRef({ y: 0, h: 0 })
 
   // Publish the panel's live height to a CSS variable so .main-content reserves
-  // exactly the space the panel occupies — no dead gap when collapsed, no
+  // exactly the space the panel occupies - no dead gap when collapsed, no
   // content hidden behind it when expanded. (Fixes the old static 320px pad.)
   const effectiveHeight = open ? panelHeight : COLLAPSED_H
   useEffect(() => {

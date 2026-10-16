@@ -31,7 +31,7 @@ var validName = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,64}$`)
 func isValidName(s string) bool { return validName.MatchString(s) }
 
 // pathName returns the {name} route variable, having already answered 400 when
-// it is not a valid identifier — so a handler only needs to return on !ok.
+// it is not a valid identifier - so a handler only needs to return on !ok.
 func pathName(w http.ResponseWriter, r *http.Request, kind string) (string, bool) {
 	name := mux.Vars(r)["name"]
 	if !isValidName(name) {
@@ -570,7 +570,7 @@ func describeInstallVar(name string, inline map[string]string) InstallVar {
 		return InstallVar{name, "", "Active runtime profile (k3d | kind | aks | eks), selected by the lab."}
 	}
 	if strings.HasSuffix(name, "_PASSWORD") || strings.HasSuffix(name, "_TOKEN") || strings.HasSuffix(name, "_KEY") {
-		return InstallVar{name, "", "Secret — export this environment variable before installing (a built-in default is used otherwise)."}
+		return InstallVar{name, "", "Secret - export this environment variable before installing (a built-in default is used otherwise)."}
 	}
 	return InstallVar{name, "", "Environment variable read by the install script (provide it before installing to override the default)."}
 }
@@ -632,7 +632,7 @@ func (s *Server) handlePlatformComponentDetail(w http.ResponseWriter, r *http.Re
 
 // scenariosUsingComponent returns the scenarios whose platform prerequisites
 // reference this component, matching by full "category/name" key, bare category,
-// or bare name — the three forms scenarios use to name a prerequisite.
+// or bare name - the three forms scenarios use to name a prerequisite.
 func (s *Server) scenariosUsingComponent(category, name string) []ScenarioRef {
 	full := category + "/" + name
 	out := []ScenarioRef{}

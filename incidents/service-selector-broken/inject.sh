@@ -18,19 +18,19 @@ POD_LABEL="$(kubectl -n "$NS" get deploy "$SVC" \
 SVC_LABEL="$(kubectl -n "$NS" get svc "$SVC" \
   -o 'jsonpath={.spec.selector.app\.kubernetes\.io/name}' 2>/dev/null || true)"
 if [ -n "$SVC_LABEL" ] && [ "$SVC_LABEL" != "$POD_LABEL" ]; then
-  echo "Fault already injected — nothing to do."
+  echo "Fault already injected - nothing to do."
   exit 0
 fi
 
 # A plausible wrong value, not one that names the lab. "labfault-nobody" sat in
 # the single object the learner is meant to inspect and announced that the lab
-# had done this — the whole drill is noticing that two label sets disagree, and
+# had done this - the whole drill is noticing that two label sets disagree, and
 # a value prefixed "labfault-" answers it on sight. A half-finished rename is
 # how this really happens.
 BAD_LABEL="${POD_LABEL:-$SVC}-v2"
 
 # Arm the paging rule first so the on-call drill measures real detection.
-# Tolerate a missing prometheus operator — the fault still works unpaged.
+# Tolerate a missing prometheus operator - the fault still works unpaged.
 MON_NS="${MONITORING_NAMESPACE:-monitoring}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=incidents/_lib/render.sh
@@ -38,7 +38,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=incidents/_lib/state.sh
 . "$LIB/state.sh"
 render_targeted "$SCRIPT_DIR/alerts/rule.yaml" | kubectl apply -n "$MON_NS" -f - >/dev/null 2>&1 ||
-  echo "Note: alert rule not installed (monitoring stack missing?) — continuing without paging."
+  echo "Note: alert rule not installed (monitoring stack missing?) - continuing without paging."
 
 echo "Applying a configuration change to $NS/$SVC..."
 fault_state_save "$FAULT" "original-selector=${ORIGINAL_SELECTOR:-none}"

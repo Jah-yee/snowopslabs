@@ -1,5 +1,5 @@
 ## Kyverno overlay for security-compliance.
-## Base values come from platformValues: security/policy/kyverno (ADR-0010) —
+## Base values come from platformValues: security/policy/kyverno (ADR-0010) -
 ## this file adds ONLY what the scenario needs on top: Prometheus scraping, so
 ## the security dashboard's policy panels have data instead of "No data".
 ##

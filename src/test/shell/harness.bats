@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Tests for the stub harness itself. If these fail, every other shell test in
-# the repo is untrustworthy — so they run first and assert the harness's own
+# the repo is untrustworthy - so they run first and assert the harness's own
 # contract: recording, failure injection, per-argument rules, and the
 # idempotency helpers that W3's provider tests depend on.
 

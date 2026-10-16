@@ -1,4 +1,4 @@
-# Coverage exceptions — a ratchet, not an amnesty.
+# Coverage exceptions - a ratchet, not an amnesty.
 #
 # Format: <package> <floor-percent> <phase that removes this entry> <why>
 #

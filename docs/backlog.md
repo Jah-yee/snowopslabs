@@ -6,7 +6,7 @@ session can pick one up without re-deriving it.
 
 To pick one up: read the item, read the documents it links, and follow the
 [definition of done](AGENT-CONTEXT.md#definition-of-done). When it lands, delete
-the item — git history keeps the record.
+the item - git history keeps the record.
 
 Effort is in engineering days and is an estimate, not a commitment.
 
@@ -38,7 +38,7 @@ Effort is in engineering days and is an estimate, not a commitment.
 
 ---
 
-## B1 — Activate one scenario for two apps at once
+## B1: Activate one scenario for two apps at once
 
 **Problem.** A scenario can be active for exactly one app. Its name is the only
 identity everywhere: the `.active` marker, the run lock (`LockKey(name)`), the
@@ -65,14 +65,14 @@ None of those need to change.
 4. UI: a scenario card lists its activations; verify and teardown per activation.
 5. One traffic run per app (see [B2](#b2--k6-metrics-carry-no-app-label)).
 6. Content, by readiness:
-   - ready once the engine supports it — autoscaling-under-load,
+   - ready once the engine supports it: autoscaling-under-load,
      backup-restore-drill, secrets-management, mesh-traffic-management,
      cost-right-sizing, chaos-engineering;
-   - needs redesign — env-promotion (fixed `env-dev/staging/prod` namespaces and
+   - needs redesign: env-promotion (fixed `env-dev/staging/prod` namespaces and
      one `env-metadata` ConfigMap per env), observability-sre (fixed
      PrometheusRule name, alert checks keyed on the scenario), security-compliance
      (cluster-wide ClusterPolicies change what the other activation is graded on);
-   - single-instance by nature, refuse a second activation in preflight —
+   - single-instance by nature, refuse a second activation in preflight -
      node-drain-drill and cluster-upgrade-drill (they drain or replace nodes under
      every app), event-driven-arch and gitops-cicd (they do not use the app).
 
@@ -86,7 +86,7 @@ not for comparing performance grades.
 
 ---
 
-## B2 — k6 metrics carry no app label
+## B2: k6 metrics carry no app label
 
 **Problem.** There is one cluster-wide k6 Job (`traffic-k6`) and its remote-written
 metrics (`k6_http_reqs_total`, `k6_http_req_duration_p95`, …) have no `app`
@@ -111,7 +111,7 @@ dashboards.
 
 ---
 
-## B3 — The shared request dashboard only sees the default metric name
+## B3: The shared request dashboard only sees the default metric name
 
 **Problem.** An app declares its request histogram in `app.env`
 (`APP_REQUEST_METRIC`, free-form). Scenario dashboards render the bound app's
@@ -131,7 +131,7 @@ the second.
 
 ---
 
-## B4 — Two scenarios can mutate the same app at once
+## B4: Two scenarios can mutate the same app at once
 
 **Problem.** Scenarios share the app they are bound to. cost-right-sizing inflates
 its resource requests, autoscaling-under-load scales it and measures latency,
@@ -149,7 +149,7 @@ conflict before choosing refuse over warn.
 
 ---
 
-## B5 — Activating from the UI does not report missing hostnames
+## B5: Activating from the UI does not report missing hostnames
 
 **Problem.** Only a lab on a `DOMAIN_SUFFIX` the user set is affected: the
 default `*.localhost` names resolve without hosts entries, and `labctl init`
@@ -157,7 +157,7 @@ moves a lab on the old `*.k3d.local` default to them. On such a lab,
 `labctl scenario up` and `labctl app deploy` print Ingress hostnames that
 `/etc/hosts` does not list yet (`warnMissingHosts`). Activating from the UI
 prints nothing, so a learner there first learns of a new hostname when the
-browser fails to resolve it — env-promotion's `<app>-dev|staging|prod` hosts are
+browser fails to resolve it - env-promotion's `<app>-dev|staging|prod` hosts are
 the common case.
 
 **Proposed approach.** Expose the missing hosts on the scenario detail or status
@@ -169,7 +169,7 @@ response (reading `/etc/hosts` needs no privileges), and show a notice with the
 
 ---
 
-## B6 — Incident scripts still fall back to go-api
+## B6: Incident scripts still fall back to go-api
 
 **Problem.** Scenario scripts take the binding through
 `scenarios/_lib/workload.sh` and fail loudly without one. Incident scripts
@@ -186,7 +186,7 @@ fallbacks. Review each fault with the incident review harness afterwards.
 
 ---
 
-## B7 — A Docker VM restart silently kills k3d nodes
+## B7: A Docker VM restart silently kills k3d nodes
 
 **Problem.** k3d nodes share the Docker VM's kernel, whose
 `fs.inotify.max_user_instances` defaults to 128 on colima. `runtimes/k3d/up.sh`
@@ -209,7 +209,7 @@ docker restart k3d-snowops-agent-1-0
 ```
 
 **Proposed approach.** Re-apply the limit wherever labctl touches a running
-cluster, not only at creation — `labctl status`, `labctl doctor`, and the start of
+cluster, not only at creation: `labctl status`, `labctl doctor`, and the start of
 every run-engine operation are candidates. Have `labctl status` report a node
 whose k3s process is gone while its container is up, with the recovery above.
 
@@ -218,7 +218,7 @@ whose k3s process is gone while its container is up, with the recovery above.
 
 ---
 
-## B9 — Latency below 5ms is invisible, and it hides tail amplification
+## B9: Latency below 5ms is invisible, and it hides tail amplification
 
 **Problem.** The request histogram's first bucket ends at 5ms (`le` = 0.005, 0.01,
 0.025, …, 10). Go and the JVM both answer the lab's routes in about a
@@ -246,7 +246,7 @@ histogram with no bucket below 5ms.
 
 ---
 
-## B10 — Chaos network faults never reach the traffic generator
+## B10: Chaos network faults never reach the traffic generator
 
 **Problem.** chaos-engineering's `network-delay` and `network-partition`
 experiments act only between the workload and the `traefik` namespace
@@ -270,7 +270,7 @@ with the scenario review harness afterwards.
 
 ---
 
-## B11 — secrets-management only works for the app the platform was installed for
+## B11: secrets-management only works for the app the platform was installed for
 
 **Problem.** `platform/secrets/external-secrets/install.sh` creates the
 SecretStore and the `<workload>-secret` ExternalSecret for whichever app is bound
@@ -278,7 +278,7 @@ when the platform component is installed (`${WORKLOAD_NAME:-go-api}`). The
 scenario then assumes that ExternalSecret exists for the app it is activated
 with. On a lab whose platform was installed for go-api, `labctl scenario up
 secrets-management --app java-api` fails in `seed-baseline.sh` with
-`externalsecrets.external-secrets.io "java-api-secret" not found` — and the
+`externalsecrets.external-secrets.io "java-api-secret" not found`: and the
 failed activation leaves `secret-consumer` and `env-consumer` running in the
 `java-api` namespace, because a failed `up` does not roll back what it already
 applied (compare [B8](#b8--scenario-down-reports-success-when-its-deletes-fail)).
@@ -295,7 +295,7 @@ a failed `scenario up` should uninstall the components it already applied.
 
 ---
 
-## B12 — Every k3d node promises the whole machine's memory
+## B12: Every k3d node promises the whole machine's memory
 
 **Problem.** k3d nodes are containers on one Docker VM, and each kubelet reports
 the VM's full memory as allocatable. On an 8GB colima VM the three nodes
@@ -318,7 +318,7 @@ scenario so learners know how many they can run at once.
 
 ---
 
-## B16 — Web UI actions bypass the run engine
+## B16: Web UI actions bypass the run engine
 
 **Problem.** The `/api/v2` handlers for app deploy, destroy and build, platform
 install and uninstall, scenario up and down, incident inject, services,
@@ -360,7 +360,7 @@ operator-only) and the UI action switched from the job panel to the run:
 `src/internal/httpapi/traffic.go`, `src/internal/service/`.
 ---
 
-## B18 — `internal/cli` runs on package-level state
+## B18: `internal/cli` runs on package-level state
 
 **Problem.** The CLI's configuration, executor and engines (`cfg`,
 `scriptExec`, `reg`, `scenes`, `incEng`, `svcReg`, `rtm`) are package
@@ -389,7 +389,7 @@ constructor form for new commands.
 
 ---
 
-## B19 — Smaller Go clean-ups
+## B19: Smaller Go clean-ups
 
 Each is small, safe and independent:
 
@@ -422,7 +422,7 @@ Each is small, safe and independent:
 
 ---
 
-## B20 — `install.sh` leaves a fresh Mac stuck on `PATH`
+## B20: `install.sh` leaves a fresh Mac stuck on `PATH`
 
 **Problem.** On a fresh macOS user `install.sh` prints "`~/.local/bin` is not on
 your PATH. Add this line to ~/.bashrc or ~/.zshrc" and the export line. A fresh
@@ -443,7 +443,7 @@ section, `docs/getting-started/macos.md`, the install tests in `src/test/shell`.
 
 ---
 
-## B21 — `init` floods the screen with `metrics.k8s.io` discovery errors
+## B21: `init` floods the screen with `metrics.k8s.io` discovery errors
 
 **Problem.** A clean `labctl init` prints dozens of lines such as
 `E0929 … memcache.go:287] couldn't get resource list for metrics.k8s.io/v1beta1:
@@ -466,7 +466,7 @@ filter only these known discovery lines from stderr and keep them under
 
 ---
 
-## B22 — cost-right-sizing cannot activate on a 2 CPU lab
+## B22: cost-right-sizing cannot activate on a 2 CPU lab
 
 **Problem.** `scenario up cost-right-sizing --deploy-prereqs` fails after five
 minutes in the inflate stage with `error: timed out waiting for the condition`
@@ -490,7 +490,7 @@ resource figures in [Resources](resources.md).
 
 ---
 
-## B23 — Scenario Explore links point at dashboards that do not exist yet
+## B23: Scenario Explore links point at dashboards that do not exist yet
 
 **Problem.** The Explore tab of an inactive scenario links to its Grafana
 dashboard (for example `/d/autoscaling-under-load`). The dashboard is installed
@@ -507,7 +507,7 @@ links in each `scenario.yaml`.
 
 ---
 
-## B28 — The pod memory panel cannot show one small pod
+## B28: The pod memory panel cannot show one small pod
 
 **Problem.** "Pod memory working set" on the Pod Resources dashboard is
 `sum by (namespace, pod) (container_memory_working_set_bytes{container!=""})`
@@ -535,14 +535,14 @@ really shows: a pod killed every twenty seconds leaves dots, not a line, and
 
 ---
 
-## B29 — oom-kill's output gives the fault away, and its solution describes an older fault
+## B29: oom-kill's output gives the fault away, and its solution describes an older fault
 
 **Problem.** Two things, both in `incidents/oom-kill`:
 
 1. `inject.sh` says "Nothing printed here names the fault", then prints
    "Sizing the change from its resting working set of 4Mi.", "Applying a
    resource change to go-api/go-api..." and, when the first limit does not
-   bite, "Still healthy — tightening to 7Mi." The lab UI shows these lines in
+   bite, "Still healthy - tightening to 7Mi." The lab UI shows these lines in
    its output panel while the learner waits for the fault.
 2. `solution.md` says the limit "was cut to a quarter of its own memory
    request" and "will read as a quarter of the request below it".
@@ -569,7 +569,7 @@ from what `inject.sh` does today.
 
 ---
 
-## B30 — `rollout undo` brings old fault markers back onto the Deployment
+## B30: `rollout undo` brings old fault markers back onto the Deployment
 
 **Problem.** Faults keep their bookkeeping in a record of their own
 (`incidents/_lib/state.sh`), so a new drill writes nothing on the workload.
@@ -597,7 +597,7 @@ a mode that lists them from the object. Cover it in
 
 ---
 
-## B35 — A hand-fixed incident leaves its fault record and alert rule behind
+## B35: A hand-fixed incident leaves its fault record and alert rule behind
 
 **Problem.** When `labctl incident status` sees the detection check pass, it
 closes the incident as solved by hand, but what `inject.sh` added for its own
@@ -625,7 +625,7 @@ its runner runs `resolve` after the hand fix to tidy up, which hides it.
 `result.Pass` branch), `src/internal/service/incident/`, `src/test/cluster/run.sh`.
 ---
 
-## B36 — `platform status` misses components a scenario installed
+## B36: `platform status` misses components a scenario installed
 
 **Problem.** `labctl platform status` lists components from the run history,
 which only `labctl platform up` writes. A component that `scenario up

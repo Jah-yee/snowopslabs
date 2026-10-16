@@ -21,12 +21,12 @@ teardown() {
   rm -rf "$WORK"
 }
 
-# hunk <path> <first-line> <count> — one added hunk in the diff.
+# hunk <path> <first-line> <count> - one added hunk in the diff.
 hunk() {
   printf '+++ b/%s\n@@ -1,0 +%s,%s @@\n' "$1" "$2" "$3" >>"$DIFF"
 }
 
-# block <file> <first-line> <last-line> <count> — one coverage block.
+# block <file> <first-line> <last-line> <count> - one coverage block.
 block() {
   echo "example.com/m/$1:$2.1,$3.10 1 $4" >>"$PROFILE"
 }

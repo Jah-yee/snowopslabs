@@ -1,7 +1,7 @@
 name: network-blackhole
 verified: true
 displayName: "Network blackhole: service unreachable"
-description: "{{.WorkloadName}} went dark. Every request through the ingress 5xxes — yet the pods are Running and Ready, the app logs are quiet, and nothing was deployed. The requests are not arriving at all. Something on the wire is eating them."
+description: "{{.WorkloadName}} went dark. Every request through the ingress 5xxes - yet the pods are Running and Ready, the app logs are quiet, and nothing was deployed. The requests are not arriving at all. Something on the wire is eating them."
 category: network
 severity: high
 target:

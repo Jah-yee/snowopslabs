@@ -25,7 +25,7 @@ function prettyMetricName(name?: string): string {
 }
 
 /** Plain-English tooltip explaining the autoscaler's driving metric so a user
- *  doesn't have to decode "0.3 / 25" — what it is, and when it scales. */
+ *  doesn't have to decode "0.3 / 25" - what it is, and when it scales. */
 function hpaMetricTitle(hpa: NonNullable<AppInfo['hpa']>): string {
   const metric = prettyMetricName(hpa.metricName)
   return `Current ${hpa.metricCurrent || '0'} vs target ${hpa.metricTarget} of "${metric}", averaged across replicas. ` +
@@ -62,7 +62,7 @@ export function Apps({ notify, requestConfirm, clusterDown = false }: AppsProps)
       await navigator.clipboard.writeText(text)
       notify('success', 'Copied to clipboard', '')
     } catch {
-      notify('error', 'Copy failed', 'Clipboard access denied — copy manually.')
+      notify('error', 'Copy failed', 'Clipboard access denied - copy manually.')
     }
   }
 
@@ -109,7 +109,7 @@ export function Apps({ notify, requestConfirm, clusterDown = false }: AppsProps)
       {loadError && (
         <div className="banner banner-warn" role="alert">
           <Icon name="alert-triangle" size={16} className="banner-icon" />
-          <span className="banner-body">Refresh failed ({loadError}) — showing last known data.</span>
+          <span className="banner-body">Refresh failed ({loadError}) - showing last known data.</span>
           <span className="banner-actions">
             <button className="btn btn-sm" onClick={load} disabled={refreshing}>Retry</button>
           </span>
@@ -140,7 +140,7 @@ export function Apps({ notify, requestConfirm, clusterDown = false }: AppsProps)
                 </div>
 
                 <div className="app-meta">
-                  build: {a.buildStrategy || '—'} · deploy: {a.deployStrategy || '—'}
+                  build: {a.buildStrategy || '-'} · deploy: {a.deployStrategy || '-'}
                   {a.replicas && ` · replicas: ${a.replicas}`}
                   {a.ready && ` · ready: ${a.ready}`}
                   {a.hpa && (
@@ -248,7 +248,7 @@ function FileBody({ file, onCopy }: { file: AppFileRef; onCopy: (t: string) => v
         <button className="cmd-copy" onClick={() => onCopy(file.content)}>Copy</button>
         <pre className="snippet-code">{file.content}</pre>
       </div>
-      {file.truncated && <div className="field-help">Showing the first part of the file — open <code>{file.path}</code> for the full contents.</div>}
+      {file.truncated && <div className="field-help">Showing the first part of the file - open <code>{file.path}</code> for the full contents.</div>}
     </>
   )
 }

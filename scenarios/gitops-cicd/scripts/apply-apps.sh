@@ -30,4 +30,4 @@ echo "✓ Application gitops-demo bound (sync=${sync:-unknown}, health=${health:
 
 # gitops-broken is deliberately not waited on: it is seeded broken, so waiting
 # for it to go Healthy would hang activation for the length of the drill.
-echo "✓ Application gitops-broken bound — it is MEANT to be unhealthy; repairing it is objective 7"
+echo "✓ Application gitops-broken bound - it is MEANT to be unhealthy; repairing it is objective 7"

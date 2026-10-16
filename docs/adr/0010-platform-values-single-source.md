@@ -1,4 +1,4 @@
-# ADR 0010 — Platform values are the single source of truth for a component
+# ADR 0010: Platform values are the single source of truth for a component
 
 **Status:** Accepted
 **Date:** 2026-09-04
@@ -25,7 +25,7 @@ fields other than 'replicas', 'ordinals', 'template', 'updateStrategy',
 ```
 
 The scenario worked on a clean cluster and failed on one where the platform
-component was already installed — the more common case, and the harder one to
+component was already installed: the more common case, and the harder one to
 debug, because the error names Kubernetes' immutability rule rather than the
 duplicated file that caused it. Grafana and Prometheus never hit this: one is a
 Deployment, the other is managed by an operator.

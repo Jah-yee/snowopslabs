@@ -1,4 +1,4 @@
-# ADR 0014 — Workload binding and the app contract
+# ADR 0014: Workload binding and the app contract
 
 **Status:** Accepted
 **Date:** 2026-09-08
@@ -34,7 +34,7 @@ known port, RED metrics, an OTLP endpoint env var, and one readiness toggle.
 ## Decision
 
 Scenarios depend on a **role**, not an app. The lab holds a **binding** from
-that role to a concrete workload — `go-api` by default, swappable to another
+that role to a concrete workload - `go-api` by default, swappable to another
 built-in app or one the user brings.
 
 **1. One role for now: `http-service`.** Twelve of thirteen scenarios use
@@ -46,7 +46,7 @@ speculatively.
 `WorkloadMetric`. Checks, manifests and prose stop naming an app.
 
 The names are flat, not nested, because the run-time expander matches a single
-dotted identifier (`{{\s*\.(\w+)\s*}}`) deliberately — widening it to accept
+dotted identifier (`{{\s*\.(\w+)\s*}}`) deliberately - widening it to accept
 dots would start rewriting the Helm, Prometheus and Grafana templating that
 legitimately shares those files. A nested `{{.Workload.Name}}` would pass
 through unresolved and reach kubectl verbatim.
@@ -56,7 +56,7 @@ target reads `{{.WorkloadNamespace}}` follows the binding, while one that pins a
 literal keeps breaking exactly the workload it names.
 
 **2a. One package owns the variable set.** The set used to be written out three
-times — the catalog validator, the scenario engine, the incident engine — and
+times (the catalog validator, the scenario engine, the incident engine) and
 the copies had already drifted: `{{.IngressClass}}` resolved at run time but was
 rejected by the validator, and the incident engine carried neither it nor
 `{{.MonitoringNamespace}}`, so a fault naming one rendered `<no value>`.
@@ -79,8 +79,8 @@ second place to look.
 | `APP_CAPABILITIES` | *(none)* | Optional behaviours the app claims |
 
 Only capabilities have no default: the base interface is assumed, but a claim is
-explicit or absent. The request metric is **named rather than assumed** — each
-language's instrumentation library picks its own — while defaulting to the
+explicit or absent. The request metric is **named rather than assumed**, each
+language's instrumentation library picks its own, while defaulting to the
 OpenTelemetry semantic-convention name, so "make your app compatible" teaches a
 real standard and an already-instrumented app arrives close to conformant.
 
@@ -89,14 +89,14 @@ with `platform:` and `apps:` because they are a prerequisite of the same kind.
 Preflight refuses to activate a scenario the bound app cannot satisfy, before
 anything installs, naming every gap at once and how to fix it.
 
-The vocabulary is **closed** — `prometheus-metrics`, `otlp-tracing`,
-`readiness-toggle` — because a scenario's requirement and an app's claim are
+The vocabulary is **closed**: `prometheus-metrics`, `otlp-tracing`,
+`readiness-toggle`: because a scenario's requirement and an app's claim are
 matched by string, so an open vocabulary would let a typo on either side mean
 "never satisfied" with no error anywhere. It is also deliberately short: each
 one earns its place by being something a scenario in this repository actually
-needs. A survey of all thirteen scenarios found `stateful` was not one —
+needs. A survey of all thirteen scenarios found `stateful` was not one,
 `backup-restore-drill` and `gitops-cicd` deploy their own PVCs and merely borrow
-an app's image — so it was not invented.
+an app's image, so it was not invented.
 
 **5. Challenges and learning paths are pinned to the default workload.** They
 compose scenarios and incidents by reference, so the binding would otherwise flow
@@ -104,7 +104,7 @@ straight into them. They are scored and timed: a par time is calibrated against
 one workload, and a leaderboard comparing runs on different applications measures
 the language rather than the engineer.
 
-`--app` on those commands is an error, not a silent no-op — silently ignoring it
+`--app` on those commands is an error, not a silent no-op - silently ignoring it
 would be worse than either honouring or refusing it. An ambient `APP_NAME` is
 pinned quietly instead, because refusing every challenge because `.env` sets a
 default would be hostile.
@@ -119,8 +119,8 @@ the existing runner rather than bespoke logic, so a claim is verified the same
 way a scenario would use it.
 
 Two capabilities are reported as *declared, not machine-checked*:
-`otlp-tracing` and `readiness-toggle`. Both are conditional promises — "if you
-set this env var I will export", "if you call this endpoint I will go unready" —
+`otlp-tracing` and `readiness-toggle`. Both are conditional promises ("if you
+set this env var I will export", "if you call this endpoint I will go unready"),
 so a baseline deployment looks identical whether or not the app honours them.
 Grading them would fail a conforming app; asserting they passed would be a lie.
 This was found by building the check and watching it fail `go-api`, which does
@@ -128,9 +128,9 @@ honour OTLP but only once a tracing scenario wires the endpoint.
 
 **5. Bringing an app reuses the ADR-0008 seam.** Directory discovery plus an
 env var, no new distribution mechanism. Two modes:
-   - **Pre-built image** — a contract manifest naming image, port, probe paths
+   - **Pre-built image**: a contract manifest naming image, port, probe paths
      and metric names. Nothing is built.
-   - **Source in `apps/`** — the existing `BUILD_STRATEGY` path, unchanged.
+   - **Source in `apps/`**: the existing `BUILD_STRATEGY` path, unchanged.
 
 **6. Comparison is a first-class operation.** Running one scenario against two
 bindings and diffing the result is a product feature, which makes fairness a
@@ -146,18 +146,18 @@ from ambient config.
 They have to. Those commands run minutes later and in a different process: a
 scenario brought up against `java-api` was otherwise graded and torn down against
 whatever `APP_NAME` happened to say, and a fault injected into `java-api` was
-detected against `go-api`'s namespace — where the detection check *passes*, which
+detected against `go-api`'s namespace, where the detection check *passes*, which
 clears the incident and scores it solved.
 
 The UI offers the same choice in the activation and injection dialogs, so the
 binding is not a CLI-only feature. Its engines are never rebound in place: a
 mutating request works on a clone, because the API serves many requests from one
 engine and an injection that rebound the shared one would be observed by every
-concurrent read — and a read that waited for the binding lock would hang the UI
+concurrent read, and a read that waited for the binding lock would hang the UI
 for the length of the injection it was displaying.
 
-**7. Thresholds become workload-relative.** Absolute values calibrated to Go —
-`latency-within-slo < 1.5`, `readyReplicas >= 3` at 25 RPS/replica — grade the
+**7. Thresholds become workload-relative.** Absolute values calibrated to Go
+(`latency-within-slo < 1.5`, `readyReplicas >= 3` at 25 RPS/replica) grade the
 language, not the engineer, once a JVM app is bound. Each check with an absolute
 threshold either moves to a per-workload baseline captured at bind time or
 becomes a parameter.
@@ -167,7 +167,7 @@ becomes a parameter.
 | Alternative | Why rejected |
 |---|---|
 | Keep apps coupled; normalise `oom-kill` to `go-api` | Removes the inconsistency for ~1 day, but forecloses BYO and comparison entirely |
-| Bind any app with no declared contract | Every failure becomes ambiguous — "is the lab broken or my app?" — which is exactly the property the simulator exists to avoid |
+| Bind any app with no declared contract | Every failure becomes ambiguous, "is the lab broken or my app?", which is exactly the property the simulator exists to avoid |
 | Per-app metric-name mapping layer | Avoids touching the apps, but adds indirection to every PromQL check and hides the standard the scenario should be teaching |
 | Keep `http_requests_total` as the SnowOps standard | Zero migration now, but every non-Go app needs bespoke instrumentation to conform |
 | Multiple roles up front (`queue-consumer`, `stateful-service`) | Speculative; one role covers 12 of 13 scenarios and roles are cheap to add later |
@@ -184,7 +184,7 @@ becomes a parameter.
 
   | Before | After |
   |---|---|
-  | `http_requests_total` (counter) | *removed* — semconv defines none |
+  | `http_requests_total` (counter) | *removed* - semconv defines none |
   | `http_request_duration_seconds` (histogram) | `http_server_request_duration_seconds` |
   | labels `method`, `path`, `code` | `http_request_method`, `http_route`, `http_response_status_code` |
 
@@ -200,7 +200,7 @@ becomes a parameter.
 
   Bucket boundaries moved to the semconv-recommended set, which extends to 10s.
   The old set stopped at 1s, so a p99 SLO of 1.5s could never be measured
-  honestly — and a JVM app under warmup lives entirely above that ceiling.
+  honestly, and a JVM app under warmup lives entirely above that ceiling.
 
   `app` is kept as a label though semconv does not define it: every scenario,
   dashboard and `labctl app verify` selects on it, and it matches the pod label
@@ -211,7 +211,7 @@ becomes a parameter.
 - **Sequencing:** the semconv rename lands *before* content migration, so each
   content file is edited once for both templating and metric names.
 - **CI:** e2e stays pinned to the default binding. BYO is covered by a
-  conformance suite plus one representative scenario — never a scenario x app
+  conformance suite plus one representative scenario, never a scenario x app
   matrix.
 - **Trust:** a brought app runs in the user's cluster under their credentials,
   the same caveat ADR-0008 records for external content.

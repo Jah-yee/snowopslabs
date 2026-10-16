@@ -28,7 +28,7 @@ coverage.html
 src/internal/webui/dist/*
 !src/internal/webui/dist/.gitkeep
 
-## Vitest's run cache — a build artifact, and it changes on every test run
+## Vitest's run cache - a build artifact, and it changes on every test run
 src/.vite/
 
 ## SPA build output and dependencies
@@ -55,11 +55,11 @@ Thumbs.db
 .labctl/
 .snowops/
 
-## Local session scaffolding — planning state and scratch logs. CLAUDE.md and
+## Local session scaffolding - planning state and scratch logs. CLAUDE.md and
 ## the authoring skills under .claude/skills/ are committed: they route agents
 ## and contributors to the public docs.
 .ai/
 AGENTS.md
 
-## Internal migration planning — local only, never committed
+## Internal migration planning - local only, never committed
 .roadmap/

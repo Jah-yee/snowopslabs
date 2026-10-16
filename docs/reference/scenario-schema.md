@@ -60,7 +60,7 @@ when the Prometheus CRDs already exist
 ## Components
 
 A component is one installable thing. Use **either** a top-level `components:`
-list **or** `stages:` — never both. Stages are preferred: they group components
+list **or** `stages:`, never both. Stages are preferred: they group components
 into phases you can reason about (`baseline`, `inject-failure`) and install in
 declaration order.
 
@@ -70,7 +70,7 @@ components:
     type: helm                        # helm | manifest | grafana-dashboard | script
     chart: grafana-community/loki
     repo: https://grafana-community.github.io/helm-charts
-    version: "18.12.0"                # always pinned — see config/versions.env
+    version: "18.12.0"                # always pinned - see config/versions.env
     namespace: "{{.MonitoringNamespace}}"
     platformValues: logging/loki      # base values, owned by the platform
     valuesFile: values/loki.yaml      # overlay, applied on top
@@ -85,7 +85,7 @@ components:
 | `type` | all | `helm`, `manifest`, `grafana-dashboard` or `script` |
 | `chart` / `repo` / `version` | `helm` | Chart, repo URL, and the **required** pinned version |
 | `namespace` | all | Target namespace; template-resolved |
-| `platformValues` | `helm` | Platform component whose values are the base — see below |
+| `platformValues` | `helm` | Platform component whose values are the base - see below |
 | `valuesFile` | `helm` | Values file relative to the scenario directory, layered on top |
 | `set` | `helm` | Map of `--set` key/value overrides |
 | `adopt` | `helm` | Reuse an already-installed release instead of upgrading it |
@@ -102,7 +102,7 @@ components:
 | `grafana-dashboard` | Creates a ConfigMap from the dashboard JSON at `path`, which the Grafana sidecar picks up |
 | `script` | Runs the shell script at `script` |
 
-### Dashboards — an App selector, and legends a reader can follow
+### Dashboards: an App selector, and legends a reader can follow
 
 A dashboard that shows the workload declares an `app` variable, plus a
 `namespace` variable when its queries need one, and its queries use `$app` and
@@ -138,7 +138,7 @@ when it exposes no request metric. The dashboard `uid` and `title` stay fixed.
 Queries using `without`, `label_replace` or `label_join` are not judged, and
 neither are tables.
 
-### `platformValues` — one values file per component
+### `platformValues`: one values file per component
 
 A component's Helm values live **once**, at
 `platform/<category>/<component>/values.yaml`. A scenario names that file with
@@ -155,15 +155,15 @@ Duplicated values drift, and Helm reports the drift as a forbidden update to an
 immutable StatefulSet field. See
 [ADR-0010](../adr/0010-platform-values-single-source.md).
 
-### `adopt` — do not clobber a platform release
+### `adopt`: do not clobber a platform release
 
 `adopt: true` reuses an already-installed release rather than upgrading it, so a
 scenario never overwrites something the platform owns. A scenario that adopts a
 platform release must not uninstall it on teardown.
 
-### `uninstallScript` — undo a script component
+### `uninstallScript`: undo a script component
 
-Without it, a script's side effects — an env var set on a Deployment, say —
+Without it, a script's side effects (an env var set on a Deployment, say)
 outlive the scenario that created them.
 
 ```yaml
@@ -209,7 +209,7 @@ checks:
     pending: true                     # render PENDING rather than FAIL
 ```
 
-Each check type accepts only its own fields — an `http` check carrying a `query`
+Each check type accepts only its own fields - an `http` check carrying a `query`
 is rejected, not ignored.
 
 A `kubectl` check whose field is unset, such as `.status.readyReplicas` before
@@ -232,7 +232,7 @@ These make `verify` teach instead of alarm.
   broken". `verify` still exits non-zero.
 
 Assert on the observability pipeline too. A check that the metric *exists* means
-an empty dashboard fails `verify` instead of quietly confusing a learner — see
+an empty dashboard fails `verify` instead of quietly confusing a learner - see
 [R13](../runbooks/R13-observability-pipeline.md).
 
 > When asserting on a running image, compare `.spec.containers[].image`, not
@@ -325,7 +325,7 @@ the default and any override.
 ### `apps` is for a pinned app, not for the one you are bound to
 
 Write `apps: ["{{.WorkloadName}}"]` and the entry means "the bound workload must
-exist" — not "this scenario requires go-api". Every shipped scenario is written
+exist", not "this scenario requires go-api". Every shipped scenario is written
 this way, and the UI treats the two differently: a templated entry is shown as
 **Runs against**, with a picker offering every app in the lab; a literal one is
 shown as a requirement the user has to satisfy, and it disables the picker.
@@ -333,10 +333,10 @@ shown as a requirement the user has to satisfy, and it disables the picker.
 Prefer `capabilities` over a literal app. Pinning one is a restriction that
 cannot be lifted at activation time.
 
-### `capabilities` — stating what you need, not who provides it
+### `capabilities`: stating what you need, not who provides it
 
 A scenario that names an app can only ever run against that app. One that states
-what it needs of an app can run against any app that provides it — including a
+what it needs of an app can run against any app that provides it, including a
 user's own. See [ADR-0014](../adr/0014-workload-binding-and-app-contract.md).
 
 ```yaml
@@ -346,7 +346,7 @@ prerequisites:
     - otlp-tracing
 ```
 
-The vocabulary is closed — `labctl app capabilities` lists it, and an unknown
+The vocabulary is closed - `labctl app capabilities` lists it, and an unknown
 name fails `labctl validate` rather than silently meaning "never satisfied":
 
 | Capability | The app… |
@@ -427,7 +427,7 @@ An unknown variable is a validation error, not an empty string.
 
 ### Grading something that already happened
 
-A check for an event — an alert fired, a backlog built up — looks back over a
+A check for an event (an alert fired, a backlog built up) looks back over a
 range. Use `{{.SinceActivation}}` for it, not a fixed window:
 
 ```yaml
@@ -463,7 +463,7 @@ checks:
 
 `{{.WorkloadMetric}}` names the histogram rather than assuming it, because each
 language's instrumentation library picks its own. Derive a request rate from its
-`_count` series (`rate({{.WorkloadMetric}}_count[5m])`) — the OpenTelemetry
+`_count` series (`rate({{.WorkloadMetric}}_count[5m])`) - the OpenTelemetry
 semantic conventions the app contract mandates define no separate counter.
 
 The names are flat (`{{.WorkloadName}}`, not `{{.Workload.Name}}`). The expander
@@ -473,7 +473,7 @@ would pass through unresolved and reach kubectl verbatim.
 
 ### Templates in content, environment variables in scripts
 
-The engine resolves `{{.Workload*}}` in everything it reads itself — `scenario.yaml`,
+The engine resolves `{{.Workload*}}` in everything it reads itself: `scenario.yaml`,
 the manifests it applies, dashboard JSON, snippets and prose. It does **not**
 resolve a script: a script is executed as a file, so a `{{.WorkloadName}}` inside
 one reaches `kubectl` verbatim.
@@ -553,7 +553,7 @@ rule to traffic: write `labctl traffic start --app {{.WorkloadName}}`.
 - **File paths.** `path: manifests/{{.WorkloadName}}-tls.yaml` looks for a file
   that does not exist. Name the file for its role instead.
 - **Check names.** They are recorded against scores, so a templated name makes a
-  result history incomparable. Name the check for what it asserts —
+  result history incomparable. Name the check for what it asserts -
   `workload-healthy`, not `go-api-healthy`.
 - **Dashboard UIDs**, for the same reason: they are stable identities.
 
@@ -561,7 +561,7 @@ rule to traffic: write `labctl traffic start --app {{.WorkloadName}}`.
 
 A threshold calibrated against one application grades that application's runtime,
 not the engineer's work. A p99 bound a Go service clears easily is one a JVM
-fails on warmup alone — and a user's own application has no calibration at all,
+fails on warmup alone, and a user's own application has no calibration at all,
 so it would fail a check it has no way to satisfy.
 
 Per-application baselines do not fix this: a conforming app still arrives without
@@ -570,15 +570,15 @@ the assertion so it needs no calibration instead.
 
 | Instead of | Assert | Why it travels |
 |---|---|---|
-| `p99 < 1.5` | `p99 / p50 < N` | Tail amplification is the same question for a 2ms service and a 200ms one — it measures degradation, not speed |
+| `p99 < 1.5` | `p99 / p50 < N` | Tail amplification is the same question for a 2ms service and a 200ms one - it measures degradation, not speed |
 | `readyReplicas >= 3` | `readyReplicas > {{.MinReplicas}}` | "It scaled" is the lesson; a fixed count encodes one runtime's throughput per replica |
 | a latency bound | error ratio `< 0.01` | Saturation shows up as errors in every runtime |
 
 Most checks need no thought here: `readyReplicas >= 1`, `deployment exists`, and
 `the metric is being scraped` already grade configuration rather than speed.
 
-**When an absolute number really is the lesson** — an availability SLO in a
-drill — make it a parameter so it reads as a deliberate choice, and say in its
+**When an absolute number really is the lesson**: an availability SLO in a
+drill - make it a parameter so it reads as a deliberate choice, and say in its
 description what a failure means:
 
 ```yaml
@@ -586,7 +586,7 @@ parameters:
   - name: AvailabilitySLO
     displayName: "Availability SLO across the drain"
     description: "Lower it if your workload is slower to become Ready than the
-      drill allows — a slow-starting runtime failing this is a real finding about
+      drill allows - a slow-starting runtime failing this is a real finding about
       replica count and readiness gating, not a defect in the application."
     default: "0.995"
     type: string
@@ -605,7 +605,7 @@ by the scenario are legal template variables anywhere in it, and `labctl validat
 rejects a reference to one that is not declared.
 
 Everything `labctl scenario info` and the UI display is resolved before it is
-shown — component namespaces and charts included — using the scenario's
+shown, component namespaces and charts included, using the scenario's
 parameter **defaults** where a `{{.Param}}` appears. A learner therefore reads
 `ns=monitoring` and `minReplicaCount: 1`, never the raw placeholder, and both
 surfaces render the same content identically.
@@ -624,7 +624,7 @@ namespaces and domains.
 
 ```yaml
 references:
-  - label: "KEDA — ScaledObject specification"
+  - label: "KEDA - ScaledObject specification"
     url: "https://keda.sh/docs/latest/reference/scaledobject-spec/"
     note: "Optional one-liner on why this link is relevant."
 
@@ -677,7 +677,7 @@ yet confirmed".
 
 ## Validation rules
 
-Enforced at load time — an invalid scenario refuses to load, and CI fails on it.
+Enforced at load time - an invalid scenario refuses to load, and CI fails on it.
 
 - `components` or `stages`, never both.
 - Stage, component and check names are unique and non-empty.
@@ -703,7 +703,7 @@ labctl validate --json
 
 ## Sharing scenarios
 
-A scenario is just a directory, so sharing one is git and nothing else — no pack
+A scenario is just a directory, so sharing one is git and nothing else, no pack
 format, registry or publish step ([ADR-0008](../adr/0008-content-extensibility-seam.md)).
 
 ```bash

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# In-cluster runtime "up" — no-op. The labctl server already runs inside the
+# In-cluster runtime "up" - no-op. The labctl server already runs inside the
 # target cluster (team mode); there is no cluster to create. kubectl
 # and helm use the in-cluster ServiceAccount config automatically.
 

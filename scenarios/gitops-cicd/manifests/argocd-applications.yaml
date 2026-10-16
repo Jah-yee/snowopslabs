@@ -1,6 +1,6 @@
 ## The GitOps contract: one Application binds a path in the lab's Git repo to a
-## destination in this cluster. Everything else — what image runs, how many
-## replicas — is decided in Git, never with kubectl.
+## destination in this cluster. Everything else - what image runs, how many
+## replicas - is decided in Git, never with kubectl.
 ##
 ## No resources-finalizer here on purpose. With the finalizer, deleting this
 ## Application cascades a delete through everything it manages, which on
@@ -32,7 +32,7 @@ spec:
       - CreateNamespace=true
 ---
 ## The second half of the drill: an Application whose Git path holds a release
-## that cannot become healthy. It syncs cleanly — the manifests are valid — and
+## that cannot become healthy. It syncs cleanly, the manifests are valid, and
 ## then goes Degraded, which is exactly the shape of a real bad deploy. The
 ## learner reads why from the Application's conditions and the pods, and fixes
 ## it where the fix belongs: in Git.

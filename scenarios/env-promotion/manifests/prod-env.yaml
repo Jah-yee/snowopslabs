@@ -1,5 +1,5 @@
 ---
-# prod environment — namespace, release metadata, {{.WorkloadName}} deployment + service + ingress.
+# prod environment - namespace, release metadata, {{.WorkloadName}} deployment + service + ingress.
 apiVersion: v1
 kind: Namespace
 metadata:

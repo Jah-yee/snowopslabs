@@ -24,7 +24,7 @@ import (
 // TestHelperProcess is not a real test: it is a controlled child process that
 // the cancellation tests re-invoke via os.Args[0]. When asked, it installs an
 // ignored SIGTERM disposition with a real sigaction, announces readiness, then
-// blocks — a deterministic stand-in for a long-running tool that traps SIGTERM.
+// blocks - a deterministic stand-in for a long-running tool that traps SIGTERM.
 // Without the env marker it is an immediate no-op, so a normal suite run of it
 // costs nothing.
 func TestHelperProcess(t *testing.T) {
@@ -114,7 +114,7 @@ func TestExecRun(t *testing.T) {
 			t.Errorf("argument was reinterpreted: got %q, want %q", lines[0], nasty)
 		}
 		if _, err := os.Stat(marker); err == nil {
-			t.Error("shell metacharacters were evaluated — the argument reached a shell")
+			t.Error("shell metacharacters were evaluated - the argument reached a shell")
 		}
 	})
 
@@ -286,7 +286,7 @@ func TestExecCancellation(t *testing.T) {
 		dir := t.TempDir()
 		childPIDFile := filepath.Join(dir, "child.pid")
 
-		// The script spawns a grandchild — as helm does — and records its PID.
+		// The script spawns a grandchild - as helm does - and records its PID.
 		script := writeScript(t, fmt.Sprintf(`
 sleep 60 &
 echo $! > %s
@@ -336,7 +336,7 @@ wait
 		}
 		if !gone {
 			_ = syscall.Kill(childPID, syscall.SIGKILL) // don't leak it from the test
-			t.Errorf("grandchild %d survived cancellation — the process group was not signalled", childPID)
+			t.Errorf("grandchild %d survived cancellation - the process group was not signalled", childPID)
 		}
 	})
 
@@ -373,7 +373,7 @@ wait
 		select {
 		case <-done:
 			if elapsed := time.Since(start); elapsed < 250*time.Millisecond {
-				t.Errorf("died in %v — the grace period was not honoured", elapsed)
+				t.Errorf("died in %v - the grace period was not honoured", elapsed)
 			}
 		case <-time.After(10 * time.Second):
 			t.Fatal("a SIGTERM-ignoring process was never killed")

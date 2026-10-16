@@ -41,7 +41,7 @@ conventions:
   - Each provider owns its own namespace so it can be installed/removed without
     disturbing its sibling (kafka -> kafka ns, postgres -> postgres ns; CNPG's
     operator lives in cnpg-system).
-  - status.sh reads CR readiness from .status conditions/fields via jsonpath —
+  - status.sh reads CR readiness from .status conditions/fields via jsonpath,
     no text scraping.
   - Resource requests are minimal so both can run on a laptop k3d alongside
     monitoring. Raise them for cloud/load testing.

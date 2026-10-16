@@ -84,10 +84,10 @@ Append to `report.md`:
 | Change (commit) | Check | Result |
 
 ## Findings
-1. <severity> — <symptom>, <evidence>, <fixed in commit | backlog id>
+1. <severity> - <symptom>, <evidence>, <fixed in commit | backlog id>
 
 ## Verdict
-GO / NO-GO — <one sentence>
+GO / NO-GO - <one sentence>
 ```
 
 Give the user the report path, the verdict, and each finding with its evidence.

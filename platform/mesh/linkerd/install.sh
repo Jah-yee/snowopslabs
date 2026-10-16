@@ -10,7 +10,7 @@ set -euo pipefail
 # fresh install and reused (read back from the cluster) on re-runs so the
 # control plane keeps a stable identity across idempotent installs.
 #
-# Config (env, with defaults — scripts never source .env themselves):
+# Config (env, with defaults - scripts never source .env themselves):
 #   LINKERD_CRDS_CHART_VERSION           pinned linkerd-crds chart version
 #   LINKERD_CONTROL_PLANE_CHART_VERSION  pinned linkerd-control-plane version
 #   MESH_NAMESPACE                       workload namespace to enrol (default: go-api)

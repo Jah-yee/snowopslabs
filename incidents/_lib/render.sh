@@ -4,7 +4,7 @@
 # Sourced, not executed:
 #   . "$PROJECT_ROOT/incidents/_lib/render.sh"
 
-# render_targeted <file> — print <file> with the workload placeholders replaced.
+# render_targeted <file> - print <file> with the workload placeholders replaced.
 #
 # A fault's alert rule names the namespace it watches, but the workload a fault
 # breaks is a binding now (ADR-0014), so the rule has to follow it. The engine

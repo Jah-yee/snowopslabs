@@ -197,7 +197,7 @@ func TestCompare(t *testing.T) {
 
 func TestAllPass(t *testing.T) {
 	if AllPass(nil) {
-		t.Error("AllPass(nil) must be false — nothing verified is not success")
+		t.Error("AllPass(nil) must be false - nothing verified is not success")
 	}
 	if AllPass([]Result{{Pass: true}, {Pass: false}}) {
 		t.Error("AllPass with a failure must be false")

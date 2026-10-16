@@ -18,12 +18,12 @@ detection:
 expectAlert: LabFaultOOMKill
 
 references:
-  - label: "Kubernetes — Assign memory resources to containers"
+  - label: "Kubernetes - Assign memory resources to containers"
     url: "https://kubernetes.io/docs/tasks/configure-pod-container/assign-memory-resource/"
     note: "requests vs limits, and what the kernel does when a container exceeds its memory limit."
-  - label: "Kubernetes — Debug an OOMKilled container / exit code 137"
+  - label: "Kubernetes - Debug an OOMKilled container / exit code 137"
     url: "https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/"
-  - label: "Prometheus — kube-state-metrics container restart & OOM signals"
+  - label: "Prometheus - kube-state-metrics container restart & OOM signals"
     url: "https://github.com/kubernetes/kube-state-metrics/blob/main/docs/metrics/workload/pod-metrics.md"
 
 snippets:

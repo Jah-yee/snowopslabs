@@ -4,7 +4,7 @@
 #
 # Both halves are needed, and the second alone is what this check used to be.
 # An HTTP probe cannot tell a repaired Service from a Service that is still
-# wrong but happens to be answered — relabel one pod to match the broken
+# wrong but happens to be answered - relabel one pod to match the broken
 # selector and the endpoints repopulate, the URL returns 200, and the check
 # passes while the Deployment still labels its pods the other way. The next
 # rollout then breaks the app again, for a learner who was told they had fixed
@@ -26,7 +26,7 @@ fi
 # The Deployment's pod template is the authority on how its pods are labelled.
 LABELS="$(kubectl -n "$NS" get deploy "$DEPLOY" -o 'jsonpath={.spec.template.metadata.labels}' 2>/dev/null || true)"
 if [ -z "$LABELS" ]; then
-  echo "FAIL: deployment $NS/$DEPLOY not found — cannot tell which pods the Service should select." >&2
+  echo "FAIL: deployment $NS/$DEPLOY not found - cannot tell which pods the Service should select." >&2
   exit 1
 fi
 
@@ -53,7 +53,7 @@ fi
 CODE="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "http://${SVC}.${SUFFIX}/health" || true)"
 if [ "$CODE" != "200" ]; then
   echo "FAIL: the selector matches, but http://${SVC}.${SUFFIX}/health returned ${CODE}." >&2
-  echo "  Endpoints can take a few seconds to repopulate — try again shortly." >&2
+  echo "  Endpoints can take a few seconds to repopulate - try again shortly." >&2
   exit 1
 fi
 

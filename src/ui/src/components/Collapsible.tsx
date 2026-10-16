@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //
-// Disclosure for the bulky parts of a detail modal — a manifest snippet, a
+// Disclosure for the bulky parts of a detail modal - a manifest snippet, a
 // Dockerfile, a Helm values file. Native <details>/<summary> so it works with
 // find-in-page, keyboard and screen readers without any state of our own.
 import { Icon } from './Icon'

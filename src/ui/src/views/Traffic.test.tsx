@@ -13,7 +13,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-// The traffic targets come from the apps API — each app's in-cluster address is
+// The traffic targets come from the apps API - each app's in-cluster address is
 // the one it declares in its contract, not one the UI reconstructs.
 const APPS = [
   { name: 'go-api', buildStrategy: 'docker', deployStrategy: 'helm', deployed: true,
@@ -112,7 +112,7 @@ describe('Traffic view', () => {
     expect(await screen.findByText(/Failed to load traffic profiles/)).toBeInTheDocument()
   })
 
-  // A new app — or one on a non-default port — must appear as a target without
+  // A new app - or one on a non-default port - must appear as a target without
   // any UI change. The address is the app's own, never rebuilt by the client.
   it('offers every app the API reports, at its declared in-cluster address', async () => {
     const server = serveTraffic({ profiles: ['steady'] })

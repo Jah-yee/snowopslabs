@@ -1,8 +1,8 @@
 $ labctl learn list
 PATH                           MODULES   DESCRIPTION
 ------------------------------------------------------------------------
-course                         0/2       Course — Two modules
-demo-path                      0/1       Demo path — A path with one module
+course                         0/2       Course - Two modules
+demo-path                      0/1       Demo path - A path with one module
 
 $ labctl learn progress course
 Course  0/2 modules
@@ -48,7 +48,7 @@ Action (command): touch DONE
 
 Verifying check "marker-there"...
 ✓ Check passed. Module complete!
-Next: module 2 — Nothing to do
+Next: module 2 - Nothing to do
 
 $ labctl learn next course
 Module 2/2: Nothing to do
@@ -69,8 +69,8 @@ Course  2/2 modules
 $ labctl learn list
 PATH                           MODULES   DESCRIPTION
 ------------------------------------------------------------------------
-course                         2/2       Course — Two modules
-demo-path                      0/1       Demo path — A path with one module
+course                         2/2       Course - Two modules
+demo-path                      0/1       Demo path - A path with one module
 
 $ labctl learn progress
 Course  2/2 modules

@@ -146,7 +146,7 @@ func TestLoadMigrations(t *testing.T) {
 		t.Fatalf("loadMigrations: %v", err)
 	}
 	if len(migrations) == 0 {
-		t.Fatal("no migrations embedded — the //go:embed directive is broken")
+		t.Fatal("no migrations embedded - the //go:embed directive is broken")
 	}
 	for i := 1; i < len(migrations); i++ {
 		if migrations[i-1].version >= migrations[i].version {

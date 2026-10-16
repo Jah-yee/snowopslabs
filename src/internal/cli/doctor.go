@@ -221,7 +221,7 @@ func dockerCapacity(ctx context.Context, runner toolchain.Runner, p capacity.Pla
 			"%s\n    Below this the API server runs out of memory and every command fails with\n"+
 				"    \"TLS handshake timeout\". Fix:\n    %s", short, host.ResizeHint(capacity.Floor))}
 	}
-	return dockerReport{line: fmt.Sprintf("%s — meets the minimum (%s). Heavier scenarios say what they need.",
+	return dockerReport{line: fmt.Sprintf("%s - meets the minimum (%s). Heavier scenarios say what they need.",
 		res, capacity.Floor)}
 }
 

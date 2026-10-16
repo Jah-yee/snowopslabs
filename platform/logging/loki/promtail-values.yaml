@@ -1,4 +1,4 @@
-# Promtail values — the single source of truth for log shipping.
+# Promtail values - the single source of truth for log shipping.
 #
 # Scenarios reference this file via `platformValues: logging/loki/promtail-values.yaml`
 # rather than keeping their own copy.
@@ -22,7 +22,7 @@ config:
           max_wait_time: 3s
 
     # Without these, logs carry only Promtail's default labels and a query like
-    # {app="go-api"} matches nothing — the dashboards look broken when in fact
+    # {app="go-api"} matches nothing - the dashboards look broken when in fact
     # the label was never attached.
     extraRelabelConfigs:
       - source_labels: [__meta_kubernetes_pod_label_app]

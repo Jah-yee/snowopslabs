@@ -53,7 +53,7 @@ export class ApiError extends Error {
   }
 }
 
-/** Generic fetch wrapper — throws Error with a useful message on every
+/** Generic fetch wrapper - throws Error with a useful message on every
  *  failure mode: network down, timeout, HTTP error body, malformed JSON. An
  *  error status is thrown as an ApiError. */
 async function req<T>(path: string, opts?: RequestInit, timeoutMs = GET_TIMEOUT_MS): Promise<T> {
@@ -65,10 +65,10 @@ async function req<T>(path: string, opts?: RequestInit, timeoutMs = GET_TIMEOUT_
     res = await fetch(BASE + path, { ...opts, signal: ctrl.signal })
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
-      throw new Error(`Request timed out after ${Math.round(timeoutMs / 1000)}s — the server may be busy or stuck`)
+      throw new Error(`Request timed out after ${Math.round(timeoutMs / 1000)}s - the server may be busy or stuck`)
     }
     // fetch() rejects with TypeError when the server is unreachable
-    throw new Error('Cannot reach the labctl server — is `labctl ui` still running?')
+    throw new Error('Cannot reach the labctl server - is `labctl ui` still running?')
   } finally {
     clearTimeout(timer)
   }
@@ -81,7 +81,7 @@ async function req<T>(path: string, opts?: RequestInit, timeoutMs = GET_TIMEOUT_
       const body = await res.json() as { detail?: string; title?: string }
       if (body.detail) msg = body.detail
       else if (body.title) msg = body.title
-    } catch { /* non-JSON error body — keep the HTTP status message */ }
+    } catch { /* non-JSON error body - keep the HTTP status message */ }
     throw new ApiError(msg, res.status)
   }
 
@@ -242,7 +242,7 @@ export interface TrafficOptions {
 function enc(s: string) { return encodeURIComponent(s) }
 
 /** Nested registry categories ("monitoring/metrics") can't travel as one URL
- *  path segment — send the last segment; the server resolves it back. */
+ *  path segment - send the last segment; the server resolves it back. */
 function catSegment(cat: string) {
   const parts = cat.split('/')
   return parts[parts.length - 1]

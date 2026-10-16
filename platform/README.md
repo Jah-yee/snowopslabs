@@ -132,7 +132,7 @@ MESH_PROVIDER=linkerd labctl platform up mesh
 
 > **k3d resource reality:** give the cluster at least 4Gi memory (6Gi is
 > comfortable with a meshed app running). Linkerd needs `openssl` on the host
-> for portable mTLS identity cert generation — no `step` CLI required.
+> for portable mTLS identity cert generation, no `step` CLI required.
 
 ### Data (`data/`)
 
@@ -158,7 +158,7 @@ labctl platform down data/kafka       # remove operator + CR + PVCs + namespace
 # or via make: make platform-data-up   (both)   /  make platform-data-kafka-up
 ```
 
-CNPG's built-in failover is a ready-made day-2 drill — delete the primary pod
+CNPG's built-in failover is a ready-made day-2 drill - delete the primary pod
 and watch a replica promote (see the runbook). Kafka ships a kcat
 produce/consume smoke test in the runbook.
 
@@ -168,7 +168,7 @@ Centralised secrets: a **Vault** backend plus the **External Secrets Operator
 (ESO)** that syncs Vault values into native Kubernetes Secrets. Selected by
 `SECRETS_PROVIDER`, or addressed explicitly as `secrets/<provider>`.
 
-> **Not** to be confused with `security/secrets/` (sealed-secrets) — a different,
+> **Not** to be confused with `security/secrets/` (sealed-secrets) - a different,
 > Git-encryption approach activated via the `security-compliance` scenario.
 
 | Provider | Chart | Role |
@@ -176,7 +176,7 @@ Centralised secrets: a **Vault** backend plus the **External Secrets Operator
 | **vault** | `hashicorp/vault` | Secrets backend (dev mode for the lab; seeds `secret/go-api`, UI via ingress) |
 | **external-secrets** | `external-secrets/external-secrets` | Syncs `secret/go-api` → `ExternalSecret` → k8s Secret `go-api-secrets` |
 
-ESO **prerequires** Vault — its `install.sh` preflights for the Vault service and
+ESO **prerequires** Vault - its `install.sh` preflights for the Vault service and
 errors (rather than auto-installing) if it's missing. The full chain demonstrates
 `Vault KV → ExternalSecret → k8s Secret → go-api env var`, and rotating the value
 in Vault propagates within the 15s refresh interval (the rotation exercise).
@@ -192,7 +192,7 @@ labctl platform down secrets/external-secrets && labctl platform down secrets/va
 > **No secrets in git, ever.** The Vault dev root token comes from the
 > environment (`VAULT_DEV_ROOT_TOKEN`, defaulting to Vault's well-known dev value
 > `root`); the token ESO uses is created in-cluster from that env value. Dev-mode
-> Vault is in-memory and wiped on restart — rotation, not durability, is the point.
+> Vault is in-memory and wiped on restart: rotation, not durability, is the point.
 > Versions are pinned in `config/versions.env` (`VAULT_CHART_VERSION`, `ESO_CHART_VERSION`).
 
 ### Autoscaling (`autoscaling/`)
@@ -240,7 +240,7 @@ labctl scenario verify cost-right-sizing   # passes after right-sizing
 COST_PROVIDER=opencost labctl platform down cost
 ```
 
-> **k3d note:** no real billing API is wired — OpenCost uses on-prem pricing
+> **k3d note:** no real billing API is wired - OpenCost uses on-prem pricing
 > defaults (~$0.048/CPU-hr). Cost numbers are relative, not real invoices.
 
 Version pinned in `config/versions.env` (`OPENCOST_CHART_VERSION`), overridable per-install.

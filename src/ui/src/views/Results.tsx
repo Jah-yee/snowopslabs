@@ -70,7 +70,7 @@ function scoreVariant(score: number) {
 }
 
 function scoreLabel(score: number) {
-  return score < 0 ? '—' : String(score)
+  return score < 0 ? '-' : String(score)
 }
 
 const KINDS = ['all', 'scenario', 'incident', 'challenge', 'module'] as const
@@ -148,7 +148,7 @@ export function Results(_props: ResultsProps) {
       {loadError && (
         <div className="banner banner-warn" role="alert">
           <Icon name="alert-triangle" size={16} className="banner-icon" />
-          <span className="banner-body">Refresh failed ({loadError}) — showing last known data.</span>
+          <span className="banner-body">Refresh failed ({loadError}) - showing last known data.</span>
           <span className="banner-actions">
             <button className="btn btn-sm" onClick={load} disabled={refreshing}>Retry</button>
           </span>
@@ -167,7 +167,7 @@ export function Results(_props: ResultsProps) {
         </div>
       )}
 
-      {/* Trends — MTTR/MTTD over incidents and score over challenges. */}
+      {/* Trends - MTTR/MTTD over incidents and score over challenges. */}
       {(hasIncidentTrend || hasScoreTrend) && (
         <div className={`trend-grid mb-4${hasIncidentTrend && hasScoreTrend ? '' : ' is-single'}`}>
           {hasIncidentTrend && (
@@ -264,7 +264,7 @@ export function Results(_props: ResultsProps) {
                         {r.outcome}
                       </Badge>
                     </td>
-                    {records.some(rec => rec.user) && <td className="td-muted">{r.user ?? '—'}</td>}
+                    {records.some(rec => rec.user) && <td className="td-muted">{r.user ?? '-'}</td>}
                   </tr>
                 ))}
               </tbody>
@@ -321,7 +321,7 @@ function ScenarioResultName({ record }: { record: ResultRecord }) {
                     <Icon name={c.pass ? 'check' : 'x'} size={14} />
                   </span>
                   <span>{c.name}</span>
-                  {!c.pass && c.detail && <span className="td-muted">— {c.detail}</span>}
+                  {!c.pass && c.detail && <span className="td-muted">- {c.detail}</span>}
                 </li>
               ))}
             </ul>

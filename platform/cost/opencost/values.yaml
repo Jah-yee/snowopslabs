@@ -4,7 +4,7 @@
 # default (use port-forward or enable INGRESS_PROVIDER after installing).
 #
 # NOTE: No cloud billing API is configured. OpenCost uses on-prem pricing
-# defaults ($0.048/CPU-hour, $0.006/GB-hour) — representative for right-sizing
+# defaults ($0.048/CPU-hour, $0.006/GB-hour) - representative for right-sizing
 # exercises even without real billing data.
 
 opencost:
@@ -30,7 +30,7 @@ opencost:
 
     # Expose the OpenCost UI through the cluster ingress so it is reachable at
     # http://opencost.<domain> without a port-forward. NOTE: the ingress config
-    # lives under opencost.ui.ingress (not opencost.ingress) — that is where the
+    # lives under opencost.ui.ingress (not opencost.ingress) - that is where the
     # chart reads it; a top-level opencost.ingress block is silently ignored.
     # install.sh overrides the host with the real DOMAIN_SUFFIX at install time.
     ingress:

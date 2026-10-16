@@ -1,4 +1,4 @@
--- 0001_init — the durable core (W1).
+-- 0001_init - the durable core (W1).
 --
 -- Timestamps are Unix microseconds (INTEGER). Wall-clock is stored because it
 -- is what a human reads back; durations that must be accurate are measured
@@ -37,7 +37,7 @@ CREATE INDEX runs_active_lock_idx ON runs (lock_key)
     WHERE status IN ('queued', 'running');
 
 -- Every output line, in order. seq is monotonic per run and is the cursor
--- consumers resume from (ADR-0006) — no line is ever dropped for a slow reader.
+-- consumers resume from (ADR-0006) - no line is ever dropped for a slow reader.
 CREATE TABLE run_logs (
     run_id TEXT    NOT NULL REFERENCES runs (id) ON DELETE CASCADE,
     seq    INTEGER NOT NULL,

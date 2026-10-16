@@ -16,7 +16,7 @@ export function DeployedBadge({ deployed }: { deployed: boolean }) {
 }
 
 // UnknownBadge stands in for a state that cannot be read, such as while the
-// cluster is unreachable — never "Not Installed", which would be a guess.
+// cluster is unreachable - never "Not Installed", which would be a guess.
 export function UnknownBadge() {
   return <Badge variant="pending">Unknown</Badge>
 }

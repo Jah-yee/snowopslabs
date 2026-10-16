@@ -241,7 +241,7 @@ func buildBlock(hosts []string) string {
 // reexecWithSudo re-runs the current invocation under sudo, preserving all flags
 // and appending extra arguments.
 func reexecWithSudo(extra ...string) error {
-	fmt.Fprintln(os.Stderr, "Root required — re-running with sudo...")
+	fmt.Fprintln(os.Stderr, "Root required - re-running with sudo...")
 	args := append([]string{os.Args[0]}, os.Args[1:]...)
 	args = append(args, extra...)
 	c := exec.Command("sudo", args...) //nolint:gosec,noctx // re-exec of this same CLI under sudo; a context would not manage the replacement process

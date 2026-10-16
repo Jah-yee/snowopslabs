@@ -1,6 +1,6 @@
 # Default deny all ingress and egress traffic
 # Applied to namespaces with label: network-policy=enforced
-# This forms the baseline — explicit allow rules open specific paths
+# This forms the baseline - explicit allow rules open specific paths
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

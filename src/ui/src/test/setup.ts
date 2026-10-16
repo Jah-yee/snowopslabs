@@ -4,7 +4,7 @@
 //
 // The MSW server is started once for the whole run. Handlers are reset between
 // tests so per-test overrides cannot leak, and unhandled requests error rather
-// than silently hitting the network — a test that forgets to mock an endpoint
+// than silently hitting the network - a test that forgets to mock an endpoint
 // must fail loudly, not pass by accident.
 
 import '@testing-library/jest-dom/vitest'

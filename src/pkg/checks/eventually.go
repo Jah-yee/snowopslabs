@@ -48,7 +48,7 @@ func (o EventuallyOpts) withDefaults() EventuallyOpts {
 }
 
 // Eventually polls the check until it passes, the deadline elapses, or ctx is
-// cancelled — whichever comes first. It returns the most recent Result, with
+// cancelled - whichever comes first. It returns the most recent Result, with
 // Attempts set to the number of evaluations and DurationMS spanning the whole
 // poll (not just the last attempt).
 //

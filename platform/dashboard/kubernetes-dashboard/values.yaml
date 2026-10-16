@@ -10,7 +10,7 @@ app:
 #
 # Both listeners must be set, not just tls. The chart ships proxy.http.enabled
 # as FALSE and proxy.tls.enabled as true, so turning tls off on its own leaves
-# Kong with no listener at all — and a Kong with no listener renders no proxy
+# Kong with no listener at all, and a Kong with no listener renders no proxy
 # Service. The Ingress then references a Service that does not exist, which
 # traefik retries in a hot loop until it fails its own liveness probe and takes
 # every other ingress in the lab down with it.

@@ -18,7 +18,7 @@ func TestPlatformSubdomainsCoverEveryURLTheCLIBuilds(t *testing.T) {
 		known[s] = true
 	}
 
-	// Matches `"http://name." + something` — how the CLI and the API compose a
+	// Matches `"http://name." + something` - how the CLI and the API compose a
 	// default ingress URL from the domain suffix.
 	pattern := regexp.MustCompile(`"https?://([a-z0-9-]+)\." \+`)
 

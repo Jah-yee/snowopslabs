@@ -4,7 +4,7 @@ set -euo pipefail
 # Objective: diagnose a failed release and repair it IN GIT.
 #
 # The lab seeds the 'broken' path with a Deployment whose image tag does not
-# exist. It syncs cleanly — the manifests are valid YAML — and then goes
+# exist. It syncs cleanly - the manifests are valid YAML - and then goes
 # Degraded, which is what a real bad deploy looks like: nothing is wrong with
 # your pipeline, the release itself is wrong.
 #
@@ -29,7 +29,7 @@ health=$(kubectl -n argocd get application "$APP" -o jsonpath='{.status.health.s
 
 if [ "$sync" = "Synced" ] && [ "$health" = "Healthy" ]; then
   image="$(git_repo show HEAD:broken/deployment.yaml | awk '/^ *image:/ {print $2; exit}' || true)"
-  echo "OK: ${APP} is Synced and Healthy — Git now declares ${image:-a working image}."
+  echo "OK: ${APP} is Synced and Healthy - Git now declares ${image:-a working image}."
   echo "You fixed a bad release the way GitOps requires: by changing what Git says."
   exit 0
 fi
@@ -38,7 +38,7 @@ echo "PENDING: ${APP} is sync=${sync:-Unknown} health=${health:-Unknown}." >&2
 echo "  This one ships broken on purpose. Diagnose it, then repair it in Git." >&2
 echo "  What ArgoCD thinks:" >&2
 echo "    kubectl -n argocd get application ${APP} -o jsonpath='{.status.conditions}'; echo" >&2
-echo "  What the pods say — this is where the real reason is:" >&2
+echo "  What the pods say - this is where the real reason is:" >&2
 echo "    kubectl -n gitops-broken get pods" >&2
 echo "    kubectl -n gitops-broken describe pod -l app=gitops-broken | tail -20" >&2
 echo "  Fix it in your clone (broken/deployment.yaml), commit, push, then sync." >&2

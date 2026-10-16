@@ -144,7 +144,7 @@ func TestList_CloudRuntimeNoContextConfig(t *testing.T) {
 	})
 
 	// Even if some context named "kind" happens to be in kubeconfig, it must
-	// NOT be treated as active — we cannot reliably guess the context name.
+	// NOT be treated as active - we cannot reliably guess the context name.
 	m := newTestManager(t, rtDir, "snowops", "kind", []string{"kind"})
 
 	list := m.List()

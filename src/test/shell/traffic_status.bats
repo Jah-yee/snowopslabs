@@ -6,7 +6,7 @@
 # Assembling the report from several reads let it contradict itself: the job
 # carries ttlSecondsAfterFinished, so it can be deleted between two calls, and
 # the status then announced "running" and immediately failed with a raw
-# NotFound and a bare "exit status 1" — observed on a live lab.
+# NotFound and a bare "exit status 1" - observed on a live lab.
 
 load 'helpers/stub'
 

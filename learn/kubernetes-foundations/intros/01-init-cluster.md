@@ -1,9 +1,9 @@
-# Module 1 — Start the cluster
+# Module 1: Start the cluster
 
 ## What you'll do
 
 Spin up a local k3d Kubernetes cluster. This is the base for everything
-in the lab — all platform components, apps, and scenarios run here.
+in the lab: all platform components, apps, and scenarios run here.
 
 ## Background
 
@@ -24,6 +24,6 @@ kubectl cluster-info
 reachable).
 
 If you already have a lab cluster running, this module is already done and will
-pass immediately — the same is true of module 2 if the demo apps are already
+pass immediately - the same is true of module 2 if the demo apps are already
 deployed. The path is written for someone starting from nothing; skipping
 straight to module 3 on an existing lab is fine.

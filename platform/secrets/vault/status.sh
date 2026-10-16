@@ -44,5 +44,5 @@ if kubectl exec -n "$NAMESPACE" vault-0 -- sh -c \
   "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN='${VAULT_DEV_ROOT_TOKEN:-root}' vault kv get -field=api-key secret/go-api" >/dev/null 2>&1; then
   echo "  present (key: api-key)"
 else
-  echo "  not found — re-run install.sh to seed, or check your dev root token"
+  echo "  not found - re-run install.sh to seed, or check your dev root token"
 fi

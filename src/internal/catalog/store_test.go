@@ -74,7 +74,7 @@ func TestStore_Roots(t *testing.T) {
 	if len(got) != 2 || got[0] != r1 || got[1] != r2 {
 		t.Errorf("Roots() = %v, want [%s %s]", got, r1, r2)
 	}
-	// The returned slice must be a copy — mutating it must not affect the store.
+	// The returned slice must be a copy - mutating it must not affect the store.
 	got[0] = "tampered"
 	if s.Roots()[0] != r1 {
 		t.Error("Roots() leaked the internal slice")

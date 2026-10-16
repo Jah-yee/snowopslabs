@@ -1,4 +1,4 @@
-# RFC NNNN — Title
+# RFC NNNN: Title
 
 **Status:** Draft | Accepted | Declined | Superseded by RFC-NNNN
 **Author:** @your-handle

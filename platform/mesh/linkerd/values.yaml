@@ -1,7 +1,7 @@
 # Custom values for linkerd-control-plane.
 # Referenced by platform/mesh/linkerd/install.sh via -f.
 # Trust anchor + issuer certs are injected at install time via --set-file.
-# Tuned minimal for k3d resource reality — raise for cloud/load testing.
+# Tuned minimal for k3d resource reality - raise for cloud/load testing.
 
 # Single replica control plane components on a laptop cluster.
 controllerReplicas: 1

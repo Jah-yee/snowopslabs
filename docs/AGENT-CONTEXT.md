@@ -9,7 +9,7 @@ sends you to. Do not read the codebase to answer a question the docs answer.
 ## The contract
 
 **Documentation is the source of truth.** It describes what the system does,
-and the code is expected to match it. This is not aspiration — it is enforced
+and the code is expected to match it. This is not aspiration - it is enforced
 by `make docs-check` and by CI.
 
 Three rules follow:
@@ -22,7 +22,7 @@ Three rules follow:
    Never silently work around a wrong doc.
 3. **A change is not done until the docs match it.** Same PR, not a follow-up.
 
-Read code when — and only when — the docs are silent on what you need, the docs
+Read code when, and only when, the docs are silent on what you need, the docs
 contradict themselves, or you are editing the code in question.
 
 ---
@@ -39,21 +39,21 @@ contradict themselves, or you are editing the code in question.
 | Review, grade or improve a path or challenge end to end | [learning review](authoring/learning-review.md) | `src/internal/learn/` |
 | Add a platform component | [R05](runbooks/R05-platform-components.md), [ADR-0010](adr/0010-platform-values-single-source.md), [ADR-0011](adr/0011-chart-pinning-and-repo-migration.md) | `platform/*/` beyond your component |
 | Add or change an API route | [ADR-0006](adr/0006-api-conventions.md), [architecture §7](architecture/ARCHITECTURE.md) | the whole `httpapi` package |
-| Change the CLI surface | [CLI reference](reference/cli/index.md) | — |
-| Fix a dashboard, metric or trace | [R13](runbooks/R13-observability-pipeline.md) | — |
+| Change the CLI surface | [CLI reference](reference/cli/index.md) | - |
+| Fix a dashboard, metric or trace | [R13](runbooks/R13-observability-pipeline.md) | - |
 | Understand the run engine | [architecture §3](architecture/ARCHITECTURE.md), [R01](runbooks/R01-run-engine-and-cancellation.md) | `src/internal/run/` |
-| Write or change Go code | [Go conventions](GO-CONVENTIONS.md) | — |
-| Write tests | [TESTING.md](TESTING.md) | — |
-| Ship a release | [RELEASING.md](../RELEASING.md) | — |
-| Accept a branch for release on a live lab | [release acceptance](release-acceptance.md) | — |
-| Pick up deferred work | [backlog](backlog.md) | — |
+| Write or change Go code | [Go conventions](GO-CONVENTIONS.md) | - |
+| Write tests | [TESTING.md](TESTING.md) | - |
+| Ship a release | [RELEASING.md](../RELEASING.md) | - |
+| Accept a branch for release on a live lab | [release acceptance](release-acceptance.md) | - |
+| Pick up deferred work | [backlog](backlog.md) | - |
 
 Everything else: [docs/README index in the root README](../README.md#documentation).
 
 ## Skills
 
 `.claude/skills/` holds packaged versions of the routes above, for harnesses
-that support them — `scenario-author`, `scenario-review`, `incident-author`,
+that support them: `scenario-author`, `scenario-review`, `incident-author`,
 `incident-review`, `learning-author`, `learning-review`, `platform-component`,
 `api-change`, `docs-sync` and `release-acceptance`. Each one
 names the documents to read, the rules that are easy to break, and a checklist
@@ -79,7 +79,7 @@ These hold everywhere. Breaking one is a review rejection, not a discussion.
 - One gosec policy, in `src/.golangci.yml`. `make sec` runs gosec through
   golangci-lint so it reads that file and the per-site `//nolint:gosec`
   justifications. Suppress a finding at its call site with a reason, or exclude
-  the rule there with one — never by running the tool unconfigured.
+  the rule there with one, never by running the tool unconfigured.
 
 **Content**
 
@@ -94,7 +94,7 @@ These hold everywhere. Breaking one is a review rejection, not a discussion.
 
 - Users are served `/api/v2` only.
 - Metrics and access logs are middleware wrapping the whole mux, never
-  per-handler — so a new route cannot ship unmeasured.
+  per-handler, so a new route cannot ship unmeasured.
 
 **Tests**
 
@@ -112,11 +112,13 @@ These hold everywhere. Breaking one is a review rejection, not a discussion.
   cancellation and deadline-exceeded tests.
 - No new coverage exceptions or exclusions; floors only go up.
 
-**Comments**
+**Comments and text**
 
 - The comment rule in [CLAUDE.md](../CLAUDE.md#hard-rules) applies to Go,
   shell, TypeScript and YAML alike: what the code does and why, never the
   story behind a change.
+- No em dashes in any tracked file. Use a comma, a colon, parentheses or a
+  plain " - ". `make docs-check` runs `scripts/em-dash-check.sh`.
 
 ---
 
@@ -126,11 +128,11 @@ These hold everywhere. Breaking one is a review rejection, not a discussion.
    `make test-e2e` too for a UI change). `make test` ends with
    [the gates on a change](TESTING.md#gates-on-a-change): the change brought
    tests with it, and at least 85% of the lines it touches are tested.
-2. Every doc the change touches is updated — schema, CLI reference, runbook.
+2. Every doc the change touches is updated: schema, CLI reference, runbook.
 3. A notable decision gets an ADR under `docs/adr/`.
 4. `make docs-check` passes. It fails a change to `src/` or content with no
-   matching documentation change, and catches doc paths the website publishes
-   that no longer exist.
+   matching documentation change, catches doc paths the website publishes
+   that no longer exist, and rejects em dashes.
 5. If you moved or renamed a published doc, update `scripts/docs-manifest.mjs`
    in the `snowopslabs-web` repository. The website reads these files directly;
    a rename with no manifest entry silently drops the page.

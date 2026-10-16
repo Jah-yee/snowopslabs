@@ -4,7 +4,7 @@
 
 Applications live in `apps/<name>/`, each with an `app.env` declaring its
 `BUILD_STRATEGY`, `DEPLOY_STRATEGY` and `HELM_VALUES`. The CLI reads that file
-and runs the matching strategy — it never hardcodes how an app is built.
+and runs the matching strategy - it never hardcodes how an app is built.
 
 ```bash
 labctl app list              # discovered apps, their strategies and capabilities
@@ -25,7 +25,7 @@ server-side, it passes `--force-conflicts`, so fields changed by hand with
 REST: `GET /api/v2/apps`, `GET /api/v2/apps/{name}/detail`,
 `POST /api/v2/apps/{name}/{build,deploy,destroy}`.
 
-## `labctl app verify` — the workload contract
+## `labctl app verify`: the workload contract
 
 An app declares a **contract** in its `app.env`: the interface it promises a
 scenario, so a scenario can name the contract instead of naming the app. See
@@ -58,7 +58,7 @@ capability it never advertised. Two capabilities are reported as **declared, not
 machine-checked**: `otlp-tracing` (the app exports only once
 `OTEL_EXPORTER_OTLP_ENDPOINT` is set, which a tracing scenario does) and
 `readiness-toggle` (proving it means deliberately making the app unready). Both
-are conditional promises — a baseline deployment looks identical whether or not
+are conditional promises - a baseline deployment looks identical whether or not
 the app honours them, so failing an app for one would fail a conforming app.
 
 ```
@@ -71,7 +71,7 @@ PASS  request-metric-scraped  (promql)   got: 8, want: >= 1
 ```
 
 The metric check queries Prometheus rather than the pod, so it proves both that
-the app exposes the histogram and that scraping works — the state every
+the app exposes the histogram and that scraping works - the state every
 metric-driven scenario actually depends on.
 
 ## Binding a scenario to an app
@@ -92,14 +92,14 @@ cannot satisfy, before anything installs:
 
 ```
 preflight failed for scenario "observability-sre":
-  - workload "echo-server" does not declare: otlp-tracing, readiness-toggle —
+  - workload "echo-server" does not declare: otlp-tracing, readiness-toggle -
     either bind an app that does (APP_NAME=<app>, see 'labctl app list') or add
     the capability to apps/echo-server/app.env once the app truly provides it
 ```
 
 ## `labctl service`
 
-Shared services that apps depend on — Redis and friends. They live outside the
+Shared services that apps depend on - Redis and friends. They live outside the
 platform categories because they are application dependencies, not platform
 capability.
 

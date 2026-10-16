@@ -17,7 +17,7 @@ func TestApp_BuildInfoAlwaysPresent(t *testing.T) {
 		t.Errorf("build_info should be present with the version:\n%s", got)
 	}
 	// The metric families are pre-registered, so their TYPE lines appear even
-	// before any observation — a scraper sees the full schema.
+	// before any observation - a scraper sees the full schema.
 	for _, want := range []string{
 		"# TYPE labctl_http_requests_total counter",
 		"# TYPE labctl_http_request_duration_seconds histogram",

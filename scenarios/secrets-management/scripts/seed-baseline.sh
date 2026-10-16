@@ -5,7 +5,7 @@ set -eu
 # Stage 1: put a known baseline value in Vault so the drill has a defined starting
 # point, and wait for it to reach the consumer pod. The Vault->Secret wiring itself
 # belongs to the secrets/external-secrets platform component and is not touched
-# here — this scenario only seeds a value and mounts the result.
+# here - this scenario only seeds a value and mounts the result.
 #
 # Config (env, never committed):
 #   VAULT_DEV_ROOT_TOKEN   dev root token (default: root)
@@ -23,7 +23,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # Record what the consumer looked like before the drill: which pod is serving,
 # and at what Deployment generation. "No redeploy was needed" is a claim about
 # THIS pod still running afterwards, and it can only be graded against a value
-# captured now — a literal generation of 1 is an accident of a fresh install, not
+# captured now - a literal generation of 1 is an accident of a fresh install, not
 # evidence of anything.
 record_checkpoint() {
   # Wait for the pod that will still be running at the end of the drill; a
@@ -50,7 +50,7 @@ kubectl exec -n vault vault-0 -- sh -c \
 #
 # Vault runs in dev mode and keeps its KV in memory, so any restart of vault-0
 # empties it. ESO then fails to read secret/<workload> and backs off
-# exponentially — after a few hours it is retrying on the order of hours, not the
+# exponentially - after a few hours it is retrying on the order of hours, not the
 # 15s refreshInterval. Re-seeding the value alone does not help: the reconcile
 # that would notice it is not due for a long time. The force-sync annotation is
 # ESO's own idiom for "reconcile this one now", and it resets the backoff.

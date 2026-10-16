@@ -3,7 +3,7 @@
 # checkpoint and the check that grades against it.
 #
 # They cannot be allowed to disagree. A plain `-l app=secret-consumer` with
-# items[0] will happily return a pod that is Terminating — which is exactly what
+# items[0] will happily return a pod that is Terminating - which is exactly what
 # happens on `scenario reset`, where the old Deployment's pod is still going away
 # while the new one comes up. The checkpoint then names a pod that is already
 # dead, and the drill grades red no matter what the learner does.

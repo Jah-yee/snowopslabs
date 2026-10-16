@@ -65,7 +65,7 @@ func ensureAppsDeployed(ctx context.Context, apps []string, autoDeploy bool) err
 			continue
 		}
 		if autoDeploy {
-			fmt.Printf("Prerequisite app %q is not deployed — building and deploying it...\n", app)
+			fmt.Printf("Prerequisite app %q is not deployed - building and deploying it...\n", app)
 			if err := scriptExec.RunScript("src/engine/build.sh", app); err != nil {
 				return fmt.Errorf("building prerequisite app %s: %w", app, err)
 			}
@@ -116,7 +116,7 @@ func ensurePlatformPrereqs(ctx context.Context, out io.Writer, prereqs []string,
 		if err != nil {
 			return fmt.Errorf("resolving platform prerequisite %s: %w", pre, err)
 		}
-		fmt.Fprintf(out, "Platform prerequisite %s is not installed — installing %s/%s...\n", pre, category, provider)
+		fmt.Fprintf(out, "Platform prerequisite %s is not installed - installing %s/%s...\n", pre, category, provider)
 		if err := reg.Install(category, provider, scriptExec); err != nil {
 			return fmt.Errorf("installing platform prerequisite %s: %w", pre, err)
 		}

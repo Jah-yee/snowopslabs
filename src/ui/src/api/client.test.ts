@@ -8,7 +8,7 @@
 //
 // This suite exercises the real fetch path, not the DOM. It must run in the
 // `node` environment because jsdom substitutes an AbortController whose signals
-// Node's fetch rejects with a TypeError — which would mask every assertion here
+// Node's fetch rejects with a TypeError - which would mask every assertion here
 // behind a spurious "cannot reach the server". See src/test/setup.ts.
 
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -34,7 +34,7 @@ describe('api client', () => {
     expect(seen).toBe('/api/v2/scenarios')
   })
 
-  // Each transport failure must produce a distinct, actionable message —
+  // Each transport failure must produce a distinct, actionable message -
   // "something went wrong" is not a useful thing to show an operator.
   const failures: { name: string; respond: () => Response | Promise<Response>; expect: RegExp }[] = [
     {
@@ -94,7 +94,7 @@ describe('api client', () => {
 // 404/405 at runtime, so we assert the verb and the exact, correctly-encoded
 // path for each one. A catch-all handler records the request and answers 200 so
 // the call resolves regardless of the declared response type.
-describe('api client — every endpoint binds the right verb and path', () => {
+describe('api client - every endpoint binds the right verb and path', () => {
   let seen: { method: string; path: string }
 
   beforeEach(() => {

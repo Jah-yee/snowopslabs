@@ -39,7 +39,7 @@ awk -v budget="$budget" '
     }
     printf "time-budget failed: %d test(s) over %ss:\n", n, budget > "/dev/stderr"
     for (i = 1; i <= n; i++) print "  " over[i] > "/dev/stderr"
-    print "\nA slow test is usually waiting on real time: use synctest, a shorter interval knob, or a fake clock — see docs/TESTING.md" > "/dev/stderr"
+    print "\nA slow test is usually waiting on real time: use synctest, a shorter interval knob, or a fake clock - see docs/TESTING.md" > "/dev/stderr"
     exit 1
   }
 ' "$log"

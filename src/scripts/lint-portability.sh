@@ -2,12 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Portability gate (golden rule 1): reject GNU-only constructs that work on
-# Linux and silently fail — or worse, silently misbehave — on macOS's BSD
+# Linux and silently fail - or worse, silently misbehave - on macOS's BSD
 # userland. shellcheck does not catch these because they are valid syntax.
 #
 # Comment-only lines are skipped, so documenting a pitfall does not trip the
-# gate that enforces it. A file that must contain these constructs as data —
-# only this gate's own test fixtures, realistically — opts out with the marker
+# gate that enforces it. A file that must contain these constructs as data -
+# only this gate's own test fixtures, realistically - opts out with the marker
 # `portability-gate: ignore-file` anywhere in it.
 #
 # Run by `make lint-shell` and by CI on every PR.
@@ -24,8 +24,8 @@ root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null || (cd "$scri
 cd "$root"
 
 # Rules are <scope><TAB><extended-regex><TAB><explanation>.
-#   scope "sh"  — shell scripts only (Makefiles legitimately name build targets)
-#   scope "all" — every scanned file
+#   scope "sh" - shell scripts only (Makefiles legitimately name build targets)
+#   scope "all" - every scanned file
 rules=$(
   cat <<'RULES'
 all	grep[[:space:]]+-[a-zA-Z]*P[[:space:]]	grep -P (PCRE) is GNU-only; use grep -E or awk
@@ -81,7 +81,7 @@ $rules
 EOF
 
 if [ "$status" -ne 0 ]; then
-  printf '\nportability gate failed — see CONTRIBUTING.md golden rules 1\n' >&2
+  printf '\nportability gate failed - see CONTRIBUTING.md golden rules 1\n' >&2
   exit 1
 fi
 

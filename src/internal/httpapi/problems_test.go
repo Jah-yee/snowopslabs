@@ -69,7 +69,7 @@ func TestUnversionedAPI_IsNotServed(t *testing.T) {
 		s.router.ServeHTTP(w, req)
 
 		if ct := w.Header().Get("Content-Type"); strings.Contains(ct, "json") {
-			t.Errorf("%s: served a JSON response (%q) — the unversioned API should be gone", path, ct)
+			t.Errorf("%s: served a JSON response (%q) - the unversioned API should be gone", path, ct)
 		}
 	}
 }
@@ -115,7 +115,7 @@ func TestProblemSlugs_StableSet(t *testing.T) {
 // set of code slugs (3rd argument) passed to respondError.
 func scanRespondErrorSlugs(t *testing.T) map[string]bool {
 	t.Helper()
-	// respondError(w, r, <status>, "<slug>", ...) — capture the slug.
+	// respondError(w, r, <status>, "<slug>", ...) - capture the slug.
 	re := regexp.MustCompile(`respondError\(w, r, [^,]+, "([a-z_]+)"`)
 	entries, err := os.ReadDir(".")
 	if err != nil {
@@ -136,7 +136,7 @@ func scanRespondErrorSlugs(t *testing.T) map[string]bool {
 		}
 	}
 	if len(used) == 0 {
-		t.Fatal("found no respondError slugs — the scan regex is probably stale")
+		t.Fatal("found no respondError slugs - the scan regex is probably stale")
 	}
 	return used
 }
@@ -167,6 +167,6 @@ func TestHandlers_NeverWritePlainTextErrors(t *testing.T) {
 		}
 	}
 	if scanned == 0 {
-		t.Fatal("scanned no source files — the test is looking in the wrong directory")
+		t.Fatal("scanned no source files - the test is looking in the wrong directory")
 	}
 }

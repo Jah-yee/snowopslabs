@@ -1,8 +1,8 @@
-# Loki Helm Chart Values — single-binary mode, sized for a laptop cluster.
+# Loki Helm Chart Values - single-binary mode, sized for a laptop cluster.
 #
 # This file is the single source of truth for Loki's configuration. Scenarios
 # that need Loki reference it via `platformValues: logging/loki` and layer only
-# their differences on top — a second full copy drifts, and Helm turns drift on
+# their differences on top - a second full copy drifts, and Helm turns drift on
 # a StatefulSet into an immutable-field error on upgrade.
 
 deploymentMode: SingleBinary
@@ -22,7 +22,7 @@ loki:
         index:
           prefix: index_
           period: 24h
-  # Log retention — default 7 days. Override via LOKI_RETENTION_HOURS, which
+  # Log retention - default 7 days. Override via LOKI_RETENTION_HOURS, which
   # install.sh turns into a --set on loki.limits_config.retention_period.
   # Set it to 0 to keep logs forever (the PVC fills up eventually).
   limits_config:
@@ -66,7 +66,7 @@ resultsCache:
   enabled: false
 
 # Loki is part of the monitoring stack, so it does not monitor itself here.
-# lokiCanary moved to the top level in the newer chart — leaving it only under
+# lokiCanary moved to the top level in the newer chart - leaving it only under
 # `monitoring:` silently left the canary DaemonSet running on every node.
 lokiCanary:
   enabled: false

@@ -178,7 +178,7 @@ func TestEngineProgress_NoneStarted(t *testing.T) {
 }
 
 // TestEnginePaths_CorruptPathSkipped verifies that a directory with a broken
-// path.yaml does not cause Paths() to error — the broken entry is silently
+// path.yaml does not cause Paths() to error - the broken entry is silently
 // skipped and valid paths still load.
 func TestEnginePaths_CorruptPathSkipped(t *testing.T) {
 	e, learnDir := makeEngine(t)

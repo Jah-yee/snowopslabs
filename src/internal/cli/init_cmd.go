@@ -55,7 +55,7 @@ var initCmd = &cobra.Command{
 		// An existing lab has nothing to install, and helm upgrades would race
 		// pods that are still restarting, so it only waits for them instead.
 		if namespaces, ok := baselineDeployed(ctx, baselineComponents()); ok {
-			fmt.Fprintln(out, "\n=== Platform already installed — waiting for it to be ready ===")
+			fmt.Fprintln(out, "\n=== Platform already installed - waiting for it to be ready ===")
 			if err := waitPodsReady(ctx, out, namespaces); err != nil {
 				return err
 			}

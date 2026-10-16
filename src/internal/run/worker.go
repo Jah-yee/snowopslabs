@@ -210,7 +210,7 @@ func classify(runCtx, timeoutCtx context.Context, timeout time.Duration, res too
 	switch {
 	case errors.Is(timeoutCtx.Err(), context.DeadlineExceeded) && runCtx.Err() == nil:
 		return store.StatusTimedOut, nil,
-			"timed out after " + timeout.String() + " — raise the timeout for this run kind if the work is legitimately this slow"
+			"timed out after " + timeout.String() + " - raise the timeout for this run kind if the work is legitimately this slow"
 
 	case runCtx.Err() != nil:
 		return store.StatusCancelled, nil, "cancelled by user"

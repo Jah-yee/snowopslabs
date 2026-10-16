@@ -13,7 +13,7 @@ ORIGINAL="$(fault_state_get "$FAULT" original-image)"
 CURRENT="$(kubectl -n "$NS" get deploy "$DEPLOY" -o 'jsonpath={.spec.template.spec.containers[0].image}' 2>/dev/null || true)"
 
 # With nothing recorded and the bad image still deployed, fall back to what a
-# person would do — read the image off the pod that is still serving — rather
+# person would do - read the image off the pod that is still serving - rather
 # than reporting success over a broken workload.
 if [ -z "$ORIGINAL" ]; then
   case "$CURRENT" in
@@ -22,7 +22,7 @@ if [ -z "$ORIGINAL" ]; then
         --field-selector=status.phase=Running \
         -o 'jsonpath={range .items[*]}{.status.containerStatuses[0].ready}{" "}{.spec.containers[0].image}{"\n"}{end}' \
         2>/dev/null | awk '$1 == "true" && $2 !~ /:v99\.9\.9$/ { print $2; exit }')"
-      [ -z "$ORIGINAL" ] || echo "No original recorded — recovering the image from the pod still serving."
+      [ -z "$ORIGINAL" ] || echo "No original recorded - recovering the image from the pod still serving."
       ;;
   esac
 fi

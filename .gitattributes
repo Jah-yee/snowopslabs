@@ -1,6 +1,6 @@
 # Scripts must keep LF line endings. A Windows clone with core.autocrlf=true
 # would otherwise check them out with CRLF, and bash then fails on every line
-# with "$'\r': command not found" — including inside WSL.
+# with "$'\r': command not found" - including inside WSL.
 * text=auto
 *.sh text eol=lf
 *.bash text eol=lf

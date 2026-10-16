@@ -52,7 +52,7 @@ all_checks() {
   echo pv-data-loss-demonstrated
 }
 
-# archive_with <token> — a backup holding the marker with this token.
+# archive_with <token> - a backup holding the marker with this token.
 archive_with() {
   cat >"$ARCHIVE" <<JSON
 {"kind":"List","items":[

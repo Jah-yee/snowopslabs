@@ -28,13 +28,13 @@ kubectl get ns > "$SCRATCHPAD/ns.before.txt"
 finding.** An `inject.sh` that dies on
 `failed to download openapi: ... EOF` is reporting a dead API server, not a
 broken fault. `docker inspect k3d-<cluster>-server-0 --format '{{.RestartCount}}'`
-climbing between two runs means the control plane is flapping — stop, say so,
+climbing between two runs means the control plane is flapping: stop, say so,
 and resume when it is stable. Re-run any failed step once on a confirmed-healthy
 lab before it becomes a finding.
 
 ---
 
-## I1 — static
+## I1: static
 
 ```sh
 ./bin/labctl validate
@@ -47,7 +47,7 @@ ls incidents/$FAULT/alerts/rule.yaml 2>/dev/null   # required iff expectAlert is
 grep -n "$FAULT" incidents/README.md               # listed in the fault table
 ```
 
-## I2 — baseline: green when healthy
+## I2: baseline: green when healthy
 
 ```sh
 ./bin/labctl incident inject "$FAULT"
@@ -56,7 +56,7 @@ grep -n "$FAULT" incidents/README.md               # listed in the fault table
 ./bin/labctl incident status                  # MUST pass on the healthy lab
 ```
 
-## I3 — inject, idempotency, symptom
+## I3: inject, idempotency, symptom
 
 ```sh
 ./bin/labctl incident inject "$FAULT"
@@ -76,9 +76,9 @@ curl -s -o /dev/null -w '%{http_code}\n' "http://go-api.$DOMAIN_SUFFIX/health"
 ```
 
 A description promising "every pod Running and Ready" against pods in
-`CrashLoopBackOff` is a defect — the learner is sent to the wrong layer.
+`CrashLoopBackOff` is a defect - the learner is sent to the wrong layer.
 
-## I4 — diagnose blind
+## I4: diagnose blind
 
 `inject.sh`, `manifests/` and `solution.md` stay closed. Start the clock and the
 load:
@@ -92,7 +92,7 @@ kubectl -n "$NS" logs deploy/<workload> --tail=50
 kubectl top pods -n "$NS" 2>/dev/null
 ```
 
-Then the on-call view — dashboards and the pager:
+Then the on-call view - dashboards and the pager:
 
 ```sh
 curl -s --get "$PROM/api/v1/query" \
@@ -103,7 +103,7 @@ curl -s "$ALERTMANAGER_URL/api/v2/alerts" | jq -r '.[].labels.alertname' 2>/dev/
 Record the elapsed time and **which signal gave it away**. "Nothing did, I had
 to `get` every object in the namespace" is the finding for dimension 2.
 
-## I5 — hint ladder
+## I5: hint ladder
 
 ```sh
 ./bin/labctl incident hint        # one at a time, read each fully
@@ -116,11 +116,11 @@ Fix by hand the way a learner would, then:
 ./bin/labctl incident status      # MUST pass on a genuine fix
 ```
 
-## I6 — false-fix test
+## I6: false-fix test
 
 Both directions. Back up what you change, and restore between attempts.
 
-**False green** — satisfy the check without fixing the fault. The check must
+**False green**: satisfy the check without fixing the fault. The check must
 stay red:
 
 ```sh
@@ -130,7 +130,7 @@ kubectl -n "$NS" scale deploy <decoy> --replicas=1
 kubectl -n "$NS" scale deploy <decoy> --replicas=0
 ```
 
-**False red** — fix the fault by a route the author did not imagine. The check
+**False red**: fix the fault by a route the author did not imagine. The check
 must go green:
 
 ```sh
@@ -139,27 +139,27 @@ kubectl -n "$NS" rollout status deploy/<workload>
 ./bin/labctl incident status      # MUST pass
 ```
 
-A false green caps the whole review at 3.5 — the grader does not grade. A false
+A false green caps the whole review at 3.5 - the grader does not grade. A false
 red is scored almost as harshly: it teaches learners to distrust the grader.
 
 Three things this test gets wrong if you improvise it:
 
 - **Satisfy the whole request path, or the attempt proves nothing.** A decoy
   that carries only some of the Service's selector labels, or exposes a port the
-  Service's named `targetPort` does not resolve to, never receives traffic — and
+  Service's named `targetPort` does not resolve to, never receives traffic, and
   the check staying red then looks like a check that held when it is really an
   attempt that missed. Read the full selector and the port names first:
   `kubectl -n "$NS" get svc <name> -o jsonpath='{.spec}' | jq '{selector,ports}'`.
 - **A false green closes the run.** Once the detection check passes, the
-  incident is recorded as resolved and `incident status` reports nothing active
-  — while the fault is still live and the lab still broken. Recover with
+  incident is recorded as resolved and `incident status` reports nothing active,
+   while the fault is still live and the lab still broken. Recover with
   `./bin/labctl incident resolve <name>`, which is also I7's fourth state.
 - **A zero-work pass is not always the grader's fault.** Before recording a
-  false green, confirm the fault actually took hold — annotation present, the
+  false green, confirm the fault actually took hold: annotation present, the
   changed field changed, the symptom visible. A fault that never manifests
   produces the same passing check for an entirely different reason.
 
-## I7 — escape hatch matrix
+## I7: escape hatch matrix
 
 Run all four, resolving and re-injecting between them:
 
@@ -167,17 +167,17 @@ Run all four, resolving and re-injecting between them:
 # 1. freshly injected, untouched
 ./bin/labctl incident inject "$FAULT" && ./bin/labctl incident resolve
 
-# 2. half fixed by hand — the state that breaks naive resolve scripts
+# 2. half fixed by hand - the state that breaks naive resolve scripts
 ./bin/labctl incident inject "$FAULT"
 kubectl -n "$NS" patch <partial fix>
 ./bin/labctl incident resolve
 
-# 3. fully fixed by hand — must be a no-op, not an error
+# 3. fully fixed by hand - must be a no-op, not an error
 ./bin/labctl incident inject "$FAULT"
 kubectl -n "$NS" patch <full fix>
 ./bin/labctl incident resolve
 
-# 4. active state lost — resolve by name
+# 4. active state lost - resolve by name
 ./bin/labctl incident inject "$FAULT"
 rm -f ~/.snowops/state/snowops/incidents/active.yaml 2>/dev/null
 ./bin/labctl incident resolve "$FAULT"

@@ -17,12 +17,12 @@ port_now() {
 # Guard on the fault itself, not on its record: a record can outlive a hand
 # fix, and a guard on it then refuses to inject on a healthy Deployment.
 if [ "$(port_now)" = "$BAD_PORT" ]; then
-  echo "Fault already injected — nothing to do."
+  echo "Fault already injected - nothing to do."
   exit 0
 fi
 
 # Arm the paging rule first so the on-call drill measures real detection.
-# Tolerate a missing prometheus operator — the fault still works unpaged.
+# Tolerate a missing prometheus operator - the fault still works unpaged.
 MON_NS="${MONITORING_NAMESPACE:-monitoring}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=incidents/_lib/render.sh
@@ -30,7 +30,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=incidents/_lib/state.sh
 . "$LIB/state.sh"
 render_targeted "$SCRIPT_DIR/alerts/rule.yaml" | kubectl apply -n "$MON_NS" -f - 2>/dev/null ||
-  echo "Note: alert rule not installed (monitoring stack missing?) — continuing without paging."
+  echo "Note: alert rule not installed (monitoring stack missing?) - continuing without paging."
 
 # Record the PORT the workload shipped so resolve puts back exactly that; "none"
 # means the app set no PORT of its own and resolve removes the variable again.

@@ -55,10 +55,10 @@ security of the reporter of any incident.
 Community leaders will follow these Community Impact Guidelines in determining the
 consequences for any action they deem in violation of this Code of Conduct:
 
-1. **Correction** — a private, written warning.
-2. **Warning** — a warning with consequences for continued behavior.
-3. **Temporary Ban** — a temporary ban from any sort of interaction.
-4. **Permanent Ban** — a permanent ban from any sort of public interaction.
+1. **Correction**: a private, written warning.
+2. **Warning**: a warning with consequences for continued behavior.
+3. **Temporary Ban**: a temporary ban from any sort of interaction.
+4. **Permanent Ban**: a permanent ban from any sort of public interaction.
 
 ## Attribution
 

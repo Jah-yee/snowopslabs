@@ -63,20 +63,20 @@ The `app.env` file is sourced by `engine/build.sh` and `engine/deploy.sh` to sel
 ID into a pod annotation (`snowops.net/image-id`). Without it, rebuilding under
 an unchanged tag leaves the Deployment spec identical, `helm upgrade` is a no-op,
 and the running pods keep serving the previous build while deploy reports
-success. A chart brought by a BYO app should carry the same annotation — set
-`image.id` on the pod template — or iterating on that app will appear to do
+success. A chart brought by a BYO app should carry the same annotation, set
+`image.id` on the pod template, or iterating on that app will appear to do
 nothing.
 
 **`APP_VERSION`** is part of the workload contract: when it is set, the app must
 report it as the version on `/version`, overriding any build-time stamp. Content
-relies on this to run two Deployments of one image as distinct versions — a mesh
+relies on this to run two Deployments of one image as distinct versions - a mesh
 canary splits on it, and `/version` is how a learner sees which subset served
 them. Both reference apps honour it (`go-api`, `java-api`).
 
 ## The workload contract
 
 `app.env` also declares the **contract**: the interface this app promises a
-scenario. It is what lets one scenario run against many applications — the
+scenario. It is what lets one scenario run against many applications - the
 scenario states what it needs, rather than naming an app. See
 [ADR-0014](../docs/adr/0014-workload-binding-and-app-contract.md).
 
@@ -105,7 +105,7 @@ Only `APP_CAPABILITIES` has no default. The base interface is assumed; a
 capability is claimed explicitly or the app does not have it.
 
 `APP_REQUEST_METRIC` is **named rather than assumed**, because each language's
-instrumentation library picks its own — Micrometer emits
+instrumentation library picks its own - Micrometer emits
 `http_server_requests_seconds`, prom-client emits whatever you configure. The
 contract mandates the OpenTelemetry semantic-convention name for new apps, so an
 already-instrumented app arrives close to conformant.
@@ -126,7 +126,7 @@ Run `labctl app capabilities` for the current list.
 | `readiness-toggle` | can have its readiness flipped to failing on demand |
 
 Claim only what the app truly provides. A scenario requiring a capability the
-bound app does not declare is refused at preflight, before anything installs —
+bound app does not declare is refused at preflight, before anything installs,
 which is the point. An overclaim turns that clear refusal into a confusing
 failure halfway through a scenario.
 
@@ -138,7 +138,7 @@ labctl app verify go-api --static   # declaration only; no cluster needed
 ```
 
 A declaration is only a claim. `verify` runs the checks each claim implies
-against the deployed workload — readiness, the contract port, the probe paths,
+against the deployed workload: readiness, the contract port, the probe paths,
 and (for `prometheus-metrics`) a Prometheus query proving the declared histogram
 is actually being scraped. An app is only checked for what it claims.
 
@@ -155,7 +155,7 @@ that scenarios can bind to.
 
 Drop a directory into `apps/` with source, a `Dockerfile`, an `app.env` and a
 Helm chart under `deploy/helm/`. `BUILD_STRATEGY=docker` builds the image and
-imports it into the cluster. This is how `go-api` and `echo-server` work — see
+imports it into the cluster. This is how `go-api` and `echo-server` work - see
 [Adding a New Application](#adding-a-new-application).
 
 ### With a pre-built image only
@@ -190,14 +190,14 @@ the cluster cannot resolve, and every pod then fails to start with the image
 apparently present.
 
 The shared chart is used automatically whenever `apps/<name>/deploy/helm` does
-not exist. Everything it needs comes from the contract — port, probe paths,
+not exist. Everything it needs comes from the contract (port, probe paths,
 metrics path and the `app: <name>` label that Prometheus relabels onto every
-series — so the deployed pod and the declaration cannot disagree.
+series), so the deployed pod and the declaration cannot disagree.
 
 **Writable paths.** The shared chart runs your image with a read-only root
 filesystem, as a non-root user, with all capabilities dropped. `/tmp` is mounted
 writable because nearly every runtime needs it. If your image needs more, say
-so — this is the most common reason a hardened image crashloops:
+so - this is the most common reason a hardened image crashloops:
 
 ```bash
 APP_WRITABLE_PATHS=/var/cache/nginx,/run
@@ -205,7 +205,7 @@ APP_WRITABLE_PATHS=/var/cache/nginx,/run
 
 **Declare only what your app really does.** An app that claims nothing still
 runs; it is simply refused by scenarios that need something it did not promise,
-with a message naming the gap. That refusal is the feature — it happens before
+with a message naming the gap. That refusal is the feature - it happens before
 anything installs, rather than as a confusing failure halfway through.
 
 ### Binding a scenario to an app
@@ -217,7 +217,7 @@ APP_NAME=echo-server labctl scenario info observability-sre
 ```
 
 Content resolves the binding through `{{.WorkloadName}}` and friends, and the
-port and metric come from the app's own contract — see the
+port and metric come from the app's own contract - see the
 [scenario schema](../docs/reference/scenario-schema.md#the-workload-variables).
 
 ## Build and Deploy
@@ -368,7 +368,7 @@ A second technology stack, so a scenario can be run against something that is no
 Go and the two compared. Its JVM characteristics are the point: ~50Mi resident at
 rest against the Go services' ~10Mi, plus slower start and GC pauses.
 
-It has **no Helm chart of its own** — the shared workload chart deploys it from
+It has **no Helm chart of its own** - the shared workload chart deploys it from
 its declared contract, which is the same path a user's own application takes. It
 also has no build tool: the app is dependency-free and compiles with `javac`, so
 the lab stays offline and fast.

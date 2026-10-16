@@ -65,7 +65,7 @@ func toView(id string, r *compare.Report) comparisonView {
 	}
 }
 
-// GET /api/v2/comparisons — every recorded comparison, newest first.
+// GET /api/v2/comparisons - every recorded comparison, newest first.
 func (s *Server) handleListComparisons(w http.ResponseWriter, r *http.Request) {
 	reps, ids, err := compareStore(s).List()
 	if err != nil {
@@ -79,7 +79,7 @@ func (s *Server) handleListComparisons(w http.ResponseWriter, r *http.Request) {
 	writeJSONCached(w, r, http.StatusOK, out)
 }
 
-// GET /api/v2/comparisons/{id} — one recorded comparison.
+// GET /api/v2/comparisons/{id} - one recorded comparison.
 func (s *Server) handleGetComparison(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	rep, err := compareStore(s).Get(id)

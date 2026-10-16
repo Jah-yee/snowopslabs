@@ -7,7 +7,7 @@ set -euo pipefail
 # cluster matches Git, which is indistinguishable from never having touched it,
 # and ArgoCD itself keeps no durable record: a self-heal appends no entry to
 # .status.history, and argocd_app_sync_total resets when the controller restarts.
-# Catching it in flight does not work either — the revert lands in a couple of
+# Catching it in flight does not work either - the revert lands in a couple of
 # seconds, well inside a single verify run.
 #
 # What does survive is the Deployment's own event trail. A revert appears as a
@@ -27,7 +27,7 @@ WITNESS="selfheal-witness"
 if kubectl -n "$GIT_NS" get configmap "$WITNESS" >/dev/null 2>&1; then
   seen="$(kubectl -n "$GIT_NS" get configmap "$WITNESS" -o jsonpath='{.data.detail}' 2>/dev/null || true)"
   echo "OK: ${seen}"
-  echo "kubectl is not how you change anything ArgoCD manages — that is selfHeal."
+  echo "kubectl is not how you change anything ArgoCD manages - that is selfHeal."
   exit 0
 fi
 
@@ -63,7 +63,7 @@ if [ -n "$reverted_from" ]; then
     --from-literal=detail="$detail" \
     --dry-run=client -o yaml | kubectl apply -f - >/dev/null 2>&1 || true
   echo "OK: ${detail}."
-  echo "kubectl is not how you change anything ArgoCD manages — that is selfHeal."
+  echo "kubectl is not how you change anything ArgoCD manages - that is selfHeal."
   exit 0
 fi
 

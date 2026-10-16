@@ -36,7 +36,7 @@ run_gate() {
 
 @test "passes when every package clears the minimum" {
   write_profile "example.com/m/pkga" 9 1   # 90%
-  write_profile "example.com/m/pkgb" 8 2   # 80% — exactly on the line
+  write_profile "example.com/m/pkgb" 8 2   # 80% - exactly on the line
   run_gate
   [ "$status" -eq 0 ]
   [[ "$output" == *"coverage gate passed"* ]] || false
@@ -100,7 +100,7 @@ run_gate() {
 }
 
 @test "an exception that is no longer needed must be removed" {
-  write_profile "example.com/m/legacy" 9 1   # 90% — clears the global bar
+  write_profile "example.com/m/legacy" 9 1   # 90% - clears the global bar
   echo "example.com/m/legacy 50 P2 pending tests" >"$EXCEPTIONS"
   run_gate
   [ "$status" -ne 0 ]

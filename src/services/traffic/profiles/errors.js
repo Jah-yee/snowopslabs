@@ -1,4 +1,4 @@
-// Errors profile — drives go-api into and out of simulated readiness failure so
+// Errors profile - drives go-api into and out of simulated readiness failure so
 // you can watch error rate, readiness, and alerts react under load. It toggles
 // /toggle-failure periodically while a steady stream hits /ready and /.
 // TRAFFIC_TARGET is treated as a BASE origin.
@@ -34,7 +34,7 @@ export const options = {
     },
   },
   thresholds: {
-    // Expect SOME failures here — this profile is about observing them, so the
+    // Expect SOME failures here - this profile is about observing them, so the
     // threshold is loose and never aborts.
     http_req_failed: [{ threshold: 'rate<0.9', abortOnFail: false }],
   },

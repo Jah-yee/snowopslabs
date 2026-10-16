@@ -35,7 +35,7 @@ and how many hints you needed.`,
 	return cmd
 }
 
-var errNoActiveChallenge = errors.New("no active challenge — start one with `labctl challenge start <name>`")
+var errNoActiveChallenge = errors.New("no active challenge - start one with `labctl challenge start <name>`")
 
 func challengeEngine() *challenge.Engine {
 	root := cfg.ProjectRoot
@@ -267,7 +267,7 @@ func challengeHintCmd() *cobra.Command {
 				if err := eng.RecordHint(); err != nil {
 					return err
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "[Hint %d/%d — -%d%% score penalty]\n\n%s\n",
+				fmt.Fprintf(cmd.OutOrStdout(), "[Hint %d/%d - -%d%% score penalty]\n\n%s\n",
 					hint.Index, hint.Total, penalty, hint.Text)
 				return nil
 			}

@@ -1,8 +1,8 @@
 # Learning Paths
 
 Learning paths are guided, ordered tracks that walk you through real lab
-exercises — cluster setup, app deployment, observability, and incident
-response — with machine-verifiable completion checks at every step.
+exercises (cluster setup, app deployment, observability, and incident
+response) with machine-verifiable completion checks at every step.
 
 ## Shipped paths
 
@@ -11,7 +11,7 @@ response — with machine-verifiable completion checks at every step.
 | `kubernetes-foundations` | 4 | 45m | Cluster up, deploy an app with Helm, enable observability, then diagnose and hand-fix a real fault |
 
 Written for someone starting from no cluster. On a lab that is already running,
-the first two modules pass immediately — that is expected, and the path says so.
+the first two modules pass immediately - that is expected, and the path says so.
 
 ## Directory layout
 
@@ -58,9 +58,9 @@ modules:
 
 | type | fields |
 |------|--------|
-| `http` | `url`, `expectStatus` — HTTP GET must return the given status (`expectedStatus` is a deprecated alias) |
-| `script` | `script` — bash script relative to the path dir; exit 0 = pass |
-| `promql` | `query`, `operator`, `value` — queries Prometheus and compares the result |
+| `http` | `url`, `expectStatus` - HTTP GET must return the given status (`expectedStatus` is a deprecated alias) |
+| `script` | `script`: bash script relative to the path dir; exit 0 = pass |
+| `promql` | `query`, `operator`, `value` - queries Prometheus and compares the result |
 
 A check of any other type, or one missing the fields its type needs, fails
 `labctl validate`: the path runner could not grade it, so the module could
@@ -71,9 +71,9 @@ never be completed.
 1. Create `learn/<your-path-name>/path.yaml`.
 2. Add intro markdown files in `intros/` (optional but recommended).
 3. Add completion-check scripts in `checks/` (for `type: script` checks).
-4. Run `labctl learn list` — if the path appears, the schema is valid.
+4. Run `labctl learn list` - if the path appears, the schema is valid.
 
-The schema is validated by `go test ./internal/learn/...` in CI — a broken
+The schema is validated by `go test ./internal/learn/...` in CI - a broken
 `path.yaml` fails the build before it reaches the cluster.
 
 ## Reviewing a path
@@ -90,7 +90,7 @@ a draft.
 
 1. Checks must be idempotent and exit 0 only when the module's objective is
    truly complete (not just "the lab is up").
-2. Intro files must live inside the path directory — no `..` or absolute paths.
+2. Intro files must live inside the path directory, no `..` or absolute paths.
 3. Action refs must name real scenarios or faults (names validated at load time
    by the scenario/incident engines when the module is run).
 4. Keep paths self-contained: do not depend on external URLs or credentials

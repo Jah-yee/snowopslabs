@@ -1,7 +1,7 @@
 # Architecture Decision Records
 
 Each ADR records one decision, the alternatives considered, and why the
-alternative was rejected. ADRs are immutable once accepted — a later decision
+alternative was rejected. ADRs are immutable once accepted - a later decision
 supersedes an earlier one with a new record rather than editing it.
 
 Write a new ADR whenever a task makes a choice that a future maintainer would

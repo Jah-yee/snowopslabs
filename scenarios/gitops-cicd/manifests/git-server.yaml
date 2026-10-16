@@ -1,6 +1,6 @@
 ## The lab's Git source of truth.
 ## ArgoCD reconciles from THIS repository, which lives in the cluster and which
-## you can push to — that is what makes the GitOps loop performable here.
+## you can push to - that is what makes the GitOps loop performable here.
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -63,7 +63,7 @@ data:
     ##
     ## The image tag does not exist, so the pods sit in ImagePullBackOff and the
     ## rollout never completes. progressDeadlineSeconds is 60 rather than the
-    ## 600 default so ArgoCD reports Degraded within a minute instead of ten —
+    ## 600 default so ArgoCD reports Degraded within a minute instead of ten -
     ## a drill nobody waits out teaches nothing.
     apiVersion: apps/v1
     kind: Deployment
@@ -95,8 +95,8 @@ data:
                   cpu: 100m
                   memory: 64Mi
 ---
-## The repo outlives the pod on purpose. On an emptyDir, any restart — a scale
-## to zero, an eviction, a node reboot — silently discards every commit the
+## The repo outlives the pod on purpose. On an emptyDir, any restart - a scale
+## to zero, an eviction, a node reboot - silently discards every commit the
 ## learner pushed and reseeds, leaving `verify` red with no way back. The PVC is
 ## deleted with the gitops namespace on teardown, so it still leaks nothing.
 apiVersion: v1
@@ -167,7 +167,7 @@ spec:
       containers:
         - name: git-daemon
           image: alpine/git:2.47.2
-          ## alpine/git carries the git client but not the daemon — `git daemon`
+          ## alpine/git carries the git client but not the daemon - `git daemon`
           ## lives in the separate git-daemon subpackage, so add it at start.
           ## --enable=receive-pack is what makes the repo pushable, which is the
           ## whole point: a repo you can only read teaches nothing about GitOps.

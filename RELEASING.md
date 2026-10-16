@@ -1,17 +1,17 @@
 # Releasing SnowOps Labs
 
-Releases are cut by the **lead maintainer** (release authority is reserved — see
+Releases are cut by the **lead maintainer** (release authority is reserved - see
 [GOVERNANCE.md](GOVERNANCE.md)). This document is the runbook.
 
 ## What ships
 
 A release is two things that must match:
 
-- **The lab content** — the tagged commit. Learners clone it
+- **The lab content**: the tagged commit. Learners clone it
   (`git clone --branch stable`), so what they run, read and edit is the repo
   itself. `LAB_VERSION` at the root names the release; `labctl` warns when it
   and the binary differ.
-- **The `labctl` CLI** — a single self-contained binary with the web UI
+- **The `labctl` CLI**: a single self-contained binary with the web UI
   embedded, one archive per platform. [`install.sh`](install.sh), run from a
   clone, downloads the archive named by `LAB_VERSION`.
 
@@ -27,7 +27,7 @@ cross-compile from any host:
 Builds, archives (`.tar.gz`) and a `checksums.txt` (SHA-256) are produced by
 [goreleaser](https://goreleaser.com) from
 [`src/.goreleaser.yaml`](src/.goreleaser.yaml). The Go module lives under `src/`
-(issue #7), so goreleaser runs from there — the CI and release workflows set the
+(issue #7), so goreleaser runs from there - the CI and release workflows set the
 working directory accordingly.
 
 ## Versioning
@@ -44,7 +44,7 @@ Releases are past 1.0, so the [stability policy](docs/authoring/sdk-stability-po
 applies to the CLI, the content schemas and the public SDK (`pkg/`). Any
 breaking change is called out in the release notes.
 
-## TL;DR — cut and publish a release
+## TL;DR: cut and publish a release
 
 One command opens the release pull request; merging it tags the release and
 builds a **draft** GitHub Release; you review the draft and publish it.
@@ -69,9 +69,9 @@ that leaves it on anything else. `make release VERSION=X.Y.Z` (it runs
 [`scripts/release.sh`](scripts/release.sh)) opens a pull request from
 `release/vX.Y.Z` with two commits off `main`:
 
-1. `release: vX.Y.Z` — sets `LAB_VERSION` to `X.Y.Z`. This is the commit that
+1. `release: vX.Y.Z`: sets `LAB_VERSION` to `X.Y.Z`. This is the commit that
    gets tagged.
-2. `chore: start X.<Y+1>.0-dev` — moves `main` on to the next development
+2. `chore: start X.<Y+1>.0-dev`: moves `main` on to the next development
    version. Pass `NEXT=X.Y.Z-dev` to choose another.
 
 When the pull request merges, the
@@ -125,7 +125,7 @@ sha256sum -c checksums.txt   # (shasum -a 256 -c on macOS)
 
 ## Not yet automated (post-first-delivery)
 
-Deferred until after the first feedback round — tracked in the W8 tasks:
+Deferred until after the first feedback round - tracked in the W8 tasks:
 
 - **cosign** signing of artifacts and an **SBOM** (goreleaser supports both; they
   need signing-key and tooling setup).

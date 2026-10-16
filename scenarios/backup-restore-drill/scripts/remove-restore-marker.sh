@@ -4,7 +4,7 @@
 #
 # The archives go too. They are keyed to a marker token that teardown has just
 # destroyed, so leaving them behind would hand the next activation a backup that
-# looks valid and grades red — the worst kind of stale state.
+# looks valid and grades red - the worst kind of stale state.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

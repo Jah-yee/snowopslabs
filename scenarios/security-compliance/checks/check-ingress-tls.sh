@@ -7,7 +7,7 @@ set -euo pipefail
 # has proved cert-manager works, but nothing is actually protected until the
 # Ingress serves it. So this asserts on the wire, not on the manifest.
 #
-# The handshake is the outcome. Traefik answers 443 either way — with its own
+# The handshake is the outcome. Traefik answers 443 either way - with its own
 # CN=TRAEFIK DEFAULT CERT when no route matches, or with the lab-signed leaf
 # once the Ingress references the Secret. Only the second one passes.
 
@@ -62,7 +62,7 @@ case "$issuer" in
     echo "FAIL: ${HOST} is served by a certificate the lab CA did not sign:" >&2
     echo "$served" | sed 's/^/        /' >&2
     echo "      'CN=TRAEFIK DEFAULT CERT' means the Ingress TLS block is not routing to" >&2
-    echo "      $SECRET — check the host in spec.tls[].hosts matches $HOST exactly, and" >&2
+    echo "      $SECRET - check the host in spec.tls[].hosts matches $HOST exactly, and" >&2
     echo "      that the websecure entrypoint is enabled on the router." >&2
     exit 1
     ;;

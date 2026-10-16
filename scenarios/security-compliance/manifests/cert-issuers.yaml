@@ -7,7 +7,7 @@
 #
 # Two issuers, because a self-signed leaf is not what production looks like:
 # selfsigned-issuer signs the lab-ca root ONCE, and every workload certificate
-# is then issued by lab-ca-issuer off that root — a real chain a browser can be
+# is then issued by lab-ca-issuer off that root - a real chain a browser can be
 # taught to trust.
 ---
 apiVersion: cert-manager.io/v1

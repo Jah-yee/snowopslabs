@@ -1,4 +1,4 @@
-// Spike profile — baseline load, a sharp 10x spike, then recovery.
+// Spike profile - baseline load, a sharp 10x spike, then recovery.
 // TRAFFIC_RPS sets the baseline; the spike is 10x that. TRAFFIC_DURATION
 // is ignored (the shape is fixed: ~6 minutes total) so the spike stays sharp.
 import http from 'k6/http';

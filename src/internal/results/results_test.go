@@ -104,7 +104,7 @@ func TestProgress_GroupsByPath(t *testing.T) {
 
 func TestAppend_Idempotent_FileCreation(t *testing.T) {
 	s := makeStore(t)
-	// Append twice — should not create duplicate entries if path changes mid-run.
+	// Append twice - should not create duplicate entries if path changes mid-run.
 	_ = s.Append(Record{Kind: KindChallenge, Name: "c1", StartedAt: now})
 	_ = s.Append(Record{Kind: KindChallenge, Name: "c2", StartedAt: now.Add(time.Minute)})
 	all, _ := s.All()
@@ -170,7 +170,7 @@ func TestNewComparisonRecord(t *testing.T) {
 		t.Errorf("Kind = %q, want %q", r.Kind, KindComparison)
 	}
 	if r.Workload != "java-api" {
-		t.Errorf("Workload = %q, want java-api — a comparison is keyed by (scenario, workload)", r.Workload)
+		t.Errorf("Workload = %q, want java-api - a comparison is keyed by (scenario, workload)", r.Workload)
 	}
 	if r.Name != "autoscaling-under-load" {
 		t.Errorf("Name = %q", r.Name)

@@ -1,6 +1,6 @@
 # Learning & challenges
 
-## `labctl learn` — guided paths
+## `labctl learn`: guided paths
 
 Learning paths combine cluster setup, app deployment, scenarios and incidents
 into structured modules with machine-verifiable completion checks. Progress
@@ -29,7 +29,7 @@ REST: `GET /api/v2/learn/paths`, `GET /api/v2/learn/paths/{name}`,
 `GET /api/v2/learn/paths/{name}/progress`, `POST /api/v2/learn/paths/{name}/start`,
 `POST /api/v2/learn/paths/{name}/reset`, `POST /api/v2/learn/paths/{name}/complete`.
 
-## `labctl challenge` — timed assessments
+## `labctl challenge`: timed assessments
 
 A challenge injects a real fault (or activates a scenario), races you against a
 par time, and auto-grades on submit. Each hint costs score.
@@ -58,7 +58,7 @@ the fraction of checks that pass. Details in
 
 **Grading runs the check the way its own engine does.** With
 `grading.useDetectionCheck: true`, `submit` resolves the fault's detection check
-exactly as `labctl incident status` does — template variables expanded, and the
+exactly as `labctl incident status` does - template variables expanded, and the
 check's `script` resolved against the *fault's* directory rather than the
 project root. A challenge's own `grading.checks` are template-resolved too, with
 their scripts relative to the project root. Without this a templated URL reaches

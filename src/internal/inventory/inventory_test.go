@@ -16,7 +16,7 @@ import (
 )
 
 // harness wires an engine with the inventory recorder registered as a finish
-// hook, plus a platform service, all over a Fake runner and a temp store — so a
+// hook, plus a platform service, all over a Fake runner and a temp store - so a
 // real install/uninstall run drives the real inventory, hermetically.
 type harness struct {
 	t   *testing.T

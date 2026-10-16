@@ -79,7 +79,7 @@ docker_recovers_after_restart() {
 @test "k3d up restarts a node container whose k3s has died" {
   # After a Docker/Colima restart the node containers come back with different
   # bridge IPs and k3s exits at once, but k3d's entrypoint keeps the container
-  # Up — so the node sits NotReady and nothing self-heals. `init` must restart
+  # Up - so the node sits NotReady and nothing self-heals. `init` must restart
   # it, not leave it or delete the cluster.
   stub_when docker "label=k3d.cluster" 0 "k3d-testcluster-agent-0"
   stub_when docker "k3d.role" 0 "agent"

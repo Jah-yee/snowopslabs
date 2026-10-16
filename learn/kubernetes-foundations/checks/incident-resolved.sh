@@ -2,7 +2,7 @@
 # Passes when the learner has injected service-selector-broken and fixed it
 # themselves. Cluster state after a resolve is identical to state before the
 # inject, so the run history is the only evidence the module was actually done
-# — and resolvedBy distinguishes a real fix from the escape hatch.
+# - and resolvedBy distinguishes a real fix from the escape hatch.
 #
 # Only the most recent run of this fault counts: an older fix must not pass a
 # lab where the fault was injected again and left alone. That last run has to
@@ -18,7 +18,7 @@ LAST="$(grep '"kind":"incident"' "$HISTORY" |
   grep '"name":"service-selector-broken"' | tail -1)"
 
 if [ -z "$LAST" ]; then
-  echo "No run of service-selector-broken recorded yet — inject it and fix it." >&2
+  echo "No run of service-selector-broken recorded yet - inject it and fix it." >&2
   exit 1
 fi
 

@@ -115,7 +115,7 @@ func TestHandleProgress_WithModuleRecords(t *testing.T) {
 // returns an empty JSON array, not a 500.
 func TestHandleResults_StoreNotCreatedYet(t *testing.T) {
 	root := t.TempDir()
-	// Do NOT create .labctl/history — simulate a fresh install.
+	// Do NOT create .labctl/history - simulate a fresh install.
 	s := &Server{cfg: &config.Config{ProjectRoot: root, StateDir: filepath.Join(root, ".labctl")}}
 	req := httptest.NewRequest(http.MethodGet, "/api/results", nil)
 	w := httptest.NewRecorder()

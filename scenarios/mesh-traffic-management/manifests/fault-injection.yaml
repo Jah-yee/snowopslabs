@@ -1,12 +1,12 @@
-# Exercise: nothing installs this file — the learner applies it.
+# Exercise: nothing installs this file - the learner applies it.
 #
-# Re-applies the canary VirtualService (same name — this replaces it) with a
+# Re-applies the canary VirtualService (same name - this replaces it) with a
 # delay on requests that carry `x-canary: always`.
 #
 # The delay is attached to a header-matched route, not to the weighted one,
 # because an Istio fault applies to a whole HTTPRoute: inside a single weighted
 # route there is no way to slow one destination and not the other. Matching the
-# header first gives the canary traffic a route of its own — which is also how
+# header first gives the canary traffic a route of its own, which is also how
 # you would rehearse a slow release against opted-in testers only.
 #
 # Order matters. Istio evaluates http[] top down and takes the first match, so

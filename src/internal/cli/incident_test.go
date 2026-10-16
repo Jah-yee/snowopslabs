@@ -96,7 +96,7 @@ func TestIncident_Journey(t *testing.T) {
 
 	l.remove(faultMarker) // the learner's own fix
 	fixed := step("incident", "status")
-	if !strings.Contains(fixed.stdout, "RESOLVED — detection check") || !strings.Contains(fixed.stdout, "Tidying up") {
+	if !strings.Contains(fixed.stdout, "RESOLVED - detection check") || !strings.Contains(fixed.stdout, "Tidying up") {
 		t.Errorf("status after a hand fix does not confirm it and tidy up:\n%s", fixed.stdout)
 	}
 	if r := step("incident", "status"); !strings.Contains(r.stdout, "No incident is active") {

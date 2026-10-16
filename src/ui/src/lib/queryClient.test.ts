@@ -19,7 +19,7 @@ describe('qk query-key registry', () => {
   })
 
   it('scopes a single run by id', () => {
-    // qk.run is the one computed key — a per-run scope nested under 'runs' so
+    // qk.run is the one computed key - a per-run scope nested under 'runs' so
     // invalidating the list and a single run stay independent.
     expect(qk.run('abc123')).toEqual(['runs', 'abc123'])
     expect(qk.run('abc123')).not.toEqual(qk.runs)

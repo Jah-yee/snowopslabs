@@ -1,6 +1,6 @@
 ## Nginx Ingress Controller Helm Chart Values
 ## https://github.com/kubernetes/ingress-nginx/tree/main/charts/ingress-nginx
-## Alternative to Traefik — commonly used in cloud environments (AKS, EKS)
+## Alternative to Traefik - commonly used in cloud environments (AKS, EKS)
 
 controller:
   # IngressClass name
@@ -38,6 +38,6 @@ controller:
     use-forwarded-headers: "true"
     compute-full-forwarded-for: "true"
 
-# Default backend (optional — returns 404 for unmatched routes)
+# Default backend (optional - returns 404 for unmatched routes)
 defaultBackend:
   enabled: false

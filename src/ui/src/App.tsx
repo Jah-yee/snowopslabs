@@ -65,7 +65,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ]
 
-// Flattened, in render order — used for arrow-key nav, the command palette, and
+// Flattened, in render order - used for arrow-key nav, the command palette, and
 // resolving the current page's title.
 const NAV: NavItem[] = NAV_GROUPS.flatMap(g => g.items)
 
@@ -91,7 +91,7 @@ function nowHMS() {
 }
 
 /** Catches render-time crashes in a view so one bad payload can't blank the
- *  whole UI — shows a reset affordance instead. Keyed by route so navigating
+ *  whole UI - shows a reset affordance instead. Keyed by route so navigating
  *  away from a crashed view clears the error. */
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null }
@@ -116,13 +116,13 @@ function AppLayout({ auth, onLogout }: { auth: AuthStatus; onLogout: () => void 
 
   // Keep the current section visible when the nav overflows.
   //
-  // The sidebar scrolls once there are more sections than fit — at a 720px
+  // The sidebar scrolls once there are more sections than fit - at a 720px
   // viewport the last one sat behind the pinned runtime footer, so the page you
   // were on was the one you could not see. Scrolling it into view survives the
   // nav growing again, which shaving spacing does not.
   useEffect(() => {
     const active = document.querySelector<HTMLElement>('.sidebar-nav .nav-item.active')
-    // Guarded: jsdom has no scrollIntoView, and this is a nicety — it must
+    // Guarded: jsdom has no scrollIntoView, and this is a nicety - it must
     // never be the reason a render throws.
     if (typeof active?.scrollIntoView === 'function') {
       active.scrollIntoView({ block: 'nearest' })
@@ -159,7 +159,7 @@ function AppLayout({ auth, onLogout }: { auth: AuthStatus; onLogout: () => void 
     })
   }, [])
 
-  // Debounced cache invalidation — coalesces bursts of action_end events into
+  // Debounced cache invalidation - coalesces bursts of action_end events into
   // one refetch. Every mounted view's useQuery reruns.
   const bumpTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const bumpRefresh = useCallback(() => {
@@ -196,7 +196,7 @@ function AppLayout({ auth, onLogout }: { auth: AuthStatus; onLogout: () => void 
   }, [appendLog, bumpRefresh])
 
   // The live status frame (pushed every 5 s) carries no per-component state, but
-  // its signature — connection, context, k8s version, node count — shifts when
+  // its signature - connection, context, k8s version, node count - shifts when
   // the cluster is torn down, reset, or the runtime is switched *out of band*
   // (e.g. from the CLI). When it does, the platform/apps/status the cache holds
   // may be stale (a torn-down cluster still shows components as "Installed"), so
@@ -223,7 +223,7 @@ function AppLayout({ auth, onLogout }: { auth: AuthStatus; onLogout: () => void 
     prevWsStatus.current = s
     setWsStatus(s)
     if (s === 'connected' && prev === 'disconnected') {
-      notify('info', 'Reconnected', 'Live updates restored — refreshing data.')
+      notify('info', 'Reconnected', 'Live updates restored - refreshing data.')
       if (hasTrackedJobs()) {
         api.getJobs().then(reconcileJobs).catch(() => { /* next event will settle them */ })
       }
@@ -346,7 +346,7 @@ function AppLayout({ auth, onLogout }: { auth: AuthStatus; onLogout: () => void 
       <ConfirmDialog request={confirm} onClose={() => setConfirm(null)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={commands} />
 
-      {/* Sidebar — brand, grouped nav, and runtime/connection footer. On mobile
+      {/* Sidebar - brand, grouped nav, and runtime/connection footer. On mobile
           it slides in as a drawer over the content. */}
       <aside className={`sidebar${drawerOpen ? ' is-open' : ''}`}>
         <div className="sidebar-brand">
@@ -449,12 +449,12 @@ function AppLayout({ auth, onLogout }: { auth: AuthStatus; onLogout: () => void 
           </div>
         </header>
 
-        {/* Non-blocking offline state — a live spinner makes clear the app is
+        {/* Non-blocking offline state - a live spinner makes clear the app is
             actively reconnecting (and recovers on its own; see onStatusChange). */}
         {wsStatus === 'disconnected' && (
           <div className="banner banner-warn banner-reconnecting" role="alert">
             <span className="banner-icon" aria-hidden="true" />
-            <span className="banner-body">Live updates unavailable — reconnecting to the labctl server…</span>
+            <span className="banner-body">Live updates unavailable - reconnecting to the labctl server…</span>
           </div>
         )}
 
@@ -487,12 +487,12 @@ export function ClusterDownBanner({ info }: { info: ClusterInfo }) {
       {info.context ? (
         <span className="banner-body">
           Cluster <code>{info.context}</code> is unreachable{info.error ? <> ({info.error})</> : null}.
-          Usually Docker is stopped or short of memory — run <code>labctl doctor</code>, then{' '}
+          Usually Docker is stopped or short of memory - run <code>labctl doctor</code>, then{' '}
           <code>labctl init</code> to bring the lab back. Component and app states below are unknown until then.
         </span>
       ) : (
         <span className="banner-body">
-          No cluster yet — run <code>labctl init</code> to create the lab.
+          No cluster yet - run <code>labctl init</code> to create the lab.
         </span>
       )}
     </div>

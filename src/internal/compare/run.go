@@ -196,6 +196,6 @@ func awaitLoad(ctx context.Context, q Querier, w workload.Workload, o Options, s
 			return fmt.Errorf("waiting for load: %w", err)
 		}
 	}
-	return fmt.Errorf("load never reached %d req/s within %s — is the traffic generator running?",
+	return fmt.Errorf("load never reached %d req/s within %s - is the traffic generator running?",
 		o.RPS, loadSettleTimeout)
 }

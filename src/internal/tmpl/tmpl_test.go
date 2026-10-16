@@ -217,7 +217,7 @@ func TestExpandVars(t *testing.T) {
 	}
 }
 
-// An empty binding must not silently produce "deployment/" — callers are
+// An empty binding must not silently produce "deployment/" - callers are
 // expected to populate the workload before expanding content.
 func TestExpandZeroContextEmptiesKnownVars(t *testing.T) {
 	if got := Expand("deployment/{{.WorkloadName}}", Context{}, nil); got != "deployment/" {

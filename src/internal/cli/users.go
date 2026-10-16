@@ -25,7 +25,7 @@ var usersCmd = &cobra.Command{
 	Short: "Manage API/UI users for team mode (requires LABCTL_AUTH=true to take effect)",
 	Long: `Manage the static users file (~/.snowops/state/<cluster>/users.yaml) used when authentication
 is enabled (LABCTL_AUTH=true). Passwords are stored as PBKDF2-HMAC-SHA256
-hashes — never in plain text.
+hashes - never in plain text.
 
 Two roles are supported:
   operator     full control (platform, runtime, lab, apps, services, …)

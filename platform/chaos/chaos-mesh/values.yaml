@@ -14,7 +14,7 @@ controllerManager:
 
 chaosDaemon:
   runtime: containerd
-  # socketPath is NOT set here — install.sh selects the correct path per PROFILE.
+  # socketPath is NOT set here - install.sh selects the correct path per PROFILE.
   # k3d:      /run/k3s/containerd/containerd.sock
   # aks/eks:  /run/containerd/containerd.sock
   resources:

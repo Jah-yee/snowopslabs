@@ -241,7 +241,7 @@ checks block (scenario format v2) and reports each result. Exits non-zero
 if any check fails, so it is safe to use in CI and scripts.
 
 With --watch, checks are re-run every --interval until they all pass or
---timeout elapses — useful right after 'scenario up' while pods settle.`,
+--timeout elapses - useful right after 'scenario up' while pods settle.`,
 	Args: cobra.ExactArgs(1), // a failing check is a result, not a usage error
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Check the app the scenario was activated against; check scripts read
@@ -289,11 +289,11 @@ With --watch, checks are re-run every --interval until they all pass or
 				}
 				if failed == 0 && pending > 0 {
 					// Nothing failed; the learner has steps left to do.
-					return fmt.Errorf("%d step(s) still pending — complete the drill above, then re-verify", pending)
+					return fmt.Errorf("%d step(s) still pending - complete the drill above, then re-verify", pending)
 				}
 				return fmt.Errorf("%d of %d checks failed", failed, len(results))
 			}
-			fmt.Printf("\n%d of %d checks not yet passing — retrying in %s (until %s)...\n\n",
+			fmt.Printf("\n%d of %d checks not yet passing - retrying in %s (until %s)...\n\n",
 				failed+pending, len(results), verifyInterval, deadline.Format("15:04:05"))
 			select {
 			case <-ctx.Done():
@@ -436,7 +436,7 @@ func printVerifyRemediation(results []checks.Result) {
 		}
 	}
 	if genericFailure {
-		fmt.Fprintln(os.Stderr, "\nA check with no fix-it hint failed — a pod may still be starting.")
+		fmt.Fprintln(os.Stderr, "\nA check with no fix-it hint failed - a pod may still be starting.")
 		fmt.Fprintln(os.Stderr, "Re-run with --watch to wait, or inspect with: kubectl get pods -A")
 	}
 }
@@ -567,7 +567,7 @@ var scenarioInfoCmd = &cobra.Command{
 		}
 
 		if len(s.Checks) > 0 {
-			fmt.Printf("\nChecks (%d) — run 'labctl scenario verify %s':\n", len(s.Checks), s.Name)
+			fmt.Printf("\nChecks (%d) - run 'labctl scenario verify %s':\n", len(s.Checks), s.Name)
 			for _, c := range s.Checks {
 				fmt.Printf("  - %s [%s]\n", c.Name, c.Type)
 			}

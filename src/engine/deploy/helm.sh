@@ -34,7 +34,7 @@ HELM_CHART_PATH="apps/${APP_NAME}/deploy/helm"
 #
 # A rebuild under a mutable tag (:latest, or any tag reused during iteration)
 # leaves the Deployment spec byte-identical, so helm upgrade is a no-op, no new
-# ReplicaSet is created, and the running pods keep serving the previous build —
+# ReplicaSet is created, and the running pods keep serving the previous build -
 # while deploy reports success. Threading the local image ID into a pod
 # annotation makes the template change exactly when the image content does, so
 # a rebuilt app actually goes live. Empty when docker cannot resolve the
@@ -53,7 +53,7 @@ if [ ! -d "${HELM_CHART_PATH}" ]; then
     echo "ERROR: no chart at apps/${APP_NAME}/deploy/helm and no shared chart at ${HELM_CHART_PATH}" >&2
     exit 1
   fi
-  echo "[chart] ${APP_NAME} has no chart of its own — using the shared workload chart"
+  echo "[chart] ${APP_NAME} has no chart of its own - using the shared workload chart"
   SHARED_VALUES=(
     --set "appName=${APP_NAME}"
     --set "namespace=${NAMESPACE}"
@@ -113,7 +113,7 @@ case "${COMMAND}" in
 
     echo "[lint] Linting chart with values..."
     if ! helm lint "${HELM_CHART_PATH}" "${VALUES_ARGS[@]}"; then
-      echo "[lint] ERROR: chart failed lint — aborting deploy" >&2
+      echo "[lint] ERROR: chart failed lint - aborting deploy" >&2
       exit 1
     fi
     echo "[lint] OK"
@@ -123,7 +123,7 @@ case "${COMMAND}" in
       "${VALUES_ARGS[@]}" \
       --namespace "${NAMESPACE}" --create-namespace \
       --dry-run 2>&1; then
-      echo "[dry-run] ERROR: dry-run failed — aborting deploy" >&2
+      echo "[dry-run] ERROR: dry-run failed - aborting deploy" >&2
       exit 1
     fi
     echo "[dry-run] OK"

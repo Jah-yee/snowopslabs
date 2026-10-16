@@ -3,7 +3,7 @@
 #
 # Per-package coverage gate with a ratchet.
 #
-# Every package must reach COVERAGE_MIN (default 80%) — except packages listed
+# Every package must reach COVERAGE_MIN (default 80%) - except packages listed
 # in .coverage-exceptions, which must reach at least their recorded floor. The
 # floor is a ratchet in both directions: a package below it fails, a package
 # more than COVERAGE_SLACK points above it fails until the floor is raised, and
@@ -71,11 +71,11 @@ while read -r pkg pct; do
       printf '  FAIL %-58s %5s%% (exception floor %s%%)\n' "$pkg" "$pct" "$floor" >&2
       status=1
     elif awk "BEGIN { exit !($pct >= $min) }"; then
-      printf '  RATCHET %-55s %5s%% now clears %s%% — remove its .coverage-exceptions entry\n' \
+      printf '  RATCHET %-55s %5s%% now clears %s%% - remove its .coverage-exceptions entry\n' \
         "$pkg" "$pct" "$min" >&2
       status=1
     elif awk "BEGIN { exit !($pct >= $floor + $slack) }"; then
-      printf '  RAISE %-57s %5s%% is %s points or more above its floor %s%% — set the floor to %s\n' \
+      printf '  RAISE %-57s %5s%% is %s points or more above its floor %s%% - set the floor to %s\n' \
         "$pkg" "$pct" "$slack" "$floor" "$(awk "BEGIN { printf \"%d.0\", $pct }")" >&2
       status=1
     fi
@@ -98,7 +98,7 @@ if [ -f "$exceptions" ]; then
     case " $exempt_used " in
       *" $pkg "*) ;;
       *)
-        printf '  STALE %-58s no coverage recorded — remove the exception\n' "$pkg" >&2
+        printf '  STALE %-58s no coverage recorded - remove the exception\n' "$pkg" >&2
         status=1
         ;;
     esac
@@ -106,7 +106,7 @@ if [ -f "$exceptions" ]; then
 fi
 
 if [ "$status" -ne 0 ]; then
-  printf '\ncoverage gate failed — see docs/TESTING.md\n' >&2
+  printf '\ncoverage gate failed - see docs/TESTING.md\n' >&2
   exit 1
 fi
 

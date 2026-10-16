@@ -27,7 +27,7 @@ if [ -z "$CURRENT" ]; then
 fi
 
 if [ "$CURRENT" = "$BASELINE" ]; then
-  echo "PENDING: secret/${WORKLOAD_NAME} is still the baseline ('${BASELINE}') — you have not rotated it yet." >&2
+  echo "PENDING: secret/${WORKLOAD_NAME} is still the baseline ('${BASELINE}') - you have not rotated it yet." >&2
   exit 1
 fi
 

@@ -27,7 +27,7 @@ setup() {
 
 @test "is_wsl is false on a plain linux box (no env, no kernel signature)" {
   # Point the kernel-file scan at files that exist but lack the signature by
-  # overriding nothing — a normal CI linux runner has neither the env var nor a
+  # overriding nothing - a normal CI linux runner has neither the env var nor a
   # microsoft/wsl kernel string, which is exactly this case. Run on WSL itself,
   # the real kernel files say WSL, so there is no plain box to check.
   if grep -qiE 'microsoft|wsl' /proc/sys/kernel/osrelease /proc/version 2>/dev/null; then

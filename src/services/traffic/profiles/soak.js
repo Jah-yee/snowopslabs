@@ -1,4 +1,4 @@
-// Soak profile — sustained moderate load over a long period, for finding
+// Soak profile - sustained moderate load over a long period, for finding
 // leaks, OOM creep, and slow degradation. Defaults to 2 hours.
 import http from 'k6/http';
 import { check } from 'k6';

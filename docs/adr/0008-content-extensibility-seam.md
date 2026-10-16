@@ -1,4 +1,4 @@
-# ADR 0008 — Content paths and an extension seam instead of a marketplace
+# ADR 0008: Content paths and an extension seam instead of a marketplace
 
 **Status:** Accepted
 **Date:** 2026-07-26
@@ -25,7 +25,7 @@ Meet the need with two small mechanisms instead of a distribution system.
    scripts. Drop it in and it appears. `labctl scenario new` scaffolds it.
 2. **`SNOWOPS_CONTENT_PATH`** is a list of additional content roots. A team
    keeps private scenarios in their own git repo, clones it anywhere, points the
-   variable at it, and their content sits alongside the built-in catalog —
+   variable at it, and their content sits alongside the built-in catalog -
    attributed to its source in the CLI and UI.
 
 `pkg/extension` remains as a resolver-chain seam for out-of-tree behaviour that
@@ -43,7 +43,7 @@ content cannot express, governed by `docs/authoring/sdk-stability-policy.md`.
 
 - **Easier:** publishing content is `git push`. Consuming it is `git clone` plus
   an environment variable. Nothing to sign, host, index or authenticate.
-- **Harder:** no discovery — you cannot browse community content from inside the
+- **Harder:** no discovery - you cannot browse community content from inside the
   product. Accepted for now; a curated list in the docs covers it until there is
   enough community content for the problem to be real.
 - **Trust:** external content runs shell scripts with the user's cluster

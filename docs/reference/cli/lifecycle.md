@@ -27,7 +27,7 @@ Building the lab, checking the machine, and reading back what labctl did.
   non-zero and lists what failed. Installs are safe to repeat.
 - **Health.** `init` ends by checking the API server answers and every node is
   Ready. Only then does it print "Lab is up", with the lab's real URLs.
-- **An existing lab is kept.** Re-running `init` — the way back after a reboot —
+- **An existing lab is kept.** Re-running `init`, the way back after a reboot,
   never deletes the cluster. It restarts it in order if it is unhealthy, skips
   platform installs that are already deployed and waits for their pods to be
   Ready. If the cluster still cannot be reached it stops and suggests
@@ -142,7 +142,7 @@ The block lists three sources, sorted:
   `opencost`, `argocd`, `traefik`, `dashboard`, `chaos`, `vault`), so a run
   straight after `labctl init` covers components not installed yet
 - one hostname per app under `apps/`
-- every Ingress host in the cluster under the domain suffix — the source of
+- every Ingress host in the cluster under the domain suffix: the source of
   truth for hostnames a scenario adds, such as env-promotion's
   `<app>-dev`, `<app>-staging` and `<app>-prod`
 
@@ -167,7 +167,7 @@ labctl runtime status      # connectivity and node info
 ```bash
 labctl lab up              # create the cluster as a recorded, cancellable run
 labctl lab down            # tear it down the same way
-labctl lab status          # state from the run history — fast, no cluster calls
+labctl lab status          # state from the run history - fast, no cluster calls
 labctl lab status --live   # additionally probe the cluster for reachability
 ```
 
@@ -176,8 +176,8 @@ Which profile is used comes from `PROFILE` (`k3d`, `kind` or `incluster`); see
 
 ## Snapshots and lab reset
 
-A snapshot records **intent** — which platform components, apps and scenarios
-are active — as a small YAML file in `~/.snowops/state/<cluster>/snapshots/`. It is not a copy of
+A snapshot records **intent** (which platform components, apps and scenarios
+are active) as a small YAML file in `~/.snowops/state/<cluster>/snapshots/`. It is not a copy of
 cluster bytes. Restore replays the normal idempotent install paths.
 
 ```bash
@@ -189,16 +189,16 @@ labctl lab reset                      # tear back to post-init (interactive)
 labctl lab reset --yes                # non-interactive
 ```
 
-- **Snapshot sources** — platform components from labctl's install markers in
+- **Snapshot sources**: platform components from labctl's install markers in
   `~/.snowops/state/<cluster>/platform/`, scenarios from the scenario engine's state, apps by live
   kubectl probe. Anything installed outside labctl is not tracked.
-- **Restore order** — ingress, then monitoring, then the remaining platform
+- **Restore order**: ingress, then monitoring, then the remaining platform
   components, then apps, then scenarios. Already-active pieces are skipped, so
   restoring over a half-converged lab is safe.
-- **Reset** — stops traffic, deactivates all scenarios, destroys deployed apps
+- **Reset**: stops traffic, deactivates all scenarios, destroys deployed apps
   and uninstalls platform components *except* the ingress category. It keeps
   going past individual failures and reports what stuck. The cluster stays up.
-- **An unreachable cluster** — `snapshot` and `reset` read the cluster to learn
+- **An unreachable cluster**: `snapshot` and `reset` read the cluster to learn
   what runs. When it does not answer they stop with `cannot reach the cluster`
   and change nothing: a snapshot taken then would record an empty lab, and a
   reset planned from it would skip everything it should undo.
@@ -236,8 +236,8 @@ attempts.
 | Command | Flag | Default | Meaning |
 |---|---|---|---|
 | `runs list` | `--limit` | `20` | maximum runs to show |
-| | `--kind` | — | filter by kind, e.g. `platform.install` |
-| | `--status` | — | filter by status |
+| | `--kind` | - | filter by kind, e.g. `platform.install` |
+| | `--status` | - | filter by status |
 | `runs logs` | `-f, --follow` | off | stream new output until the run ends |
 
 How the engine records and cancels work is in

@@ -5,7 +5,7 @@ import {
 } from '../lib/theme'
 
 /** useTheme owns the theme preference: it reads the stored value, applies it to
- *  the document, persists changes, and — while on 'system' — follows the OS
+ *  the document, persists changes, and - while on 'system' - follows the OS
  *  colour-scheme live. Returns the preference, the concrete resolved palette,
  *  and a setter. */
 export function useTheme(): {

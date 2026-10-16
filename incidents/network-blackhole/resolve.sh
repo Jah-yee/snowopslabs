@@ -18,7 +18,7 @@ RECORDED="$(fault_state_get "$FAULT" policy)"
 if [ -n "$RECORDED" ]; then
   kubectl delete networkpolicy "$RECORDED" -n "$NS" --ignore-not-found
 elif kubectl -n "$NS" get networkpolicy "$POLICY" >/dev/null 2>&1; then
-  echo "No record that this fault created $POLICY in $NS — leaving it in place."
+  echo "No record that this fault created $POLICY in $NS - leaving it in place."
   echo "  If it is what blocks the traffic, remove it:"
   echo "    kubectl -n $NS delete networkpolicy $POLICY"
 fi

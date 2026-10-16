@@ -18,7 +18,7 @@ Run it with the `incident-review` skill, or by hand from this document.
 **The learner diagnoses; `labctl` breaks the lab and grades the fix.**
 
 A scenario teaches you to build something. An incident teaches you to find
-something — and the skill that transfers is the search, not the fix. The fix is
+something, and the skill that transfers is the search, not the fix. The fix is
 usually one `kubectl patch`; the value is in the twenty minutes before it, spent
 reading endpoints, events, dashboards and logs.
 
@@ -32,13 +32,13 @@ Four corollaries the review tests directly:
 1. **The detection check is honest in both directions.** Green on a healthy lab,
    red the moment the fault is live, and green again only for a genuine fix.
    Two of those three are routinely untested.
-2. **The symptom is discoverable through observability** — a dashboard, an
-   alert, an event, a log line — without ever opening `inject.sh`. A fault you
+2. **The symptom is discoverable through observability**: a dashboard, an
+   alert, an event, a log line, without ever opening `inject.sh`. A fault you
    can only find by reading its own source is a puzzle, not a drill.
 3. **The hint ladder adds exactly one rung at a time**, from "where would you
    look" to "here is the resource", with the command reserved for the solution.
 4. **The escape hatch never fails**, from any state the learner can leave the
-   lab in — including half-fixed, which is the state that breaks naive
+   lab in, including half-fixed, which is the state that breaks naive
    `resolve.sh` scripts.
 
 ---
@@ -50,16 +50,16 @@ Run them in order. Phase I4 has a rule the others do not: **do not read
 can no longer assess whether the fault was findable, and that is 0.20 of the
 score.
 
-### I0 — Read the symptom, not the fault
+### I0: Read the symptom, not the fault
 
 Read `fault.yaml`'s `description`, `displayName`, `severity` and `target`, and
 its entry in the fault table in
 [incidents/README.md](../../incidents/README.md). Nothing else. Write down the
-symptom the incident promises the victim will experience — "503s through the
-ingress while every pod is Ready" — because I3 tests whether that is what
+symptom the incident promises the victim will experience, "503s through the
+ingress while every pod is Ready", because I3 tests whether that is what
 actually happens, and I4 tests whether it is enough to go on.
 
-### I1 — Static validation
+### I1: Static validation
 
 ```bash
 labctl validate
@@ -73,7 +73,7 @@ the target is a demo app or a dedicated `labfault-*` namespace and never a
 platform component; the fault is listed in the README table; `snippets[].path`
 and `references[].url` resolve.
 
-### I2 — Baseline: green when healthy
+### I2: Baseline: green when healthy
 
 The phase everyone skips, and the one that catches a check asserting the wrong
 thing entirely.
@@ -86,11 +86,11 @@ labctl incident status        # must now PASS
 ```
 
 A detection check that cannot go green on a healthy lab will grade every learner
-as broken forever. A check that is green for a reason unrelated to the fault —
-because it probes a URL that answers regardless — will grade every learner as
+as broken forever. A check that is green for a reason unrelated to the fault,
+because it probes a URL that answers regardless, will grade every learner as
 finished immediately.
 
-### I3 — Inject: idempotency, and does the symptom match?
+### I3: Inject: idempotency, and does the symptom match?
 
 ```bash
 labctl incident inject <name>
@@ -103,7 +103,7 @@ is "pods are Running and Ready but the service is dark" and the pods are in fact
 `CrashLoopBackOff`, the description is a defect: the learner is hunting the
 wrong layer.
 
-### I4 — Diagnose it blind
+### I4: Diagnose it blind
 
 Time-boxed, with `inject.sh` and `solution.md` closed. Work only from the
 symptom and the observability the lab provides:
@@ -115,12 +115,12 @@ kubectl -n <ns> get events --sort-by=.lastTimestamp | tail -20
 kubectl -n <ns> logs deploy/<workload> --tail=50
 ```
 
-Then look at it the way an on-call engineer would — the Grafana dashboards, and
+Then look at it the way an on-call engineer would - the Grafana dashboards, and
 the pager if the fault declares `expectAlert`. Record how long it took, and
 which signal actually gave it away. **If nothing in the lab's observability
 points at the fault, that is the finding**, however elegant the fault is.
 
-### I5 — Walk the hint ladder
+### I5: Walk the hint ladder
 
 Reset your knowledge as far as you honestly can, and consume the hints one at a
 time:
@@ -140,17 +140,17 @@ Then fix it by hand, the way a learner would, and confirm the check turns:
 labctl incident status    # must PASS on a genuine fix
 ```
 
-### I6 — The false-fix test
+### I6: The false-fix test
 
 The incident's answer to the scenario tamper test, run in both directions.
 
-**False green** — fix the check without fixing the fault. Make the narrowest
+**False green**: fix the check without fixing the fault. Make the narrowest
 change that satisfies the check literally while the fault is still live: point
 the probed URL at something healthy, scale a second workload in to answer, patch
 the field the check reads without repairing the cause. The check **must stay
 red**.
 
-**False red** — fix the fault by a legitimate route the author did not imagine.
+**False red**: fix the fault by a legitimate route the author did not imagine.
 Restart the deployment instead of patching, re-apply the app's Helm release,
 `kubectl delete pod` and let it come back correct. The check **must go green**;
 a check that only recognises one spelling of the fix teaches learners to distrust
@@ -163,7 +163,7 @@ the grader.
 | Blackhole NetworkPolicy | add a second, permissive policy alongside it | delete the namespace's policies wholesale |
 | OOMKill from a low limit | raise the limit far past what is sane | fix it via a Helm value rather than a patch |
 
-### I7 — The escape hatch matrix
+### I7: The escape hatch matrix
 
 `resolve.sh` runs after any amount of manual fixing, so test it from every state
 the learner can leave behind:
@@ -207,9 +207,9 @@ Eight dimensions, each scored 0–5, combined by weight.
 | 7 | **Invariant compliance** | 0.05 | POSIX shell, `make lint-shell` clean, changes recorded with `incidents/_lib/state.sh`, hermetic tests for the check and the scripts, README table current |
 | 8 | **Self-sufficiency** | 0.05 | Diagnosable and fixable from `info`, hints, references and snippets alone |
 
-**Anchors.** 5 — no finding. 4 — one cosmetic finding. 3 — a finding a learner
-would notice. 2 — a finding that misleads a learner. 1 — the dimension's promise
-is not delivered. 0 — the incident teaches the wrong lesson, or leaves the lab
+**Anchors.** 5, no finding. 4 - one cosmetic finding. 3 - a finding a learner
+would notice. 2 - a finding that misleads a learner. 1 - the dimension's promise
+is not delivered. 0 - the incident teaches the wrong lesson, or leaves the lab
 damaged.
 
 Score to two decimals. Every dimension below 5 carries a named finding, and a
@@ -218,7 +218,7 @@ score rises only on new evidence from a re-run.
 ## The loop
 
 Identical to the scenario loop: fix the highest-impact finding, re-run the
-phases it touches, re-score, and stop at 4.8 — or at 4.7 with nothing left to
+phases it touches, re-score, and stop at 4.8, or at 4.7 with nothing left to
 recommend. A review that cannot converge in four rounds is reported as failed
 with its open findings named.
 
@@ -232,9 +232,9 @@ Two incident-specific cautions:
 
 ## Related
 
-- [incidents/README.md](../../incidents/README.md) — the fault contract
-- [Scenario review](scenario-review.md) — the build-loop half of this gate
-- [Learning review](learning-review.md) — the gate for the challenges that wrap
+- [incidents/README.md](../../incidents/README.md): the fault contract
+- [Scenario review](scenario-review.md): the build-loop half of this gate
+- [Learning review](learning-review.md): the gate for the challenges that wrap
   this fault; a challenge cannot score above the incident underneath it
-- [CLI: incidents](../reference/cli/incidents.md) — commands, timing, history
-- [R13](../runbooks/R13-observability-pipeline.md) — why a symptom is invisible
+- [CLI: incidents](../reference/cli/incidents.md): commands, timing, history
+- [R13](../runbooks/R13-observability-pipeline.md): why a symptom is invisible

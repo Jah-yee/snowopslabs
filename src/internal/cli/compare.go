@@ -96,9 +96,9 @@ var compareCmd = &cobra.Command{
 	Short: "Measure one scenario against two or more application stacks",
 	Long: `Run the same scenario against different workloads and diff the result.
 
-Every app is measured under identical conditions — same traffic profile, same
+Every app is measured under identical conditions - same traffic profile, same
 request rate, same window length, and a warmup that is excluded from the
-measurement — because a comparison that skips those measures the runtime's
+measurement - because a comparison that skips those measures the runtime's
 warm-up rather than the application.
 
 Apps are measured one at a time, never together: two workloads under load on the
@@ -127,7 +127,7 @@ var compareRunCmd = &cobra.Command{
 
 		per := o.Warmup + o.Window
 		fmt.Fprintf(os.Stderr,
-			"Comparing %s across %s.\nEach app: %s warmup (excluded) + %s measured — about %s in total.\n\n",
+			"Comparing %s across %s.\nEach app: %s warmup (excluded) + %s measured - about %s in total.\n\n",
 			o.Scenario, strings.Join(o.Apps, ", "), o.Warmup, o.Window,
 			(per * time.Duration(len(o.Apps))).Round(time.Minute))
 
@@ -148,7 +148,7 @@ var compareRunCmd = &cobra.Command{
 		fmt.Println()
 		compare.Render(cmd.OutOrStdout(), o, rep.Measurements)
 		if id != "" {
-			fmt.Fprintf(cmd.OutOrStdout(), "\nRecorded as %s — 'labctl compare show %s'\n", id, id)
+			fmt.Fprintf(cmd.OutOrStdout(), "\nRecorded as %s - 'labctl compare show %s'\n", id, id)
 		}
 		return nil
 	},

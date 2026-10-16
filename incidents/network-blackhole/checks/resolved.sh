@@ -4,7 +4,7 @@
 # ingress again.
 #
 # An HTTP probe alone is not enough. The ingress controller holds a keep-alive
-# pool to the backend, and a NetworkPolicy only governs NEW connections — so the
+# pool to the backend, and a NetworkPolicy only governs NEW connections - so the
 # probe can return 200 over a connection established before the policy landed,
 # while every fresh connection is refused. That is exactly how this fault used
 # to report itself resolved the moment it was injected. Grade the policy, and
@@ -18,7 +18,7 @@ SUFFIX="${INGRESS_URL_SUFFIX:-${DOMAIN_SUFFIX:-${CLUSTER_NAME:-snowops}.localhos
 
 # Look for the fault's OWN policy, by its name, rather than for any deny-all.
 # A namespace-wide deny baseline with targeted allows beside it is the pattern
-# the security-compliance scenario teaches and production uses — flagging every
+# the security-compliance scenario teaches and production uses - flagging every
 # empty-ingress policy would make this incident unresolvable whenever that
 # scenario is active, which is a legitimate thing for a learner to have running.
 #
@@ -50,7 +50,7 @@ fi
 CODE="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "http://${DEPLOY}.${SUFFIX}/health" || true)"
 if [ "$CODE" != "200" ]; then
   echo "FAIL: no policy is blocking ingress, but http://${DEPLOY}.${SUFFIX}/health returned ${CODE}." >&2
-  echo "  The ingress controller may still be retrying failed connections — try again shortly." >&2
+  echo "  The ingress controller may still be retrying failed connections - try again shortly." >&2
   exit 1
 fi
 

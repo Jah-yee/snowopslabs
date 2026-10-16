@@ -3,7 +3,7 @@
 # holds none now.
 #
 # Read from the cluster, not from Prometheus. Draining a node evicts whatever
-# lives on it — and when that node holds Prometheus's local-path volume, the
+# lives on it - and when that node holds Prometheus's local-path volume, the
 # monitoring stack goes Pending and records nothing for the window. A metric-
 # based "was a node cordoned" check therefore has a hole exactly where the drill
 # happens, and reports that nothing was drained.
@@ -35,7 +35,7 @@ fi
 
 for node in $BEFORE; do
   if ! printf '%s\n' "$NOW" | grep -qx "$node"; then
-    echo "OK: ${node} held ${APP} pods before the drain and holds none now — they were evicted and rescheduled."
+    echo "OK: ${node} held ${APP} pods before the drain and holds none now - they were evicted and rescheduled."
     exit 0
   fi
 done
@@ -43,7 +43,7 @@ done
 echo "FAIL: every node that held ${APP} before still holds it, so no drain has moved a pod." >&2
 echo "  before: ${BEFORE}" >&2
 echo "  now:    $(printf '%s' "$NOW" | tr '\n' ' ')" >&2
-echo "  Drain a node that is actually running one of these pods — draining an" >&2
+echo "  Drain a node that is actually running one of these pods - draining an" >&2
 echo "  empty node evicts nothing and teaches nothing:" >&2
 echo "    kubectl -n $NS get pods -l app=$APP -o wide" >&2
 echo "    kubectl cordon <node> && kubectl drain <node> --ignore-daemonsets --delete-emptydir-data" >&2

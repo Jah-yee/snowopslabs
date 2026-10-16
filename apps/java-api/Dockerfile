@@ -1,7 +1,7 @@
 # Multi-stage: compile with the JDK, ship on the JRE.
 #
 # No build tool by design. The app has no dependencies, so javac is the whole
-# build — which keeps the lab's "activate offline in seconds" property that a
+# build - which keeps the lab's "activate offline in seconds" property that a
 # Maven or Gradle dependency resolution would break.
 FROM eclipse-temurin:21-jdk-alpine AS builder
 WORKDIR /build

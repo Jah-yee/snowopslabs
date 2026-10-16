@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# restore.sh <namespace> [archive] — restore a namespace from a manifest archive
+# restore.sh <namespace> [archive] - restore a namespace from a manifest archive
 # produced by backup.sh. Recreates the namespace if it was deleted, then applies
 # every captured object. Idempotent: re-running over a healthy namespace is a
 # no-op apply.
@@ -40,7 +40,7 @@ fi
 
 # Recreate the namespace if the loss simulation deleted it.
 if ! kubectl get namespace "$NS" >/dev/null 2>&1; then
-  echo "==> Namespace '${NS}' is gone — recreating it"
+  echo "==> Namespace '${NS}' is gone - recreating it"
   kubectl create namespace "$NS"
 fi
 

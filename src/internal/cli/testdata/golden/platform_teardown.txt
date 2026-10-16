@@ -1,18 +1,18 @@
 $ labctl platform teardown
 
 ── uninstalling monitoring/grafana ──
-uninstall monitoring/grafana started (run <run>). Following output — Ctrl-C stops it.
+uninstall monitoring/grafana started (run <run>). Following output - Ctrl-C stops it.
 
-Run <run> — platform.uninstall monitoring/grafana (<state>)
+Run <run> - platform.uninstall monitoring/grafana (<state>)
 
 removing grafana
 
 Succeeded in <dur>.
 
 ── uninstalling ingress/traefik ──
-uninstall ingress/traefik started (run <run>). Following output — Ctrl-C stops it.
+uninstall ingress/traefik started (run <run>). Following output - Ctrl-C stops it.
 
-Run <run> — platform.uninstall ingress/traefik (<state>)
+Run <run> - platform.uninstall ingress/traefik (<state>)
 
 removing traefik
 

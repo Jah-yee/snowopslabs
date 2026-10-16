@@ -70,7 +70,7 @@ func TestAppendLogs(t *testing.T) {
 			t.Fatalf("AppendLogs(b): %v", err)
 		}
 		if last != 1 {
-			t.Errorf("run b's first seq = %d, want 1 — sequences must not be global", last)
+			t.Errorf("run b's first seq = %d, want 1 - sequences must not be global", last)
 		}
 	})
 

@@ -14,12 +14,12 @@ interface TrafficProps {
 
 // Short blurbs so the operator knows what each k6 profile does before running it.
 const PROFILE_BLURB: Record<string, string> = {
-  steady: 'Constant request rate for the duration — a stable baseline to watch autoscaling and latency settle.',
-  spike:  'Baseline, then a sharp ~10× spike and recovery (~6 min) — see how the stack absorbs and sheds a burst.',
-  soak:   'Sustained moderate load over a long window (default 2h) — surface slow leaks and gradual degradation.',
-  browse: 'Weighted read-mix across /, /version, /health — the shape of everyday traffic, spread over routes.',
-  write:  'POSTs a JSON body against the target\u2019s write path — exercises a write path, not just reads.',
-  errors: 'Toggles the target into simulated failure under load (needs the readiness-toggle capability) — watch error rate, readiness, and alerts react.',
+  steady: 'Constant request rate for the duration - a stable baseline to watch autoscaling and latency settle.',
+  spike:  'Baseline, then a sharp ~10× spike and recovery (~6 min) - see how the stack absorbs and sheds a burst.',
+  soak:   'Sustained moderate load over a long window (default 2h) - surface slow leaks and gradual degradation.',
+  browse: 'Weighted read-mix across /, /version, /health - the shape of everyday traffic, spread over routes.',
+  write:  'POSTs a JSON body against the target\u2019s write path - exercises a write path, not just reads.',
+  errors: 'Toggles the target into simulated failure under load (needs the readiness-toggle capability) - watch error rate, readiness, and alerts react.',
 }
 
 
@@ -34,8 +34,8 @@ export function Traffic({ notify }: TrafficProps) {
   const { busy, run } = useJobRunner(notify)
 
   // The targets are whatever apps the lab has, with the in-cluster address each
-  // one declares in its contract. Hardcoding the list here meant a new app — or
-  // an app on a non-default port — was invisible to the traffic generator.
+  // one declares in its contract. Hardcoding the list here meant a new app - or
+  // an app on a non-default port - was invisible to the traffic generator.
   const { data: apps } = useApiQuery(qk.apps, api.listApps)
   const targets = (apps ?? []).filter(a => a.serviceUrl)
 
@@ -43,7 +43,7 @@ export function Traffic({ notify }: TrafficProps) {
     if (!profile && profiles.length > 0) setProfile(profiles[0])
   }, [profile, profiles])
 
-  // Default to the app the lab is bound to, not whichever app sorts first —
+  // Default to the app the lab is bound to, not whichever app sorts first -
   // load aimed at a workload nobody is looking at is worse than no default.
   const boundApp = data?.workload?.app
   useEffect(() => {
@@ -82,7 +82,7 @@ export function Traffic({ notify }: TrafficProps) {
       {loadError && (
         <div className="banner banner-warn" role="alert">
           <Icon name="alert-triangle" size={16} className="banner-icon" />
-          <span className="banner-body">Refresh failed ({loadError}) — showing last known data.</span>
+          <span className="banner-body">Refresh failed ({loadError}) - showing last known data.</span>
           <span className="banner-actions">
             <button className="btn btn-sm" onClick={load} disabled={refreshing}>Retry</button>
           </span>
@@ -130,7 +130,7 @@ export function Traffic({ notify }: TrafficProps) {
               >
                 {targets.map(a => (
                   <option key={a.name} value={a.name}>
-                    {a.name}{a.name === boundApp ? ' (bound workload)' : ''}{a.deployed ? '' : ' — not deployed'}
+                    {a.name}{a.name === boundApp ? ' (bound workload)' : ''}{a.deployed ? '' : ' - not deployed'}
                   </option>
                 ))}
                 <option value="custom">Custom URL…</option>
@@ -140,7 +140,7 @@ export function Traffic({ notify }: TrafficProps) {
                   ? 'Any http(s) URL reachable from the cluster.'
                   : resolvedTarget
                     ? <>Requests go to <code>{resolvedTarget}</code></>
-                    : 'No app declares an in-cluster address — check apps/<name>/app.env, or use a custom URL.'}
+                    : 'No app declares an in-cluster address - check apps/<name>/app.env, or use a custom URL.'}
               </span>
             </label>
 

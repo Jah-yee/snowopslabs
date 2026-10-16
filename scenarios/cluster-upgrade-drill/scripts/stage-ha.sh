@@ -2,7 +2,7 @@
 set -euo pipefail
 . "$(dirname "$0")/../../_lib/workload.sh"
 
-# stage-ha.sh — put the workload into the shape the drill needs: enough replicas that
+# stage-ha.sh - put the workload into the shape the drill needs: enough replicas that
 # a PodDisruptionBudget has something to protect. Staging only; the learner
 # still writes the PDB and performs the roll.
 
@@ -19,7 +19,7 @@ STATE="upgrade-drill-baseline"
 # a finished roll looks like.
 #
 # Recorded by UID rather than by name. k3d reuses a node's name whenever it can,
-# so a rolled worker frequently comes back called exactly what it was — a name
+# so a rolled worker frequently comes back called exactly what it was - a name
 # comparison would report it as never rolled. A recreated node always has a new
 # UID.
 WORKER_UIDS="$(kubectl get nodes -l '!node-role.kubernetes.io/control-plane' \
@@ -33,7 +33,7 @@ BEFORE="$(kubectl -n "$APP_NAMESPACE" get deployment "$WORKLOAD" \
 
 # Never overwrite an existing checkpoint. A re-activation with --force runs over
 # a cluster this scenario has ALREADY staged, so re-recording would capture the
-# staged state as the baseline — and teardown would then "restore" the workload
+# staged state as the baseline - and teardown would then "restore" the workload
 # to the replica count the drill itself set, never to what it actually found.
 if kubectl -n "$APP_NAMESPACE" get configmap "$STATE" >/dev/null 2>&1; then
   echo "==> Keeping the checkpoint from the first activation (re-run detected)."
@@ -48,7 +48,7 @@ else
   echo "==> Recorded the starting cluster: workers [${WORKERS}] on ${VERSIONS}"
 fi
 
-# A pod covered by two PodDisruptionBudgets cannot be evicted at all — the
+# A pod covered by two PodDisruptionBudgets cannot be evicted at all - the
 # eviction subresource refuses it, and the Kubernetes error names neither budget.
 # Warn now rather than let the learner meet it halfway through a drain.
 OTHER="$(kubectl -n "$APP_NAMESPACE" get pdb --no-headers \
@@ -59,7 +59,7 @@ if [ -n "$OTHER" ]; then
   printf '  %s\n' $OTHER
   echo "  A pod covered by two budgets cannot be evicted AT ALL, so your drain will"
   echo "  fail partway through with a message naming neither of them. That budget"
-  echo "  belongs to another scenario — tear that one down first."
+  echo "  belongs to another scenario - tear that one down first."
 fi
 
 echo "==> Scaling ${WORKLOAD} to ${REPLICAS} replicas for the upgrade drill"
@@ -72,7 +72,7 @@ for _ in $(seq 1 60); do
   ready="$(kubectl -n "$APP_NAMESPACE" get deployment ${WORKLOAD_NAME} \
     -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo 0)"
   if [ "${ready:-0}" -ge 2 ]; then
-    echo "${WORKLOAD_NAME} has ${ready} ready replicas — staged."
+    echo "${WORKLOAD_NAME} has ${ready} ready replicas - staged."
     exit 0
   fi
   sleep 5

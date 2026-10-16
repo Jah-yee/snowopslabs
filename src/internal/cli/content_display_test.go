@@ -37,12 +37,12 @@ func TestRenderReferencesResolvesEveryField(t *testing.T) {
 func TestRenderReferences(t *testing.T) {
 	var buf bytes.Buffer
 	renderReferences(&buf, []scenario.Reference{
-		{Label: "KEDA — spec", URL: "https://keda.sh/docs/", Note: "the fields"},
+		{Label: "KEDA - spec", URL: "https://keda.sh/docs/", Note: "the fields"},
 		{Label: "no note", URL: "https://example.test"},
 	}, identityResolve)
 	got := buf.String()
 	want := "\nReferences:\n" +
-		"  - KEDA — spec\n    https://keda.sh/docs/\n    the fields\n" +
+		"  - KEDA - spec\n    https://keda.sh/docs/\n    the fields\n" +
 		"  - no note\n    https://example.test\n"
 	if got != want {
 		t.Fatalf("renderReferences mismatch:\n got: %q\nwant: %q", got, want)
@@ -79,7 +79,7 @@ func TestRenderSnippets_InlineAndPathWithTemplate(t *testing.T) {
 		gone bool
 	}{
 		{name: "header", want: "Snippets:"},
-		{name: "label and description", want: "# inline — a note"},
+		{name: "label and description", want: "# inline - a note"},
 		{name: "inline body indented", want: "    kind: ConfigMap"},
 		{name: "path body resolved", want: "    ns: monitoring"},
 		{name: "banner trimmed", want: "# banner", gone: true},

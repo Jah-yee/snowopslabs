@@ -16,7 +16,7 @@ provides:
 requires:
   kubernetes_resources:
     - The monitoring/metrics Prometheus (PROMETHEUS_SVC must be reachable)
-    - An ingress controller (optional — the UI is also accessible via port-forward)
+    - An ingress controller (optional - the UI is also accessible via port-forward)
   tools:
     - helm
     - kubectl
@@ -36,7 +36,7 @@ values:
   values.yaml: "Helm chart values for the provider (k3d-minimal resources; ingress off by default)"
 
 conventions:
-  - Install monitoring/metrics (Prometheus) BEFORE this provider — it reads metrics from there.
+  - Install monitoring/metrics (Prometheus) BEFORE this provider - it reads metrics from there.
   - k3d/lab deployments have no real billing API; on-prem pricing defaults are used.
     Cost numbers are relative (useful for right-sizing) not absolute invoices.
   - Chart versions are pinned and overridable via env (defaults in config/versions.env).

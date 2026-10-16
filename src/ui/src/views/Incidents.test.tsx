@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // Incidents view behaviour: browse the library, inject/resolve, and reveal hints
-// progressively — plus an axe pass. Requests go through the real client to the
+// progressively - plus an axe pass. Requests go through the real client to the
 // contract server (test/contract.ts).
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -159,7 +159,7 @@ describe('Incidents view', () => {
   })
 
   // Only what the user must install. The app the fault resolved from the binding
-  // is what gets broken, not a prerequisite — listing it said content that runs
+  // is what gets broken, not a prerequisite - listing it said content that runs
   // against any conforming app ran against one.
   it('surfaces a fault\'s prerequisites so required tools are visible before injecting', async () => {
     serveIncidents({

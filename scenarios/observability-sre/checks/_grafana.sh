@@ -3,7 +3,7 @@
 #
 # The proxy is deliberate. It is the path the learner uses in Explore, so a
 # check that passes here proves the datasource the learner will actually click
-# is wired correctly — not merely that a pod is listening. Probing Loki or
+# is wired correctly - not merely that a pod is listening. Probing Loki or
 # Tempo directly would pass with a broken Grafana datasource, which is the most
 # common way this stack looks "empty" to a learner.
 
@@ -32,7 +32,7 @@ ds_get() {
 
 # The signals are graded over a recent window, not over all of history. Tempo
 # and Loki retain what a PREVIOUS run of this scenario produced, so an unwindowed
-# query is green the moment the lab has ever done this exercise — the learner's
+# query is green the moment the lab has ever done this exercise - the learner's
 # own work is never what makes it pass.
 #
 # Tempo filters at block granularity, so the window bounds staleness to roughly

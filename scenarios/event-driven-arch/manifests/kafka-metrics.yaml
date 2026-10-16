@@ -1,8 +1,8 @@
 # Tell Prometheus what to scrape for Kafka. Two sources, and both are needed:
 #
-#   kafka-exporter  — consumer-group lag and topic offsets (the "is the consumer
+#   kafka-exporter - consumer-group lag and topic offsets (the "is the consumer
 #                     keeping up?" question this scenario is about)
-#   the brokers     — throughput, replication health and request latency, via
+#   the brokers - throughput, replication health and request latency, via
 #                     the JMX Prometheus exporter that platform/data/kafka
 #                     enables on the Kafka CR
 #

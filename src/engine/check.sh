@@ -41,7 +41,7 @@ case "$cmd" in
       exit 1
     fi
     if ! kubectl cluster-info >/dev/null 2>&1; then
-      echo "ERROR: cannot reach cluster — is the container runtime running?" >&2
+      echo "ERROR: cannot reach cluster - is the container runtime running?" >&2
       _docker_hint
       exit 1
     fi

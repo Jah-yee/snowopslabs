@@ -3,7 +3,7 @@
 # Every real Audit rollout turns up one of these: a vendor image shipped with a
 # fixed manifest the team does not own, so "add securityContext and re-deploy"
 # is not on the table. It violates three of the four policies, which makes the
-# policy report a triage exercise rather than a one-line fix — some violations
+# policy report a triage exercise rather than a one-line fix - some violations
 # you remediate, some you exempt, and knowing which is which is the job.
 #
 # It carries a label that says WHY it is exempt. A PolicyException should match
@@ -34,7 +34,7 @@ spec:
         prometheus.io/scrape: "false"
     spec:
       containers:
-        # Deliberately declares no securityContext and no resource limits —
+        # Deliberately declares no securityContext and no resource limits -
         # this is the violation the drill is about.
         - name: reporter
           image: "{{.WorkloadName}}:v1.2.0"

@@ -10,7 +10,7 @@ import (
 
 // TestSchemasAreWellFormed asserts every embedded schema parses as JSON and
 // carries the metadata external tooling relies on. A malformed schema would ship
-// silently otherwise — editors would just stop offering completion.
+// silently otherwise - editors would just stop offering completion.
 func TestSchemasAreWellFormed(t *testing.T) {
 	for kind, raw := range ByKind {
 		t.Run(kind, func(t *testing.T) {

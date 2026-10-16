@@ -12,7 +12,7 @@ setup() {
   CFG="$ROOT/src/.golangci.yml"
 }
 
-# sec_recipe — the sec target's recipe lines, without the target line itself.
+# sec_recipe - the sec target's recipe lines, without the target line itself.
 sec_recipe() {
   awk '/^sec:/{f=1;next} f && /^[a-zA-Z_.-]+:/{f=0} f' "$MK"
 }

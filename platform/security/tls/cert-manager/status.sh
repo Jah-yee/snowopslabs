@@ -8,7 +8,7 @@ echo "===================="
 echo ""
 
 if ! kubectl get namespace $NAMESPACE &>/dev/null; then
-  echo "Namespace '$NAMESPACE' not found — cert-manager not installed"
+  echo "Namespace '$NAMESPACE' not found - cert-manager not installed"
   exit 1
 fi
 

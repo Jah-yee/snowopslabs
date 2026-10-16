@@ -41,10 +41,10 @@ installed. The web UI (`labctl ui`) does the same in one click.
 **Category:** observability
 
 **What it stages:**
-- Loki (log aggregation, `grafana-community/loki`) — adopted when the platform already installed it
+- Loki (log aggregation, `grafana-community/loki`): adopted when the platform already installed it
 - Promtail (log shipping agent, `grafana/promtail`; deprecated upstream, see ADR-0012)
 - Tempo (trace backend, `grafana-community/tempo`)
-- Grafana Alloy (OTLP trace **collector** — the app exports here, Alloy forwards to Tempo)
+- Grafana Alloy (OTLP trace **collector**: the app exports here, Alloy forwards to Tempo)
 - Alerting rules (PrometheusRule CRDs: error rate, latency, memory saturation, CPU throttling, readiness)
 - Three dashboards: Golden Signals (with a Tempo traces panel), an SLO dashboard, and a Log Explorer
 
@@ -55,11 +55,11 @@ the stage just set. The `reset-tracing-wiring` component runs
 unwired and ends clean.
 
 **The drill:**
-1. Wire the app to Alloy — `kubectl set env deployment/<app> OTEL_EXPORTER_OTLP_ENDPOINT=...`
+1. Wire the app to Alloy - `kubectl set env deployment/<app> OTEL_EXPORTER_OTLP_ENDPOINT=...`
    (or run `scripts/enable-tracing.sh`). The app never learns which trace backend
    is behind the collector.
 2. Drive real load with k6: `labctl traffic start --profile steady --rps 25`.
-3. Follow one request across all three signals — Loki gives a `trace_id`, Grafana
+3. Follow one request across all three signals - Loki gives a `trace_id`, Grafana
    turns it into a jump to that trace in Tempo.
 4. Break readiness on purpose and take `PodNotReady` from inactive to firing.
 
@@ -76,8 +76,8 @@ trace ids, and an alert from this scenario actually fired.
 
 The pairing matters. `app-exports-traces-to-collector` reads the environment
 variable and gives the exact command to fix it; `traces-arrived-in-tempo` reads
-Tempo. An endpoint can be set on a Deployment that never sends a span — wrong
-port, collector down, no traffic — and all of those pass the setting check.
+Tempo. An endpoint can be set on a Deployment that never sends a span (wrong
+port, collector down, no traffic) and all of those pass the setting check.
 
 **Traps this scenario encodes:**
 - **History satisfies an unwindowed query.** Tempo and Loki retain what a
@@ -105,7 +105,7 @@ changes show as queueing at a constant arrival rate. See runbook
 
 **Explore after activation:**
 - Golden Signals dashboard: `http://grafana.snowops.localhost/d/observability-sre`
-- Explore > Loki > `{namespace="<workload-ns>"} | json` — expand a line, click its `trace_id`
+- Explore > Loki > `{namespace="<workload-ns>"} | json`: expand a line, click its `trace_id`
 - Explore > Tempo > search by `service.name`
 - Check alerts: Prometheus > Alerts, or `kubectl -n monitoring get prometheusrules`
 
@@ -119,7 +119,7 @@ changes show as queueing at a constant arrival rate. See runbook
 - A Git server in the cluster (namespace `gitops`), serving a bare repo over
   `git://` on a PVC, seeded with two paths: `demo/` (a working release) and
   `broken/` (a release that cannot become healthy)
-- ArgoCD — adopted from the `gitops/argocd` platform component, never a second
+- ArgoCD: adopted from the `gitops/argocd` platform component, never a second
   copy of it
 - Two ArgoCD Applications, each watching one of those paths, both with automated
   sync, prune and self-heal
@@ -144,7 +144,7 @@ an objective that used to be described and never tested:
 image tag and replica count, push, and watch ArgoCD reconcile it. Then prove the
 three things that separate GitOps from `kubectl`: scale the Deployment by hand
 and be reverted, delete a manifest from Git and watch the resource leave, and
-repair the deliberately-broken release — in Git, because `kubectl set image` is
+repair the deliberately-broken release - in Git, because `kubectl set image` is
 reverted within seconds.
 
 **Explore after activation:**
@@ -155,8 +155,8 @@ reverted within seconds.
 - Edit `demo/deployment.yaml`, push, and force a sync rather than waiting for
   the ~3 minute poll
 
-> **`Synced` does not mean `working`.** `gitops-broken` syncs perfectly — its
-> manifests are valid YAML — and is still `Degraded`, because the image tag in
+> **`Synced` does not mean `working`.** `gitops-broken` syncs perfectly, its
+> manifests are valid YAML, and is still `Degraded`, because the image tag in
 > them does not exist. Sync status is a statement about your pipeline; health
 > status is a statement about your release. Telling them apart is objective 7.
 
@@ -164,7 +164,7 @@ reverted within seconds.
 > revert lands in a couple of seconds, ArgoCD appends no `.status.history` entry
 > for it, and `argocd_app_sync_total` resets when the controller restarts. What
 > survives is a `ScalingReplicaSet` event scaling *from* a count Git never
-> declared *to* the count it does — which a rolling update cannot produce, since
+> declared *to* the count it does, which a rolling update cannot produce, since
 > its own steps only move between declared counts.
 
 > **Do not compare `.status.sync.revision` with repo HEAD.** It is the revision
@@ -187,7 +187,7 @@ reverted within seconds.
 - cert-manager v1.21.1 (via Helm) plus the lab CA chain: `selfsigned-issuer` →
   `lab-ca` → `lab-ca-issuer`
 - 4 Kyverno ClusterPolicies, all shipped in **Audit** so activation disrupts
-  nothing — promoting them is the drill:
+  nothing: promoting them is the drill:
   - `deny-privilege-escalation`
   - `require-non-root-user`
   - `require-resource-limits`
@@ -195,9 +195,9 @@ reverted within seconds.
 - Default-deny NetworkPolicies for the the bound workload namespace, plus the allowances a
   real workload needs: DNS, intra-namespace, mesh control plane, ingress and
   scraping
-- `legacy-reporter` — a stand-in vendor workload violating three of the four
+- `legacy-reporter`: a stand-in vendor workload violating three of the four
   policies, which the learner must exempt rather than fix
-- Security Grafana dashboard (`/d/security-compliance`) — policy violations by
+- Security Grafana dashboard (`/d/security-compliance`): policy violations by
   mode and by policy, certificate expiry, admission latency
 
 **Prerequisites:**
@@ -206,20 +206,20 @@ reverted within seconds.
 
 **What you do** (four graded tasks, shown as PENDING until you complete them):
 1. Read the policy report, then remediate the **workload** so it satisfies every
-   policy — `kubectl -n <workload-ns> get policyreports -o wide`
+   policy - `kubectl -n <workload-ns> get policyreports -o wide`
 2. Promote the two Pod Security policies Audit → Enforce, and prove the webhook
    now rejects a root Pod with `kubectl apply --dry-run=server`
 3. Triage the one you cannot fix: exempt `legacy-reporter` with a **label-scoped**
-   `PolicyException`. The grading checks the scope — an exception matching the
+   `PolicyException`. The grading checks the scope - an exception matching the
    namespace instead of the label fails it
 4. Issue the `go-api-tls` Certificate from `lab-ca-issuer`, wire it onto the
    Ingress, and prove the lab-signed leaf is what answers the TLS handshake
 
 Order matters: promoting to Enforce before the workload is compliant rejects
-go-api's own next rollout — which is exactly why Audit mode exists.
+go-api's own next rollout, which is exactly why Audit mode exists.
 
 **Explore after activation:**
-- `labctl scenario info security-compliance` — twelve numbered commands walk the
+- `labctl scenario info security-compliance`: twelve numbered commands walk the
   whole drill
 - Security dashboard at `http://grafana.snowops.localhost/d/security-compliance`
 - Prove isolation: a pod in another namespace gets HTTP 000, while the ingress
@@ -230,13 +230,13 @@ go-api's own next rollout — which is exactly why Audit mode exists.
   **pod** level does not satisfy a pattern written against the **container**
   securityContext.
 - Default-deny **egress** starves an injected mesh sidecar of istiod, so every
-  new pod sits at 1/2 Running with the app container healthy — the
+  new pod sits at 1/2 Running with the app container healthy - the
   `allow-mesh-control-plane` rule is what prevents it.
 - Kyverno's CRD storage-version migration hook fails on upgrade
   (`Error: Unauthorized`), so it is disabled in the platform values; see
   [R05](runbooks/R05-platform-components.md).
 - `features.policyExceptions` has two switches. `enabled: true` alone leaves
-  `namespace: ''`, which restricts exceptions to a single unnamed namespace — the
+  `namespace: ''`, which restricts exceptions to a single unnamed namespace - the
   feature reads as on while every exception is silently ignored. The platform
   values set it to `'*'`.
 - A `PolicyException`'s `ruleNames` must list the `autogen-` variants too, or the
@@ -245,22 +245,22 @@ go-api's own next rollout — which is exactly why Audit mode exists.
 ---
 
 
-> **What NetworkPolicy actually enforces on k3d — measured, 2026-09-09.**
+> **What NetworkPolicy actually enforces on k3d: measured, 2026-09-09.**
 > Default-deny is real for ordinary pod-to-pod traffic: with `default-deny-all`
 > in place a pod in `default` gets `curl` exit code `000`, and with no policies
 > at all the same probe gets `200`. But **traffic from the ingress controller and
-> from Prometheus reaches the workload whether or not a rule admits them** — both
+> from Prometheus reaches the workload whether or not a rule admits them** - both
 > kept working with only `default-deny-all` applied. In testing, adding a
 > well-formed `namespaceSelector` ingress allow did not re-open a blocked
 > pod-to-pod flow either. So `allow-ingress-traffic` and `allow-monitoring-scrape`
 > are correct Kubernetes and belong in the manifest, but their effect is not
 > demonstrable on this runtime; the deny is. The root cause has not been isolated
-> — likely source-NAT or a k3s NetworkPolicy controller limitation — and is
+>, likely source-NAT or a k3s NetworkPolicy controller limitation, and is
 > tracked as open.
 
 > **`namespace-isolation-enforced` now proves enforcement, not just correctness.**
 > Reading the policy set shows the rules are *written* right and says nothing
-> about whether the CNI applies them — and a cluster that ignores NetworkPolicy
+> about whether the CNI applies them, and a cluster that ignores NetworkPolicy
 > entirely passes every YAML assertion while the scenario teaches nothing. The
 > check ends by opening a connection from a pod outside the namespace and
 > requiring it to be refused. Verified both ways: `200` with the policies
@@ -271,7 +271,7 @@ go-api's own next rollout — which is exactly why Audit mode exists.
 **Category:** reliability
 
 **What it deploys:**
-- A `ServiceMonitor` for the Chaos Mesh controller-manager — the chart ships
+- A `ServiceMonitor` for the Chaos Mesh controller-manager: the chart ships
   none, and its `prometheus.serviceMonitor` values key is silently ignored
 - A `PodDisruptionBudget` for the workload (`minAvailable: 1`), deliberately
   against a single-replica Deployment
@@ -293,7 +293,7 @@ do. Install it with `labctl platform up chaos/chaos-mesh`.
 - Platform: ingress, monitoring/metrics, monitoring/grafana, chaos/chaos-mesh
 - Apps: go-api
 
-**The drill:** three checks start PENDING and only pass on the learner's work —
+**The drill:** three checks start PENDING and only pass on the learner's work:
 `chaos-experiment-was-run` (inject a failure), `workload-survives-pod-loss`
 (scale out until the PDB reports `disruptionsAllowed >= 1`), and
 `blast-radius-contained` (re-run the same experiment against the hardened
@@ -304,7 +304,7 @@ seconds; at three replicas the rate never leaves the floor.
 **Explore after activation:**
 - Chaos dashboard at `http://grafana.snowops.localhost/d/chaos-engineering`
 - Chaos Mesh UI at `http://chaos.snowops.localhost`
-- Load with `labctl traffic start --app <app> --profile browse --rps 20` — never a curl loop
+- Load with `labctl traffic start --app <app> --profile browse --rps 20`, never a curl loop
 - Run one experiment: `bash scenarios/chaos-engineering/scripts/inject.sh pod-kill --app <app> --namespace <namespace>`
   (with no argument it lists what is available)
 
@@ -323,11 +323,11 @@ seconds; at three replicas the rate never leaves the floor.
 - A `network-partition` leaves the pod `1/1 Ready` with perfect pod metrics
   while every request through the ingress fails.
 - Chaos Mesh's memory stressor takes stress-ng byte format (`256MB`), not a
-  Kubernetes quantity — `256Mi` is rejected by the validating webhook.
+  Kubernetes quantity - `256Mi` is rejected by the validating webhook.
 - **`chaos-experiments.yaml` is the one manifest the scenario never installs**,
   on purpose: applying all six at once makes the blast radius unattributable. But
   the engine only renders templates in files it installs, so nothing resolves its
-  `{{.WorkloadName}}` / `{{.WorkloadNamespace}}` — `kubectl apply -f` on it fails
+  `{{.WorkloadName}}` / `{{.WorkloadNamespace}}` - `kubectl apply -f` on it fails
   with `namespaces "{{.WorkloadNamespace}}" not found`. `scripts/inject.sh`
   renders the binding and applies exactly one experiment by label.
 - **A pod-kill outage is invisible at a one-minute resolution.** The service is
@@ -339,7 +339,7 @@ seconds; at three replicas the rate never leaves the floor.
   it in the second measurement fails the learner for doing the drill correctly.
 
 > **The client's view is now on the dashboard.** Every original panel read the
-> app's own metrics, which cannot record a request the app never received — so
+> app's own metrics, which cannot record a request the app never received, so
 > the two failure modes the scenario calls out as invisible really were. Two k6
 > panels (`k6_http_req_failed_rate`, `k6_http_req_duration_p99`) show failures
 > and latency as a caller experiences them, next to the app's own numbers.
@@ -354,8 +354,8 @@ seconds; at three replicas the rate never leaves the floor.
 - A Grafana dashboard (replicas vs RPS, p99 vs p50, tail amplification)
 
 **What you do:** apply the KEDA `ScaledObject` yourself from the snippet in
-`labctl scenario info` — declaring metric-driven autoscaling is the skill the
-scenario exists to teach — then drive the spike and watch it react. Until you
+`labctl scenario info`: declaring metric-driven autoscaling is the skill the
+scenario exists to teach, then drive the spike and watch it react. Until you
 do, `verify` reports those steps as PENDING rather than failed.
 
 **Prerequisites:**
@@ -370,7 +370,7 @@ The scale check reads the **autoscaler's** replica count, not the Deployment's,
 so a hand-run `kubectl scale` does not satisfy it.
 
 None of the checks encodes how fast one runtime is, so the scenario runs
-unchanged against another application — `--app <name>`.
+unchanged against another application - `--app <name>`.
 
 **Explore after activation:**
 - Drive the spike: `labctl traffic start --profile spike --rps 10`
@@ -385,14 +385,14 @@ unchanged against another application — `--app <name>`.
 **Category:** delivery
 
 **What it deploys:**
-- Three namespaces — `env-dev`, `env-staging`, `env-prod` — each running the same
+- Three namespaces (`env-dev`, `env-staging`, `env-prod`) each running the same
   workload pinned to an explicit image tag, plus an `env-metadata` ConfigMap
   recording the tag each environment declares
 
 **What you do:** build a new immutable tag, deploy it to dev only, then promote
 it forward with `kubectl set image` and `kubectl rollout status`, and roll a bad
 promotion back with `kubectl rollout undo`. There is deliberately no
-`labctl env promote` — promotion *is* those kubectl verbs, and labctl's job is to
+`labctl env promote`: promotion *is* those kubectl verbs, and labctl's job is to
 build the three environments and grade the result
 ([R06](runbooks/R06-multi-env-promotion.md)).
 
@@ -406,7 +406,7 @@ build the three environments and grade the result
 
 **Checks (9):** three namespaces exist, the workload runs in each, a newer
 release reached prod, every environment's running image matches its declared tag
-— compared on the full image reference, not just the tag — and **a rollback was
+(compared on the full image reference, not just the tag) and **a rollback was
 exercised**.
 
 The rollback check grades the one trace a rollback leaves that rolling forward
@@ -419,18 +419,18 @@ the image back by hand, because those are the same operation.
 - Compare all three: `for e in dev staging prod; do curl -s <workload>-$e.<domain>/version; done`
 - Promote: `kubectl -n env-staging set image deploy/<workload> <workload>=<workload>:v1.1.0`
 - Then the recovery drill: ship prod a tag nobody built
-  (`<workload>:v9.9.9`), verify — spec says v9.9.9, the rollout never converges,
-  the pods still serve the old tag, and `verify` reports all three — then
+  (`<workload>:v9.9.9`), verify (spec says v9.9.9, the rollout never converges,
+  the pods still serve the old tag, and `verify` reports all three), then
   `kubectl -n env-prod rollout undo deploy/<workload>`
 
 > **Read `image_spec`, not `image`:** the lab builds each version as both
 > `vX.Y.Z` and `:latest`, so those tags share a digest and the kubelet reports
-> whichever it resolved — commonly `docker.io/library/<workload>:latest` for a pod
+> whichever it resolved - commonly `docker.io/library/<workload>:latest` for a pod
 > that correctly requested `<workload>:v1.1.0`. The consistency check compares
 > pod `.spec` for the same reason.
 
 > **Teardown removes the versioned images it built** and deliberately leaves
-> `:latest` alone — that is the tag every other scenario's workload runs on.
+> `:latest` alone - that is the tag every other scenario's workload runs on.
 > Copies already imported into the cluster's image store stay there until the
 > node is replaced; the teardown says so rather than implying a clean slate.
 
@@ -450,7 +450,7 @@ the image back by hand, because those are the same operation.
 - A Grafana dashboard (`mesh-traffic`): split by version, v2 share, latency
   percentiles, mTLS coverage
 
-**What you do:** all three objectives. Nothing installs the routing for you —
+**What you do:** all three objectives. Nothing installs the routing for you:
 apply the weighted `VirtualService`, then the header-matched latency fault, then
 the STRICT `PeerAuthentication`. Until you apply the first one, the Service
 round-robins both subsets at roughly 50% and the split check fails.
@@ -467,7 +467,7 @@ client is refused.
 The two share checks are the bounds of one band, so each names a distinct
 failure: rolled back to weight 0, and not routed at all.
 
-The last four are `pending` — they are the drill, not the setup. The sidecar
+The last four are `pending` - they are the drill, not the setup. The sidecar
 check is a guard: without it, a namespace that was never enrolled grades as a
 complete success while every routing rule sits inert.
 
@@ -481,7 +481,7 @@ complete success while every routing rule sits inert.
 > **Why the fault is header-matched.** An Istio fault applies to a whole
 > `HTTPRoute`, so inside one weighted route there is no way to delay v2 and not
 > v1. Matching `x-canary: always` first gives the canary traffic a route of its
-> own — which is also how you would rehearse a slow release against opted-in
+> own, which is also how you would rehearse a slow release against opted-in
 > testers. Istio takes the first match in `spec.http`, so that route must sit
 > above the weighted one.
 
@@ -494,7 +494,7 @@ complete success while every routing rule sits inert.
 **The exercise:** a producer/consumer flow through Kafka is already running, and
 producers have been ramped to five times what the consumer group can process, so
 orders are piling up. Diagnose the backlog, then restore throughput by scaling
-the group to the topic's partition count — and no further.
+the group to the topic's partition count, and no further.
 
 **What it stages:**
 - An `orders` KafkaTopic (3 partitions) on the Strimzi `lab-kafka` cluster
@@ -509,7 +509,7 @@ the group to the topic's partition count — and no further.
 **What the learner does:** read the per-partition backlog from
 `kafka-consumer-groups.sh` and the lag dashboard, then
 `kubectl scale deployment/orders-consumer --replicas=3` and watch it drain. The
-producers stay ramped throughout — stopping them is graded as not a fix.
+producers stay ramped throughout - stopping them is graded as not a fix.
 
 **Prerequisites:**
 - Platform: data/kafka, monitoring/metrics, monitoring/grafana
@@ -525,7 +525,7 @@ Three of those carry the lesson. `consumer-group-at-full-width` reads Kafka's ow
 `kafka_consumergroup_members` rather than pod count, because a consumer pod can
 be Ready and still not be in the group; it uses `min_over_time` so the members a
 previous run leaves behind during termination cannot satisfy it.
-`consumers-within-partition-ceiling` fails a learner who scales past three — a
+`consumers-within-partition-ceiling` fails a learner who scales past three - a
 partition is served by exactly one consumer in a group, so the extras sit idle
 and add rebalance churn. And `backlog-was-observed` gates `backlog-drained`,
 which is otherwise green at t=0 when nothing has piled up yet.
@@ -535,7 +535,7 @@ which is otherwise green at t=0 when nothing has piled up yet.
   and the lag exercise becomes unperformable. The per-message cost is load-bearing.
 - A consumer group outlives both the Deployments that joined it and the topic it
   read. Left behind, the next activation reports *negative* lag for several
-  scrapes — committed offsets from the old topic ahead of the new one's log end.
+  scrapes - committed offsets from the old topic ahead of the new one's log end.
   `scripts/reset-consumer-group.sh` deletes the group on activation and teardown,
   and the drained check clamps at zero as a second line of defence.
 - Over-scaling puts the group into continuous rebalance, and
@@ -555,7 +555,7 @@ which is otherwise green at t=0 when nothing has piled up yet.
 **What it deploys:**
 - Two workloads consuming the same synced Secret `go-api-secrets`:
   `secret-consumer` mounts it as a **file** (`/etc/api/api-key`), `env-consumer`
-  takes it as an **env var** — the control group
+  takes it as an **env var**: the control group
 - A baseline value seeded at Vault `secret/go-api`
 - A **Secret Rotation** Grafana dashboard (ESO sync calls, readiness, Vault API rate)
 
@@ -568,16 +568,16 @@ not re-create or remove it.
 - Apps: go-api
 
 **Checks (9):** ESO controller ready, ExternalSecret ready, **ESO reports synced**
-(promql on ESO's own Ready condition — no series means Prometheus is not scraping
+(promql on ESO's own Ready condition, no series means Prometheus is not scraping
 ESO, a series pinned at 0 means ESO is telling you it cannot sync), both consumers
 running, then four pending drill steps: **rotation performed** (the value in Vault
 moved off the baseline), **rotation reached pod** (the file in the running
 container equals Vault), **no redeploy needed**, **env consumer did not see it**
 (the env-var pod is still on the old value, which is the lesson).
 
-`no-redeploy-needed` is graded against a **checkpoint** the activation records —
+`no-redeploy-needed` is graded against a **checkpoint** the activation records,
 the UID of the consumer pod and the Deployment's generation at the moment the
-drill began — so passing means *this* pod, the one that was already running,
+drill began, so passing means *this* pod, the one that was already running,
 picked up a value it was never started with. Grading a literal
 `observedGeneration == 1` instead would pass a pod that had been deleted and
 recreated, since deleting a pod does not bump the Deployment's generation.
@@ -591,7 +591,7 @@ recreated, since deleting a pod does not bump the Deployment's generation.
 - Grade it: `labctl scenario verify secrets-management`
 
 > **Two hops, not one:** ESO refreshes the Secret every 15s, then the kubelet
-> refreshes the mounted file on its own cycle — end to end is up to ~90s, so a
+> refreshes the mounted file on its own cycle - end to end is up to ~90s, so a
 > PENDING `rotation-reached-pod` for a minute is normal.
 
 > **Env vars are the trap:** the kubelet cannot rewrite a running process's
@@ -602,15 +602,15 @@ recreated, since deleting a pod does not bump the Deployment's generation.
 
 > **ESO backs off, and re-seeding alone will not wake it:** dev-mode Vault keeps
 > its KV in memory, so a `vault-0` restart empties it and every ESO read fails.
-> The failures back the controller off exponentially — within a few hours it is
-> retrying hours apart, not on its 15s `refreshInterval` — so putting the value
+> The failures back the controller off exponentially (within a few hours it is
+> retrying hours apart, not on its 15s `refreshInterval`), so putting the value
 > back changes nothing until a reconcile is due. Break the backoff with ESO's own
 > idiom, which activation now does for you:
 > `kubectl -n <workload-ns> annotate externalsecret <workload>-secret force-sync=$(date +%s) --overwrite`
 
 > **Reading ESO's metrics:** the `namespace` label on `externalsecret_*` is the
 > *controller's* namespace (`external-secrets`); Prometheus moved the real one to
-> `exported_namespace`. Select on `name`, or on `exported_namespace` — never on
+> `exported_namespace`. Select on `name`, or on `exported_namespace`, never on
 > `namespace`. And a *successful* rotation looks like nothing on these metrics:
 > ESO reconciles every 15s whether the value moved or not, so the dashboard is
 > there for the failure shape. The last hop into the container's file is not
@@ -632,7 +632,7 @@ recreated, since deleting a pod does not bump the Deployment's generation.
 
 **What you do:** write and apply the `PodDisruptionBudget`, start traffic, then
 cordon and drain a worker node with `kubectl` and put it back. Nothing performs
-the drain for you — draining is the transferable skill.
+the drain for you - draining is the transferable skill.
 
 **Prerequisites:**
 - Platform: ingress, monitoring/metrics
@@ -653,7 +653,7 @@ no node left cordoned.
 
 > **Two traps this drill will walk you into, on purpose.**
 > *Only one PDB may cover a pod.* The eviction API refuses a pod matched by two,
-> and `kubectl drain` then fails partway through with an error naming neither —
+> and `kubectl drain` then fails partway through with an error naming neither -
 > `chaos-engineering` and `cluster-upgrade-drill` both ship a budget for the same
 > workload, so leaving one active collides. A check catches it before you drain.
 > *Node-local storage does not move.* Prometheus, Loki and Alertmanager use
@@ -670,7 +670,7 @@ no node left cordoned.
 
 **What it deploys:**
 - The shape the drill needs: go-api scaled to 3 replicas. The
-  `PodDisruptionBudget` is yours to write and apply — that is objective one
+  `PodDisruptionBudget` is yours to write and apply: that is objective one
 - A **Cluster Upgrade Drill** Grafana dashboard (`/d/cluster-upgrade-drill`)
   plotting nodes by kubelet version, go-api pods per node, cordoned nodes, the
   PDB's healthy-pods vs disruptions-allowed, and the success rate being graded
@@ -697,33 +697,33 @@ actually flowing (promql), **success rate >= 99%** across the upgrade window
 - Grade it: `labctl scenario verify cluster-upgrade-drill`
 
 > **Honest scope:** k3d has no in-place node upgrade. `roll-node.sh` replaces one
-> already-drained agent node with a fresh one on the target k3s image — a faithful
+> already-drained agent node with a fresh one on the target k3s image - a faithful
 > rolling **worker** upgrade, and the same operation a managed node group performs.
 > It refuses to touch a node you have not drained, refuses a downgrade, and refuses
 > a kubelet more than three minor versions behind the API server. The control-plane
 > node is left as-is; managed clusters upgrade it first.
 
 > **Node replacement destroys local storage.** Any local-path PersistentVolume
-> pinned to a node you replace is lost and its claim sits Pending forever — in
+> pinned to a node you replace is lost and its claim sits Pending forever - in
 > this lab that routinely strands Prometheus itself, so the drill can no longer
 > be graded. `roll-node.sh` warns before deleting such a node, and
 > `scripts/reclaim-stranded-pvcs.sh` (try `DRY_RUN=true` first) releases the dead
 > claims so their StatefulSets rebind. A drain also evicts the k6 traffic Job,
-> which does not restart itself — check `labctl traffic status` after each roll.
+> which does not restart itself - check `labctl traffic status` after each roll.
 > See [R04 §8](runbooks/R04-lab-lifecycle.md) for the full set of node-replacement
 > traps.
 
 
-> **Rolling a node used to break the cluster's load balancer — permanently.**
+> **Rolling a node used to break the cluster's load balancer - permanently.**
 > k3d's `serverlb` holds its nginx upstreams as a fixed list of node names
 > captured at cluster creation. `roll-node.sh` replaces a node under a *new* name
 > (`agent-0` → `agent-0-0` → `agent-0-0-0`) and nothing updated that list. It is
-> invisible while the cluster keeps running, because nginx is already up — but on
+> invisible while the cluster keeps running, because nginx is already up, but on
 > the next restart confd re-renders the config, nginx fails validation on the
 > missing host (`[emerg] host not found in upstream "k3d-snowops-agent-0:443"`)
 > and the load balancer never starts. One dead upstream takes down the whole
 > listener set **including the 6443 mapping the kubeconfig points at**, so the
-> entire lab — API server included — is unreachable. Observed for real on
+> entire lab, API server included, is unreachable. Observed for real on
 > 2026-09-09 after a Docker restart. `roll-node.sh` now repoints the load
 > balancer and restarts it; the rewrite matches whole lines, because node names
 > are prefixes of one another.
@@ -744,7 +744,7 @@ actually flowing (promql), **success rate >= 99%** across the upgrade window
 
 > **The availability grade was a ratio of two rates, which reads 1.00 on an idle
 > cluster.** The scenario's headline number was therefore green on an untouched
-> lab — sitting next to a `traffic-is-flowing` check correctly reporting there
+> lab - sitting next to a `traffic-is-flowing` check correctly reporting there
 > was nothing to measure. It is now a script that requires a roll to have
 > started, requires real load, and measures from the roll rather than a fixed ten
 > minutes back. It also clamps the window to what Prometheus can actually see,
@@ -753,14 +753,14 @@ actually flowing (promql), **success rate >= 99%** across the upgrade window
 > **`roll-node.sh` failed whenever k3d reused the node name.** It identified the
 > replacement by diffing node *names* before and after, so when the name came
 > back unchanged the diff was empty and it died with "the replacement node did
-> not register with the API server" — about a node that had registered perfectly.
+> not register with the API server" - about a node that had registered perfectly.
 > It now diffs UIDs, polls for registration instead of reading once, and no
 > longer swallows the `k3d node create` error behind `|| true`.
 
 > **The stranded-PVC recovery did not recover the common case.** It looked for
 > volumes pinned to a node that no longer exists. When the name is reused the
-> affinity still matches, the pod schedules happily and then cannot mount —
-> `MountVolume.NewMounter initialization failed ... path ... does not exist` —
+> affinity still matches, the pod schedules happily and then cannot mount -
+> `MountVolume.NewMounter initialization failed ... path ... does not exist`: 
 > and the script reported "No stranded volumes" while three pods sat stuck for
 > ever. It now also detects that case from the kubelet's own FailedMount events.
 > Verified live: it found and released Prometheus, Alertmanager and Loki after a
@@ -770,7 +770,7 @@ actually flowing (promql), **success rate >= 99%** across the upgrade window
 > Prometheus, Loki and Alertmanager use `local-path` volumes pinned to a node; if
 > that node is the one you roll, their data goes with it. Run
 > `reclaim-stranded-pvcs.sh` (with `DRY_RUN=true` first), and expect the metrics
-> history — not the lab — to be gone.
+> history, not the lab, to be gone.
 
 > **A drain will block on someone else's PodDisruptionBudget.** Confirmed live:
 > the drain stalled for the full five-minute timeout on single-replica `istiod`,
@@ -786,13 +786,13 @@ actually flowing (promql), **success rate >= 99%** across the upgrade window
 
 **What it deploys:**
 - A `restore-marker` ConfigMap in the workload namespace carrying a **token
-  minted at activation**. The token lives in exactly two places — the cluster and
-  your archive — which is what makes a restore distinguishable from a re-create
+  minted at activation**. The token lives in exactly two places, the cluster and
+  your archive, which is what makes a restore distinguishable from a re-create
 - A `data-writer` Deployment mounting a PVC (`restore-data`) that persists a
   random `boot-id` on its PersistentVolume, so PV-data loss is **measured**, not
   just described
 - A Grafana dashboard (`/d/backup-restore`) plotting the object count through the
-  loss and the restore, and the **age of the volume behind the claim** — which
+  loss and the restore, and the **age of the volume behind the claim**, which
   drops to zero the moment a restore provisions a replacement
 
 **Prerequisites:**
@@ -802,7 +802,7 @@ actually flowing (promql), **success rate >= 99%** across the upgrade window
 
 **Checks (8):** namespace exists, workload running, data-writer running, **backup
 archive usable**, **loss was observed**, **restore round-tripped**, restore PVC
-present, **PV data loss demonstrated**. The last five are `pending` — they render
+present, **PV data loss demonstrated**. The last five are `pending`: they render
 as PENDING, not FAIL, until the matching drill step is done. Three of them grade
 something live state alone cannot see:
 
@@ -815,17 +815,17 @@ something live state alone cannot see:
   `labctl scenario up --force` mints a new token and turns this red, because
   re-staging is not a restore.
 
-**Run the drill (real `kubectl` — the commands you would use on a live cluster):**
+**Run the drill (real `kubectl` - the commands you would use on a live cluster):**
 - Back up: `bash scenarios/backup-restore-drill/scripts/backup.sh <workload-ns>`
-  (read it — it is `kubectl get … -o json | jq <scrub>`). It also records the
+  (read it - it is `kubectl get … -o json | jq <scrub>`). It also records the
   data-writer's `boot-id`: the fingerprint of the data the archive does *not*
   contain.
 - Simulate loss: `kubectl -n <workload-ns> delete configmap restore-marker`
-- **Verify while it is lost** — that run is what grades the loss
+- **Verify while it is lost**: that run is what grades the loss
 - Restore: `kubectl apply --server-side --force-conflicts -f ~/.snowops/state/<cluster>/backups/<workload-ns>-latest.json`
 - Then the hard half: `kubectl -n <workload-ns> delete deploy data-writer &&
   kubectl -n <workload-ns> delete pvc restore-data`, restore again, and run
-  `observe-pv-data.sh` — the `boot-id` changed.
+  `observe-pv-data.sh`: the `boot-id` changed.
 
 > **Manifest-level backup:** archives round-trip Kubernetes objects, not
 > PersistentVolume data. Delete the ConfigMap and the `boot-id` survives a
@@ -833,8 +833,8 @@ something live state alone cannot see:
 > The object round-trips, the data does not. For stateful data use a volume
 > snapshot or Velero with restic.
 
-> **Deleting the whole namespace** also works — `restore.sh` recreates it before
-> applying — but the archive deliberately skips Helm release Secrets, so the
+> **Deleting the whole namespace** also works, `restore.sh` recreates it before
+> applying, but the archive deliberately skips Helm release Secrets, so the
 > workload comes back as loose objects with no release behind them. Finish with
 > `labctl app deploy <workload>` to put it back under management.
 
@@ -848,12 +848,12 @@ something live state alone cannot see:
 **Category:** cost
 
 **The exercise:** the bound workload arrives reserving 2000m CPU and 1Gi of
-memory — roughly forty times what it uses. Drive real traffic, read the gap
+memory - roughly forty times what it uses. Drive real traffic, read the gap
 between reserved and used, then right-size the requests.
 
 **What it stages:**
 - `inflate.sh`, which puts the workload into the over-provisioned state with one
-  `kubectl set resources` — the exact inverse of the fix — and records the sizing
+  `kubectl set resources`: the exact inverse of the fix, and records the sizing
   the workload arrived with in an annotation so teardown can restore it. It
   mutates the running Deployment directly rather than via a Helm upgrade, so it
   works no matter how the workload was deployed.
@@ -879,7 +879,7 @@ about sizing requests correctly.
 - **The floor is a peak over a window, not a spot reading.** It comes from
   Prometheus, not `kubectl top`: a sample taken while the workload happened to be
   quiet blesses a request that throttles the moment traffic returns, and
-  metrics-server is briefly blind to a pod that has just rolled — exactly when the
+  metrics-server is briefly blind to a pod that has just rolled - exactly when the
   learner re-runs verify after right-sizing.
 - **Requests bill; limits throttle.** `workload-not-throttled` catches the learner
   who cuts both to the same small number, capping the workload below what it
@@ -898,25 +898,25 @@ about sizing requests correctly.
 - Apps: the bound workload
 
 > `cost/opencost` needs `monitoring/metrics` (Prometheus + kube-state-metrics) to
-> compute allocation — without it the OpenCost API returns no cost data. `scenario
+> compute allocation, without it the OpenCost API returns no cost data. `scenario
 > up` warns if a platform prerequisite is missing and prints the `labctl platform
 > up <component>` command to install it.
 
 **The drill:**
 
-1. `labctl scenario up cost-right-sizing` — inflates the requests; the two sizing
+1. `labctl scenario up cost-right-sizing`: inflates the requests; the two sizing
    checks report **pending**
-2. `labctl traffic start --profile steady --rps 25` — without load the peak is
+2. `labctl traffic start --profile steady --rps 25`: without load the peak is
    meaningless and the floor cannot bite
 3. Read the gap on `http://grafana.snowops.localhost/d/cost-right-sizing`, and the cost in
    the OpenCost UI at `http://opencost.snowops.localhost`
 4. Right-size above the observed peak and under the ceiling:
    `kubectl -n <workload-ns> set resources deployment <workload> --requests=cpu=<peak+headroom>,memory=<peak+headroom>`
-5. `labctl scenario verify cost-right-sizing` — all checks **pass**
+5. `labctl scenario verify cost-right-sizing`: all checks **pass**
 6. `labctl scenario down cost-right-sizing` restores the sizing the workload
    arrived with; it is shared with every other scenario
 
-> **k3d note:** no real billing API — OpenCost uses on-prem pricing defaults
+> **k3d note:** no real billing API - OpenCost uses on-prem pricing defaults
 > (~$0.048/CPU-hr). Cost numbers are relative; the before/after contrast is real.
 
 ---

@@ -314,7 +314,7 @@ func spaHandler(fsys http.FileSystem) http.Handler {
 		}
 		f, err := fsys.Open(name)
 		if err != nil {
-			// Unknown path — hand the SPA shell to the client router.
+			// Unknown path - hand the SPA shell to the client router.
 			rr := new(http.Request)
 			*rr = *r
 			rr.URL = new(url.URL)
@@ -333,7 +333,7 @@ func spaHandler(fsys http.FileSystem) http.Handler {
 func (s *Server) registerAPI(api *mux.Router) {
 	// Middleware, outermost first. The request ID is set before anything can
 	// reject the request, so even CORS/auth failures carry a correlation ID.
-	// Access logging wraps the rest so every request — served or rejected —
+	// Access logging wraps the rest so every request - served or rejected -
 	// produces one log line.
 	api.Use(s.requestIDMiddleware)
 	api.Use(s.accessLogMiddleware)

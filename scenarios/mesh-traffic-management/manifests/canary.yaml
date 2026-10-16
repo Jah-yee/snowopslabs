@@ -3,8 +3,8 @@
 #
 # Both Deployments run the same image; APP_VERSION is what gives them distinct
 # identities, so /version reports which subset served a request and the split is
-# observable without building two images. The routing itself — the weighted
-# VirtualService and the mTLS policy — is the learner's work, not staged here.
+# observable without building two images. The routing itself - the weighted
+# VirtualService and the mTLS policy - is the learner's work, not staged here.
 ---
 apiVersion: apps/v1
 kind: Deployment

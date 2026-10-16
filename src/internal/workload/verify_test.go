@@ -182,7 +182,7 @@ func TestWhyUnverifiable(t *testing.T) {
 	if WhyUnverifiable(CapPrometheusMetrics) != "" {
 		t.Error("prometheus-metrics is graded by a check; it must not claim to be unverifiable")
 	}
-	// Every capability is either graded by a check or explained as unprovable —
+	// Every capability is either graded by a check or explained as unprovable -
 	// none may fall silently between the two.
 	for _, c := range AllCapabilities() {
 		contract := Contract{Port: DefaultPort, HealthPath: DefaultHealthPath, ReadyPath: DefaultReadyPath,

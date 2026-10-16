@@ -4,7 +4,7 @@ set -eu
 
 # Grades the CONTRAST, which is the lesson: after a rotation reaches the
 # file-mounted consumer, the env-var consumer is still holding the old value.
-# The order of the tests below matters — "not rotated yet" and "still
+# The order of the tests below matters - "not rotated yet" and "still
 # propagating" are pending states, and only a genuine loss of the contrast
 # (the env pod restarted and re-read the Secret) is a failure.
 
@@ -32,7 +32,7 @@ if [ -z "$WANT" ]; then
 fi
 
 if [ "$WANT" = "$BASELINE" ]; then
-  echo "PENDING: secret/${WORKLOAD_NAME} is still the baseline ('${BASELINE}') — rotate it first." >&2
+  echo "PENDING: secret/${WORKLOAD_NAME} is still the baseline ('${BASELINE}') - rotate it first." >&2
   exit 1
 fi
 
@@ -47,7 +47,7 @@ fi
 
 if [ "$FILE_VALUE" = "$ENV_VALUE" ]; then
   echo "NOT COMPLETE: both pods read '${ENV_VALUE}', so the contrast is gone." >&2
-  echo "The env-var pod restarted and re-read the Secret at startup — that restart is" >&2
+  echo "The env-var pod restarted and re-read the Secret at startup - that restart is" >&2
   echo "exactly the redeploy a file mount avoids. Reset and rotate again:" >&2
   echo "  labctl scenario reset secrets-management" >&2
   exit 1

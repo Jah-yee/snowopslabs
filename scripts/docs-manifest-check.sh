@@ -19,7 +19,7 @@ web=${SNOWOPSLABS_WEB:-../snowopslabs-web}
 manifest="$web/scripts/docs-manifest.mjs"
 
 if [ ! -f "$manifest" ]; then
-  echo "docs-manifest: $manifest not found — skipping (set SNOWOPSLABS_WEB to check)"
+  echo "docs-manifest: $manifest not found - skipping (set SNOWOPSLABS_WEB to check)"
   exit 0
 fi
 

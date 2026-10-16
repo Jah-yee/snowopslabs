@@ -6,7 +6,7 @@ namespace: ""
 
 image:
   # reference is the full image ref, used verbatim when set. A pre-built app
-  # keeps the reference it was published under — retagging it locally breaks the
+  # keeps the reference it was published under - retagging it locally breaks the
   # digest the imported manifest points at, and the pod then cannot find it.
   reference: ""
   repository: ""

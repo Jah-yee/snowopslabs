@@ -4,12 +4,12 @@
 # Sourced, not executed:
 #   . "$PROJECT_ROOT/incidents/_lib/marks.sh"
 
-# clear_marks <namespace> <deployment> <annotation>... — remove bookkeeping
+# clear_marks <namespace> <deployment> <annotation>... - remove bookkeeping
 # annotations from a Deployment AND from its ReplicaSets.
 #
 # The ReplicaSets matter. `kubectl rollout undo` restores the target
 # ReplicaSet's annotations onto the Deployment, so annotations removed from the
-# Deployment alone come back the moment a learner rolls a release back — which
+# Deployment alone come back the moment a learner rolls a release back - which
 # is a fix the hints actively recommend. The resurrected marks then convince
 # inject.sh the fault is already present, and it refuses to run.
 clear_marks() {

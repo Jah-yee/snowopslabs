@@ -101,7 +101,7 @@ func description(appDir string) string {
 }
 
 // firstProse returns the first non-empty, non-heading, non-badge line of a
-// Markdown file — the sentence a reader would take as the summary.
+// Markdown file - the sentence a reader would take as the summary.
 func firstProse(path string) string {
 	f, err := os.Open(path)
 	if err != nil {

@@ -28,8 +28,8 @@ CrashLoopBackOff with a pager going off, draining a node under load without
 breaking the SLO, deciding between two service meshes with evidence instead of
 opinion.
 
-> **Early release.** The core loop — stand up a cluster, run a scenario, break
-> it, fix it, tear it down — works today; expect rapid iteration and the odd
+> **Early release.** The core loop (stand up a cluster, run a scenario, break
+> it, fix it, tear it down) works today; expect rapid iteration and the odd
 > rough edge, and please [file issues](https://github.com/sagar2395/snowopslabs/issues).
 > See [`docs/PRODUCT.md`](docs/PRODUCT.md) for what it is and who it is for, and
 > [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) for
@@ -45,7 +45,7 @@ on your own machine. Click to watch on YouTube:
 <p align="center">
   <a href="https://www.youtube.com/watch?v=XtItNiMiQy8" title="Watch the SnowOps Labs walkthrough and local setup on YouTube">
     <img src="https://img.youtube.com/vi/XtItNiMiQy8/maxresdefault.jpg" width="820"
-         alt="SnowOps Labs on YouTube: what it is and how to set it up locally — click to play.">
+         alt="SnowOps Labs on YouTube: what it is and how to set it up locally - click to play.">
   </a>
 </p>
 
@@ -56,7 +56,7 @@ on your own machine. Click to watch on YouTube:
 
 <p align="center">
   <img src="docs/assets/demo-cli.gif" width="820"
-       alt="labctl walking the scenario catalog, listing the built-in incident library, and validating every declarative file — real command output.">
+       alt="labctl walking the scenario catalog, listing the built-in incident library, and validating every declarative file - real command output.">
 </p>
 
 ## The four loops
@@ -66,7 +66,7 @@ on your own machine. Click to watch on YouTube:
 | **Build** | Stand up a cluster and install a real platform stack from swappable providers | `labctl init` |
 | **Simulate** | Activate a declarative scenario with objectives and verifiable checks | `labctl scenario up <name>` |
 | **Break** | Inject a realistic, reversible fault while traffic flows and alerts fire | `labctl incident inject <name>` |
-| **Measure** | Grade the outcome — checks passed, time taken, hints used | `labctl scenario verify <name>` |
+| **Measure** | Grade the outcome: checks passed, time taken, hints used | `labctl scenario verify <name>` |
 
 Everything you install is the real thing: actual Prometheus, actual Istio,
 actual Kafka. Failures are injected into real systems, so the signal you debug
@@ -83,36 +83,36 @@ is the signal you would see in production.
 | **Learn** | Ordered paths chaining scenarios and incidents into a curriculum |
 | **Challenges** | Timed, graded runs with hidden hints |
 | **Apps** | `go-api` (HTTP + metrics + tracing), `echo-server` (HTTP + Redis) |
-| **CLI + UI** | `labctl` — one binary with the web dashboard embedded |
+| **CLI + UI** | `labctl`: one binary with the web dashboard embedded |
 
 ## See it in action
 
-Every asset below is real `labctl` output and the actual embedded UI — no mockups.
+Every asset below is real `labctl` output and the actual embedded UI, no mockups.
 
 **Inspect a scenario before you run it.** `labctl scenario info` shows exactly
-what a scenario installs — its stages, objectives, the machine-checked
+what a scenario installs: its stages, objectives, the machine-checked
 verifications that grade you, and copy-paste explore hints:
 
 <p align="center">
   <img src="docs/assets/demo-scenario-info.gif" width="860"
-       alt="labctl scenario info observability-sre — prerequisites, staged installs, objectives, checks, and explore commands.">
+       alt="labctl scenario info observability-sre: prerequisites, staged installs, objectives, checks, and explore commands.">
 </p>
 
 **Drive it from a browser.** `labctl ui` serves an embedded web dashboard at
-`http://localhost:3939` — no extra install — and it follows your system
+`http://localhost:3939`: no extra install, and it follows your system
 light/dark theme:
 
 <picture>
   <source media="(prefers-color-scheme: dark)"  srcset="docs/assets/ui-scenarios.png">
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/ui-scenarios-light.png">
-  <img alt="SnowOps Labs web dashboard — the scenario catalog, with category tags and one-click activation." src="docs/assets/ui-scenarios.png">
+  <img alt="SnowOps Labs web dashboard - the scenario catalog, with category tags and one-click activation." src="docs/assets/ui-scenarios.png">
 </picture>
 
-More of the dashboard — click any thumbnail for full size:
+More of the dashboard - click any thumbnail for full size:
 
 | Fault library | Platform components | Operate hub |
 |---|---|---|
-| [<img src="docs/assets/ui-incidents.png" alt="Incident library — reversible faults with severity and verified badges">](docs/assets/ui-incidents.png) | [<img src="docs/assets/ui-platform.png" alt="Platform components grouped by category, each installable with one click">](docs/assets/ui-platform.png) | [<img src="docs/assets/ui-dashboard.png" alt="Dashboard — cluster status, platform components, and app controls (shown before labctl init, so the cluster reads Disconnected)">](docs/assets/ui-dashboard.png) |
+| [<img src="docs/assets/ui-incidents.png" alt="Incident library - reversible faults with severity and verified badges">](docs/assets/ui-incidents.png) | [<img src="docs/assets/ui-platform.png" alt="Platform components grouped by category, each installable with one click">](docs/assets/ui-platform.png) | [<img src="docs/assets/ui-dashboard.png" alt="Dashboard: cluster status, platform components, and app controls (shown before labctl init, so the cluster reads Disconnected)">](docs/assets/ui-dashboard.png) |
 
 ## What you need
 
@@ -122,7 +122,7 @@ More of the dashboard — click any thumbnail for full size:
   Homebrew and starts it at that size. Docker Desktop works too.
 - **About 10 GB of free disk** for the VM, images and cluster.
 
-Everything else — `kubectl`, `helm`, `k3d` — `labctl init` installs for you,
+`labctl init` installs everything else (`kubectl`, `helm`, `k3d`) for you,
 without sudo (Homebrew on macOS, `~/.local/bin` on Linux and WSL).
 
 How much memory you need depends on how much you run at once:
@@ -175,7 +175,7 @@ labctl init
 right size, creates a local Kubernetes cluster and installs the platform
 (Traefik, Prometheus, Grafana). The first run downloads a few hundred MB and
 takes about five to ten minutes; it ends with the lab's URLs. If anything is
-wrong — Docker too small, a stalled download, a pod that won't start — it stops
+wrong (Docker too small, a stalled download, a pod that won't start), it stops
 and says how to fix it.
 
 Open the dashboard:
@@ -237,7 +237,7 @@ free port and every URL it prints includes it.
 
 | You want to… | Run |
 |---|---|
-| Bring the lab back after a reboot | `labctl init` — it starts Docker, restarts the cluster and waits for it, keeping your apps and scenarios |
+| Bring the lab back after a reboot | `labctl init`: it starts Docker, restarts the cluster and waits for it, keeping your apps and scenarios |
 | See what is running and whether it is healthy | `labctl status` (or the dashboard) |
 | Run several scenarios at once | Start them one after another; labctl stops you, with the fix, if Docker has no room left |
 | Start again from a clean cluster | `labctl reset` |
@@ -326,5 +326,5 @@ Writing your own scenarios, or working on labctl itself? Start with
 
 ## License
 
-Apache-2.0 — see [LICENSE](LICENSE), [NOTICE](NOTICE) and
+Apache-2.0 - see [LICENSE](LICENSE), [NOTICE](NOTICE) and
 [TRADEMARKS.md](TRADEMARKS.md).

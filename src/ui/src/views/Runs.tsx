@@ -29,9 +29,9 @@ function statusVariant(s: RunStatus): 'running' | 'stopped' | 'pending' | 'categ
 }
 
 function relTime(iso?: string): string {
-  if (!iso) return '—'
+  if (!iso) return '-'
   const then = new Date(iso).getTime()
-  if (Number.isNaN(then)) return '—'
+  if (Number.isNaN(then)) return '-'
   const d = Math.max(0, Date.now() - then)
   const s = Math.floor(d / 1000)
   if (s < 60) return `${s}s ago`
@@ -50,7 +50,7 @@ function durationLabel(r: RunSummary): string {
   if (r.status === 'running' && r.startedAt) {
     return `${Math.floor((Date.now() - new Date(r.startedAt).getTime()) / 1000)}s…`
   }
-  return '—'
+  return '-'
 }
 
 const STATUS_FILTERS = ['all', 'running', 'succeeded', 'failed', 'cancelled'] as const
@@ -89,7 +89,7 @@ export function Runs({ notify }: RunsProps) {
       {loadError && (
         <div className="banner banner-warn" role="alert">
           <Icon name="alert-triangle" size={16} className="banner-icon" />
-          <span className="banner-body">Refresh failed ({loadError}) — showing last known data.</span>
+          <span className="banner-body">Refresh failed ({loadError}) - showing last known data.</span>
         </div>
       )}
 
@@ -98,7 +98,7 @@ export function Runs({ notify }: RunsProps) {
         <Icon name="info" size={16} className="banner-icon" />
         <span className="banner-body">
           <strong>Runs</strong> is the execution log for everything the lab does. Each lab, platform,
-          scenario or incident action becomes a recorded run with a step timeline and live output —
+          scenario or incident action becomes a recorded run with a step timeline and live output -
           select one to watch it stream, cancel a run in flight, or open a past run to see exactly where it failed.
         </span>
       </div>
@@ -123,7 +123,7 @@ export function Runs({ notify }: RunsProps) {
               <span className="empty-icon"><Icon name="runs" size={24} /></span>
               <div>No runs recorded yet.</div>
               <div className="empty-hint">
-                Trigger any action — activate a scenario, inject an incident, install a component, or run <code>labctl lab up</code> — and it shows up here with its live log.
+                Trigger any action - activate a scenario, inject an incident, install a component, or run <code>labctl lab up</code> - and it shows up here with its live log.
               </div>
             </div>
           ) : (

@@ -130,7 +130,7 @@ func TestRepoFaults_ScriptsExecute(t *testing.T) {
 			t.Fatalf("%s: %v", name, err)
 		}
 		// inject/resolve must succeed outright; a detection script may
-		// legitimately exit 1 (that just means "not resolved") — only
+		// legitimately exit 1 (that just means "not resolved") - only
 		// abnormal exits (syntax errors, missing commands) fail the test.
 		scripts := map[string]bool{"inject.sh": false, "resolve.sh": false}
 		if f.Detection.Script != "" {
@@ -148,7 +148,7 @@ func TestRepoFaults_ScriptsExecute(t *testing.T) {
 					}
 				}
 				if log == "" {
-					t.Fatalf("script never called kubectl — suspicious for a fault script:\n%s", out)
+					t.Fatalf("script never called kubectl - suspicious for a fault script:\n%s", out)
 				}
 			})
 		}

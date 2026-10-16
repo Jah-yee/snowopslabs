@@ -6,7 +6,7 @@ set -euo pipefail
 #
 # It deliberately does NOT compare revisions. ArgoCD's .status.sync.revision is
 # the repo revision it last compared at, which moves to HEAD whenever any sync
-# runs — including one triggered by a path this Application does not watch. So
+# runs - including one triggered by a path this Application does not watch. So
 # it lags behind HEAD after a commit to another path, and jumps ahead of the
 # last commit that touched demo/ after the next sync. Neither comparison is
 # right, and both produce a check that is red for reasons the learner did not
@@ -28,7 +28,7 @@ fi
 
 commits=$(git_repo rev-list --count HEAD || echo "0")
 if [ "${commits:-0}" -lt 2 ]; then
-  echo "PENDING: the lab repo still holds only the seed commit — nothing has been pushed yet." >&2
+  echo "PENDING: the lab repo still holds only the seed commit - nothing has been pushed yet." >&2
   echo "  Clone it, change demo/deployment.yaml, commit and push. The commands are in" >&2
   echo "  'labctl scenario info gitops-cicd'." >&2
   exit 1
@@ -48,14 +48,14 @@ declared_seed=$(git_repo show "${seed_rev}:demo/deployment.yaml" |
   awk '/^ *image:/ {i=$2} /^ *replicas:/ {r=$2} END {if (i != "" || r != "") print i, r}' || true)
 
 if [ -z "$declared_now" ]; then
-  echo "PENDING: demo/deployment.yaml is missing at HEAD — the Application has nothing to deploy." >&2
+  echo "PENDING: demo/deployment.yaml is missing at HEAD - the Application has nothing to deploy." >&2
   exit 1
 fi
 
 if [ "$declared_now" = "$declared_seed" ]; then
   echo "PENDING: there are ${commits} commits, but demo/deployment.yaml still declares the seed values" >&2
   echo "         (${declared_seed})." >&2
-  echo "  Change what the cluster is asked to run — the image tag, the replica count — then push:" >&2
+  echo "  Change what the cluster is asked to run - the image tag, the replica count - then push:" >&2
   echo "    sed -i.bak 's|nginx:1.27.3-alpine|nginx:1.27.4-alpine|; s|replicas: 2|replicas: 3|' demo/deployment.yaml" >&2
   echo "    git commit -am 'promote nginx 1.27.4, scale to 3' && git push origin main" >&2
   exit 1

@@ -3,8 +3,8 @@
 #
 # bootstrap/setup-tools.sh profile dispatch (W3-T07). The tool *downloads* are
 # not exercised here (they need network + sudo); these cover the branching that
-# decides what to do before any download — the help path and the unknown-profile
-# guard — so a typo in a profile name fails loudly instead of silently doing the
+# decides what to do before any download - the help path and the unknown-profile
+# guard - so a typo in a profile name fails loudly instead of silently doing the
 # wrong thing. The pure helpers (version_ge, is_wsl) are covered in
 # setup_tools_versions.bats and setup_tools_wsl.bats.
 

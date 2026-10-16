@@ -55,7 +55,7 @@ flake-hunt:
 golden-update:
 	@go test ./internal/httpapi/ -run 'TestContract_(Success|IndexIsCurrent)' -update
 	@go test ./internal/cli/ -update
-	@echo "Golden files rewritten under internal/httpapi/testdata/contract and internal/cli/testdata/golden — review the diff before committing."
+	@echo "Golden files rewritten under internal/httpapi/testdata/contract and internal/cli/testdata/golden - review the diff before committing."
 
 ## coverage-check: per-package gate with a ratchet (.coverage-exceptions)
 coverage-check:

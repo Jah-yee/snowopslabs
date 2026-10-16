@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Pre-built image strategy — for an application brought to the lab as a
+# Pre-built image strategy - for an application brought to the lab as a
 # published image rather than as source. Nothing is compiled: the image is
 # pulled once and imported into the local cluster, so it behaves exactly like a
 # locally built one (offline, and with imagePullPolicy: Never).

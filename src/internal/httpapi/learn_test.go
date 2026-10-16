@@ -135,7 +135,7 @@ func TestHandleLearn_ProgressShapeConsistent(t *testing.T) {
 	}
 
 	// Completing the only module advances nextIdx to -1 (path finished) and
-	// records the module index as completed — the end-to-end UI progression.
+	// records the module index as completed - the end-to-end UI progression.
 	body := strings.NewReader(`{"moduleIdx":0}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/learn/paths/test-path/complete", body)
 	req = setVars(req, map[string]string{"name": "test-path"})

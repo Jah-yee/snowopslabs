@@ -40,7 +40,7 @@ var (
 	shutdownTimeout = getDurationEnv("SHUTDOWN_TIMEOUT", 30*time.Second)
 	// OTEL_SERVICE_NAME is the OpenTelemetry-standard name; SERVICE_NAME is the
 	// pre-existing knob. Honour both so the same value labels metrics, logs and
-	// traces — otherwise the three signals cannot be correlated in Grafana.
+	// traces - otherwise the three signals cannot be correlated in Grafana.
 	serviceName  = getEnv("OTEL_SERVICE_NAME", getEnv("SERVICE_NAME", "go-api"))
 	otelEndpoint = getEnv("OTEL_EXPORTER_OTLP_ENDPOINT", "")
 
@@ -50,7 +50,7 @@ var (
 
 	// OpenTelemetry semantic conventions: http.server.request.duration, with
 	// attribute names in their Prometheus form. Semconv defines no separate
-	// request counter — the histogram's _count series is the request count — so
+	// request counter - the histogram's _count series is the request count - so
 	// carrying the status code here is what lets an error rate be derived from
 	// it. "app" is not semconv; it is the lab's own selector, matching the pod
 	// label every scenario and dashboard filters on.
@@ -67,7 +67,7 @@ func init() {
 
 func main() {
 	// APP_VERSION overrides the -ldflags build stamp so two Deployments of one
-	// image can present distinct identities — what a mesh canary splits on, and
+	// image can present distinct identities - what a mesh canary splits on, and
 	// what /version must report for the split to be observable. Applied here,
 	// not as an initializer: the linker's -X cannot set a var that has one.
 	if v := os.Getenv("APP_VERSION"); v != "" {
@@ -344,7 +344,7 @@ func routeLabel(path string) string {
 }
 
 // instrument meters EVERY request. Metrics used to be recorded per handler,
-// which meant a route added without its own recordMetrics call — as "/" was —
+// which meant a route added without its own recordMetrics call - as "/" was -
 // generated traffic that no dashboard could see.
 func instrument(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

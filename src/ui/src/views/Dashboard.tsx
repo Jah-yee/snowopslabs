@@ -71,7 +71,7 @@ export function Dashboard({ notify, liveCluster, lastStatusAt, requestConfirm }:
       {loadError && (
         <div className="banner banner-warn" role="alert">
           <Icon name="alert-triangle" size={16} className="banner-icon" />
-          <span className="banner-body">Refresh failed ({loadError}) — showing last known data.</span>
+          <span className="banner-body">Refresh failed ({loadError}) - showing last known data.</span>
           <span className="banner-actions">
             <button className="btn btn-sm" onClick={load} disabled={refreshing}>Retry</button>
           </span>
@@ -117,7 +117,7 @@ export function Dashboard({ notify, liveCluster, lastStatusAt, requestConfirm }:
 
         {capacityQ.data && <DockerCard capacity={capacityQ.data} />}
 
-        {/* Platform components card — read-only summary of what's installed. */}
+        {/* Platform components card - read-only summary of what's installed. */}
         <div className="card full-width">
           <div className="card-header">
             <span className="card-title">Platform Components</span>

@@ -6,7 +6,7 @@ set -eu
 # upgrade window.
 #
 # It replaces a promql check that divided success rate by total rate. That form
-# reports a perfect 1.00 when there is no traffic at all — 0/0 guarded to 1 — so
+# reports a perfect 1.00 when there is no traffic at all - 0/0 guarded to 1 - so
 # the scenario's central grade was green on an untouched, idle cluster while the
 # 'traffic-is-flowing' check sitting next to it correctly said there was nothing
 # to measure. Two checks, one truth, and the important one was wrong.
@@ -52,7 +52,7 @@ NOW="$(date -u +%s)"
 WINDOW=$(((NOW - STARTED) / 60))
 
 # Do not look back further than Prometheus can see. This drill can destroy
-# Prometheus's own volume — it is one of the things it teaches — and after that
+# Prometheus's own volume - it is one of the things it teaches - and after that
 # the window since the roll began mostly predates any data at all, so the rate
 # averages down to nothing and the learner is failed for a loss the scenario
 # told them to expect.
@@ -74,7 +74,7 @@ RPS="$(promq "sum(rate(${METRIC}_count{app=\"${WORKLOAD}\"}[${WINDOW}m])) or vec
 if [ -z "$RPS" ] || [ "$(awk -v a="${RPS:-0}" -v b="$MIN_RPS" 'BEGIN{print (a<b)}')" = "1" ]; then
   echo "FAIL: only ${RPS:-0} requests/s reached ${WORKLOAD} across the ${WINDOW}m upgrade window." >&2
   echo "  An upgrade nobody was using proves nothing about availability. Draining a node" >&2
-  echo "  also evicts the k6 traffic Job, and its Job does not restart itself — so check" >&2
+  echo "  also evicts the k6 traffic Job, and its Job does not restart itself - so check" >&2
   echo "  and restart it after each roll, then let it run a couple of minutes:" >&2
   echo "    labctl traffic status" >&2
   echo "    labctl traffic start --app ${WORKLOAD_NAME} --profile steady --rps 20" >&2
@@ -100,4 +100,4 @@ if [ "$(awk -v a="$RATIO" -v b="$SLO" 'BEGIN{print (a<b)}')" = "1" ]; then
 fi
 
 echo "OK: ${WORKLOAD} served ${RATIO} of requests successfully across the ${WINDOW}m since the"
-echo "roll began, at ${RPS} req/s — above the ${SLO} SLO, measured on real load."
+echo "roll began, at ${RPS} req/s - above the ${SLO} SLO, measured on real load."

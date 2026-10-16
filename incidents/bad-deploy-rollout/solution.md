@@ -1,11 +1,11 @@
-# Solution — bad-deploy-rollout
+# Solution: bad-deploy-rollout
 
 ## What happened
 
 The {{.WorkloadName}} Deployment was updated to an image tag that doesn't exist
 (`registry.invalid/never-pushed/{{.WorkloadName}}:v99.9.9`). The kubelet can't pull
 it, so the new ReplicaSet's pods loop in ImagePullBackOff and the rollout
-never completes. Old pods keep serving — a quiet failure unless you watch
+never completes. Old pods keep serving - a quiet failure unless you watch
 rollout health.
 
 ## Diagnosis path

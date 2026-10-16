@@ -32,7 +32,7 @@ skip_or_fail() {
     echo "test-check: $1" >&2
     exit 1
   fi
-  echo "test-check: skipped — $1"
+  echo "test-check: skipped - $1"
   exit 0
 }
 
@@ -121,7 +121,7 @@ if [ -n "$reason" ]; then
     echo "test-check: 'Tests-Not-Needed: $reason' is too short to be a reason" >&2
     exit 1
   fi
-  echo "test-check waived — Tests-Not-Needed: $reason"
+  echo "test-check waived - Tests-Not-Needed: $reason"
   printf '%s' "$problems" | sed 's/^/  /'
   exit 0
 fi

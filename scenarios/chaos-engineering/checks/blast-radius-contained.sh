@@ -61,18 +61,18 @@ RATE="$(promq "sum(rate(${METRIC}_count{app=\"${WORKLOAD}\"}[10m])) or vector(0)
 case "${RATE:-0}" in '' | 0 | 0.*) LOW=1 ;; *) LOW=0 ;; esac
 if [ "$LOW" = "1" ]; then
   echo "PENDING: Prometheus sees almost no requests to ${WORKLOAD} (${RATE:-0}/s)." >&2
-  echo "  Without load the blast radius is unmeasurable — an experiment nobody was using proves nothing." >&2
+  echo "  Without load the blast radius is unmeasurable - an experiment nobody was using proves nothing." >&2
   echo "    labctl traffic start --app ${WORKLOAD_NAME} --profile browse --rps 20 --duration 30m" >&2
   echo "  Let it run a couple of minutes, then re-run the experiment and re-verify." >&2
   exit 1
 fi
 
 # The grade: since hardening, the service never stopped serving. The window is
-# measured from that moment — capped at 15 minutes so it stays a recent claim,
+# measured from that moment - capped at 15 minutes so it stays a recent claim,
 # floored at 3 so there is something to average over.
 ELAPSED=$((NOW - HARDENED))
 if [ "$ELAPSED" -lt 120 ]; then
-  echo "PENDING: ${WORKLOAD} was hardened ${ELAPSED}s ago — too recent to measure." >&2
+  echo "PENDING: ${WORKLOAD} was hardened ${ELAPSED}s ago - too recent to measure." >&2
   echo "  Any window that short still contains the outage you correctly caused on one replica." >&2
   echo "  Re-run the experiment against the hardened service, give it a minute, and verify again." >&2
   exit 1
@@ -94,9 +94,9 @@ if [ "$ZERO" = "1" ]; then
   echo "  The experiment still took the service out, so scaling out has not contained it." >&2
   echo "  Check every replica is actually Ready and spread across nodes before re-running:" >&2
   echo "    kubectl -n ${NS} get pods -o wide" >&2
-  echo "  Make sure the load generator is still running — 'labctl traffic status' — before re-running." >&2
+  echo "  Make sure the load generator is still running - 'labctl traffic status' - before re-running." >&2
   exit 1
 fi
 
 echo "OK: ${READY} replicas serving, and the request rate never reached zero in the ${WINDOW} minute(s)"
-echo "since hardening (floor ${FLOOR}/s, current ${RATE}/s) — the pod kill no longer takes the service down."
+echo "since hardening (floor ${FLOOR}/s, current ${RATE}/s) - the pod kill no longer takes the service down."

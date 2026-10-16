@@ -41,7 +41,7 @@ fi
 LIVE_TOKEN="$(kubectl -n "$NS" get configmap restore-marker -o jsonpath='{.data.token}' 2>/dev/null || true)"
 if [ -n "$LIVE_TOKEN" ] && [ "$LIVE_TOKEN" != "$ARCHIVED_TOKEN" ]; then
   echo "FAIL: the archive holds marker token ${ARCHIVED_TOKEN}, but the live marker is ${LIVE_TOKEN}." >&2
-  echo "  This archive predates the current marker — restoring it would put back the wrong value." >&2
+  echo "  This archive predates the current marker - restoring it would put back the wrong value." >&2
   echo "  Take a fresh backup: bash ${PROJECT_ROOT:-.}/scenarios/backup-restore-drill/scripts/backup.sh ${NS}" >&2
   exit 1
 fi

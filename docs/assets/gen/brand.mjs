@@ -65,7 +65,7 @@ const files = {}
 // 1. Icon mark (square tile).
 files[`${BRAND}/mark.svg`] = svg(64, 64, mark('m'), 'SnowOps Labs')
 
-// 2. Favicon — the same mark, served by the UI.
+// 2. Favicon - the same mark, served by the UI.
 files[`${PUBLIC}/favicon.svg`] = svg(64, 64, mark('fav'), 'SnowOps Labs')
 
 // 3. Horizontal lockup: mark + wordmark. Two colourways for light/dark grounds.

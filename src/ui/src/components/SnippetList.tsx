@@ -23,7 +23,7 @@ export function SnippetList({ snippets, notify, workload, sourcePath = p => p }:
       await navigator.clipboard.writeText(text)
       notify('success', `Copied ${what}`, '')
     } catch {
-      notify('error', 'Copy failed', 'Clipboard access denied — select the text and copy it manually.')
+      notify('error', 'Copy failed', 'Clipboard access denied - select the text and copy it manually.')
     }
   }
 
@@ -54,7 +54,7 @@ export function SnippetList({ snippets, notify, workload, sourcePath = p => p }:
             {sn.description && <div className="snippet-desc">{sn.description}</div>}
             {sn.exercise && (
               <div className="snippet-exercise">
-                <span>Nothing installs this for you — applying it is the exercise, and verify grades the result.</span>
+                <span>Nothing installs this for you - applying it is the exercise, and verify grades the result.</span>
                 {sn.applyCommand && (
                   <button className="btn btn-sm" onClick={() => copy(sn.applyCommand!, 'the apply command')}>
                     Copy apply command

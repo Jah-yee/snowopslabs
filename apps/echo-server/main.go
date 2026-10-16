@@ -37,7 +37,7 @@ var (
 	logger      *slog.Logger
 	redisClient *redis.Client
 
-	// OpenTelemetry semantic conventions — see the note in go-api/main.go.
+	// OpenTelemetry semantic conventions - see the note in go-api/main.go.
 	httpRequestDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "http_server_request_duration_seconds",
 		Help:    "Duration of HTTP server requests in seconds.",
@@ -198,7 +198,7 @@ func handleHealth(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, resp)
 }
 
-// handleReady always returns 200 — the app is ready as long as its HTTP listener is up.
+// handleReady always returns 200 - the app is ready as long as its HTTP listener is up.
 // Redis is optional; its status is reported separately in /health.
 func handleReady(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()

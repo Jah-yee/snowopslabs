@@ -3,7 +3,7 @@
 #
 # Install idempotency for the default-stack providers a reviewer's core loop
 # always runs (ingress + monitoring). The install must use `helm upgrade
-# --install` — the idempotent primitive — so a re-run after an interrupted
+# --install` - the idempotent primitive - so a re-run after an interrupted
 # `labctl init` converges instead of erroring (golden rule 5).
 
 load 'helpers/stub'

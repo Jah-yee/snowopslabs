@@ -2,17 +2,17 @@
 set -euo pipefail
 . "$(dirname "$0")/../../_lib/workload.sh"
 
-# inflate.sh — put the workload into the deliberately over-provisioned 'before' state
+# inflate.sh - put the workload into the deliberately over-provisioned 'before' state
 # (40x CPU / 32x memory) so the waste is visible in OpenCost before you right-size.
 #
-# We mutate the running Deployment in place with `kubectl set resources` — the
+# We mutate the running Deployment in place with `kubectl set resources` - the
 # exact inverse of the fix the learner performs (`kubectl set resources ...
 # --requests=cpu=50m,memory=32Mi`). This is deliberately symmetric and robust:
 # it works regardless of how the workload was deployed (helm release, `kubectl apply`,
 # or the kind-e2e bootstrap) and regardless of which field-manager owns the
 # resource fields. An earlier `helm upgrade` approach failed with server-side
 # apply conflicts ("conflicts with kubectl") whenever the workload was not owned by
-# helm — `kubectl set resources` sidesteps that entirely.
+# helm - `kubectl set resources` sidesteps that entirely.
 
 NAMESPACE="${WORKLOAD_NAMESPACE}"
 APP="${WORKLOAD_NAME}"
@@ -21,7 +21,7 @@ APP="${WORKLOAD_NAME}"
 # limits are matched to requests here so the pod is a single fat, wasteful slot.
 # Prefixed, because CPU_REQUEST / MEMORY_REQUEST are the names an app's own
 # app.env uses for its contractual sizing. Sharing them would let a sourced
-# app.env silently make this script a no-op — the scenario would activate
+# app.env silently make this script a no-op - the scenario would activate
 # already right-sized and every check would be green before the learner starts.
 INFLATED_CPU_REQUEST="${INFLATED_CPU_REQUEST:-2000m}"
 INFLATED_MEM_REQUEST="${INFLATED_MEM_REQUEST:-1Gi}"

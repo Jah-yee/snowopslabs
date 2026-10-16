@@ -87,7 +87,7 @@ func TestLearn_Journey(t *testing.T) {
 	}
 
 	l.Write(t, "learn/course/DONE", "") // the learner does the task
-	if r := step("learn", "next", "course"); !strings.Contains(r.stdout, "✓ Check passed") || !strings.Contains(r.stdout, "Next: module 2 — Nothing to do") {
+	if r := step("learn", "next", "course"); !strings.Contains(r.stdout, "✓ Check passed") || !strings.Contains(r.stdout, "Next: module 2 - Nothing to do") {
 		t.Errorf("next after the task is done does not complete the module and name the next:\n%s", r.stdout)
 	}
 	if r := step("learn", "next", "course"); !strings.Contains(r.stdout, `All 2 modules complete! Path "course" finished.`) {
@@ -126,7 +126,7 @@ func TestLearn_NextWithoutAName(t *testing.T) {
 
 	writeCourse(t, l)
 	r := l.run("learn", "next")
-	if r.exitCode() != 1 || !strings.Contains(r.stderr, "multiple paths available — specify one: course, demo-path") {
+	if r.exitCode() != 1 || !strings.Contains(r.stderr, "multiple paths available - specify one: course, demo-path") {
 		t.Errorf("next with two paths = exit %d, stderr %q; want it to list both", r.exitCode(), r.stderr)
 	}
 }

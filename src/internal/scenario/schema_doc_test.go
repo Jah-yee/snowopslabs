@@ -52,7 +52,7 @@ func schemaTypes() []reflect.Type {
 
 // schemaFields returns the yaml field names the schema defines, plus the
 // subset whose values are free-form maps (their sub-keys are data, not
-// fields — e.g. the --set entries under a component's `set:`).
+// fields - e.g. the --set entries under a component's `set:`).
 func schemaFields() (fields, freeMaps map[string]bool) {
 	fields = map[string]bool{}
 	freeMaps = map[string]bool{}

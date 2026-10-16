@@ -242,7 +242,7 @@ func (m Metric) Format(v float64) string {
 // Render writes the comparison table: one row per metric, one column per
 // workload, and each non-baseline column's difference from the baseline.
 func Render(out io.Writer, o Options, ms []Measurement) {
-	fmt.Fprintf(out, "Comparison — %s\n", o.Scenario)
+	fmt.Fprintf(out, "Comparison - %s\n", o.Scenario)
 	fmt.Fprintf(out, "  profile %s at %d rps · %s warmup (excluded) · %s measured window\n\n",
 		o.Profile, o.RPS, o.Warmup, o.Window)
 
@@ -262,7 +262,7 @@ func Render(out io.Writer, o Options, ms []Measurement) {
 		for i, m := range ms {
 			v, ok := m.Values[metric.Key]
 			if !ok {
-				row = append(row, "—")
+				row = append(row, "-")
 				continue
 			}
 			cell := metric.Format(v)

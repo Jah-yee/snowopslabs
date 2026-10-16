@@ -48,7 +48,7 @@ datasources:
         editable: true
         jsonData:
           # go-api logs a trace_id on every request line. derivedFields turns it
-          # into a link that opens the trace in Tempo — the logs-to-traces jump.
+          # into a link that opens the trace in Tempo - the logs-to-traces jump.
           derivedFields:
             - name: TraceID
               datasourceUid: tempo

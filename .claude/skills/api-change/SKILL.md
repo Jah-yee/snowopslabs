@@ -8,11 +8,11 @@ user-invocable: true
 
 ## Read first
 
-1. **[ADR-0006](../../../docs/adr/0006-api-conventions.md)** — the conventions
+1. **[ADR-0006](../../../docs/adr/0006-api-conventions.md)**: the conventions
    every route obeys.
-2. [docs/architecture/ARCHITECTURE.md §7](../../../docs/architecture/ARCHITECTURE.md)
-   — the API's place in the system and the real security posture.
-3. [docs/reference/cli/server.md](../../../docs/reference/cli/server.md) — what
+2. [docs/architecture/ARCHITECTURE.md §7](../../../docs/architecture/ARCHITECTURE.md) -
+    the API's place in the system and the real security posture.
+3. [docs/reference/cli/server.md](../../../docs/reference/cli/server.md): what
    users are told the server does.
 
 ## The conventions
@@ -32,7 +32,7 @@ Users are served **`/api/v2` only**. There is no other version.
 ## Instrumentation is middleware, never per handler
 
 Metrics and access logging wrap the whole mux. Do **not** add a metrics call
-inside a handler — that is exactly how `/` ended up serving all the traffic
+inside a handler - that is exactly how `/` ended up serving all the traffic
 unmeasured. A new route is measured because it is a route, not because someone
 remembered.
 
@@ -48,15 +48,15 @@ time the handler itself.
 
 1. Register it in `registerAPI` in `src/internal/httpapi/server.go`, with its
    methods and `OPTIONS`.
-2. Put the handler in the file for its resource — `lab.go`, `incident.go`,
-   `challenge.go` and so on — not in `handlers.go` by default.
+2. Put the handler in the file for its resource (`lab.go`, `incident.go`,
+   `challenge.go` and so on) not in `handlers.go` by default.
 3. Return collections through `respondCatalog` so pagination and ETags are
    automatic. Return errors through `respondError` so the problem shape is.
 4. Long-running work goes through `internal/run`, and the route returns the run
    ID. Never block a request on a shell-out.
 5. Add its row to the contract table in
-   `src/internal/httpapi/server_contract_rows_test.go` — the correct request,
-   one wrong request with its problem `type`, and `operatorOnly` — then run
+   `src/internal/httpapi/server_contract_rows_test.go`: the correct request,
+   one wrong request with its problem `type`, and `operatorOnly`, then run
    `make golden-update` and review the new golden file. A route without a row
    fails `TestContract_EveryRouteHasARow`.
 6. Check a name in the path with `pathName`, and that it exists, before
@@ -72,7 +72,7 @@ time the handler itself.
 The auth middleware is a pass-through when `LABCTL_AUTH` is off, so the local
 experience is unchanged. When on, it gates every route except the auth
 endpoints, and enforces operator-only mutations. A new mutating route is
-operator-only unless there is a stated reason it is not — say so in the PR.
+operator-only unless there is a stated reason it is not - say so in the PR.
 
 ## Verify your work
 
@@ -98,6 +98,6 @@ tests. A bug fix starts with a test that fails because of the bug.
 - [ ] Every error goes through `respondError` with a slug from `knownProblemSlugs`; none uses `http.Error`.
 - [ ] React client updated, `make test-ui` passes against the new golden, and the view that reads it has a row in `contract.test.tsx`.
 - [ ] Endpoint documented in the relevant
-      [CLI reference](../../../docs/reference/cli/index.md) page — every command
+      [CLI reference](../../../docs/reference/cli/index.md) page - every command
       page lists its REST equivalents.
 - [ ] `make docs-check` passes.

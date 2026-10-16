@@ -47,7 +47,7 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "labctl",
-	Short: "SnowOps Labs — platform engineering simulator control plane",
+	Short: "SnowOps Labs - platform engineering simulator control plane",
 	Long:  `labctl is the CLI, web UI, and API for SnowOps Labs, a Kubernetes platform engineering simulator.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Arguments and flags are valid by the time this runs, so an error

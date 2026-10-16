@@ -3,7 +3,7 @@
 # running so sidecars are injected.
 #
 # This is platform plumbing, not the lesson: without it every VirtualService,
-# DestinationRule and PeerAuthentication in this scenario is silently inert —
+# DestinationRule and PeerAuthentication in this scenario is silently inert -
 # the CRs exist, the mesh ignores them, and nothing routes. The mesh installer
 # only labels the namespace if it exists at install time, so a namespace created
 # (or recreated) afterwards is never enrolled.

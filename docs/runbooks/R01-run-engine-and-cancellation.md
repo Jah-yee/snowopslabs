@@ -1,4 +1,4 @@
-# R01 — Run Engine & Cancellation
+# R01: Run Engine & Cancellation
 
 **Wave:** W1 · **Time:** ~30 minutes · **Cluster needed:** no (a real cluster makes step 5 more convincing)
 
@@ -44,15 +44,15 @@ $ ls -la "$SNOWOPS_HOME"
 **Expect:** `snowops.db` plus WAL sidecar files (`-wal`, `-shm`). Those
 sidecars are how a reader proceeds while a write is in flight.
 
-**Failure signature — a permissions error:** `SNOWOPS_HOME` points somewhere
+**Failure signature - a permissions error:** `SNOWOPS_HOME` points somewhere
 unwritable. Pick another directory.
 
 ---
 
 ## 2. The automated cancellation suite passes on your machine
 
-The process-group behaviour is OS-specific — signal delivery differs between
-macOS and Linux — so it must be exercised where you actually work.
+The process-group behaviour is OS-specific, signal delivery differs between
+macOS and Linux, so it must be exercised where you actually work.
 
 ```bash
 $ go test -race -run 'TestExecCancellation' ./internal/toolchain/ -v
@@ -126,7 +126,7 @@ $ pgrep -fl 'sleep 60' ; echo "exit=$?"
 ```
 
 **Expect:** no matching processes (`exit=1` from `pgrep` means "none found").
-**A surviving process here is a blocking finding** — it is precisely the v1 bug
+**A surviving process here is a blocking finding**: it is precisely the v1 bug
 this wave exists to fix.
 
 ---
@@ -138,7 +138,7 @@ $ go test -race -count=1 -run 'TestRecoveryOnStart' ./internal/run/ -v
 ```
 
 **Expect:** `PASS`. The test simulates a process that died with a run in
-flight, reopens the database, and asserts four things — verify the assertions
+flight, reopens the database, and asserts four things - verify the assertions
 read the way you would expect by skimming
 `internal/run/engine_test.go:TestRecoveryOnStart`:
 
@@ -175,8 +175,8 @@ happening and what to do? Note any wording you would change.
 $ go test -race -count=1 -run 'TestReadLogs_CursorResume' ./internal/store/ -v
 ```
 
-**Expect:** `PASS`. It writes 100 lines, reads them back in pages of 7 —
-"disconnecting" between each — and fails on any gap or duplicate.
+**Expect:** `PASS`. It writes 100 lines, reads them back in pages of 7,
+"disconnecting" between each, and fails on any gap or duplicate.
 
 ```bash
 $ go test -race -count=1 -run 'TestSubscribe/a_slow_subscriber' ./internal/run/ -v
@@ -194,7 +194,7 @@ dropped log lines silently.
 $ go test -race -count=1 -run 'TestResolverContainment' ./internal/toolchain/ -v
 ```
 
-**Expect:** all subtests `PASS`, including the symlink case — a link that sits
+**Expect:** all subtests `PASS`, including the symlink case - a link that sits
 inside the root but points outside it must be refused, since checking only the
 cleaned path would let it through.
 
@@ -217,7 +217,7 @@ $ ./bin/labctl runs cancel --help
 ```
 
 **Expect:** each explains itself without needing the source. Note anything
-unclear — the CLI reference is generated from these.
+unclear - the CLI reference is generated from these.
 
 ```bash
 $ ./bin/labctl runs cancel run_does_not_exist
@@ -237,7 +237,7 @@ $ PATH=/nonexistent ./bin/labctl doctor ; echo "exit=$?"
 ```
 
 **Expect:** the table renders, every tool is reported missing, and the exit is
-non-zero. **A crash or a config-loading error is a finding** — a diagnostic
+non-zero. **A crash or a config-loading error is a finding** - a diagnostic
 that needs a healthy environment is useless.
 
 ---
@@ -270,5 +270,5 @@ $ git status --short          # should show no leftover scratch files
 
 **Environment:** OS + version ______ · Go ______ · Arch ______
 
-Steps 3, 4 and 6 are **blocking** — they are Wave 1's reason for existing.
+Steps 3, 4 and 6 are **blocking** - they are Wave 1's reason for existing.
 Report failures as issues labelled `runbook-finding`, titled `R01 step N: …`.

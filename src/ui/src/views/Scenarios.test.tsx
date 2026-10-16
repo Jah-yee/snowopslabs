@@ -56,7 +56,7 @@ function renderScenarios() {
   return { getConfirm: () => captured }
 }
 
-describe('Scenarios view — activation preview', () => {
+describe('Scenarios view - activation preview', () => {
   beforeEach(() => {
     server.override('GET', '/apps', 200, [
       { name: 'go-api', buildStrategy: 'docker', deployStrategy: 'helm', deployed: true, capabilities: ['prometheus-metrics', 'otlp-tracing'] },
@@ -114,7 +114,7 @@ describe('Scenarios view — activation preview', () => {
   })
 })
 
-describe('Scenarios view — parameters', () => {
+describe('Scenarios view - parameters', () => {
   beforeEach(() => {
     server.override('GET', '/apps', 200, [
       { name: 'go-api', buildStrategy: 'docker', deployStrategy: 'helm', deployed: true, capabilities: ['prometheus-metrics', 'otlp-tracing'] },
@@ -150,7 +150,7 @@ describe('Scenarios view — parameters', () => {
   })
 })
 
-describe('Scenarios view — detail modal teaches implementation', () => {
+describe('Scenarios view - detail modal teaches implementation', () => {
   beforeEach(() => {
     server.override('GET', '/apps', 200, [
       { name: 'go-api', buildStrategy: 'docker', deployStrategy: 'helm', deployed: true, capabilities: ['prometheus-metrics', 'otlp-tracing'] },
@@ -299,7 +299,7 @@ describe('Scenarios view — detail modal teaches implementation', () => {
   })
 })
 
-describe('Scenarios view — verify', () => {
+describe('Scenarios view - verify', () => {
   beforeEach(() => {
     server.override('GET', '/apps', 200, [
       { name: 'go-api', buildStrategy: 'docker', deployStrategy: 'helm', deployed: true, capabilities: ['prometheus-metrics', 'otlp-tracing'] },

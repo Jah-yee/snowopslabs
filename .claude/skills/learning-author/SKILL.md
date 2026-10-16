@@ -1,6 +1,6 @@
 ---
 name: learning-author
-description: "Write, edit, debug or review a SnowOps Labs learning path or challenge — path.yaml, modules, intros, completion checks, challenge.yaml, par times and grading. Use whenever a task involves anything under learn/ or challenges/, or `labctl learn|challenge`."
+description: "Write, edit, debug or review a SnowOps Labs learning path or challenge: path.yaml, modules, intros, completion checks, challenge.yaml, par times and grading. Use whenever a task involves anything under learn/ or challenges/, or `labctl learn|challenge`."
 user-invocable: true
 ---
 
@@ -12,14 +12,14 @@ grade on one of them. Neither should introduce new mechanics of its own.
 
 ## Read first
 
-- **Paths:** [learn/README.md](../../../learn/README.md) — `path.yaml`, module
+- **Paths:** [learn/README.md](../../../learn/README.md): `path.yaml`, module
   shape, `action.type` and `check.type`.
-- **Challenges:** [challenges/README.md](../../../challenges/README.md) —
+- **Challenges:** [challenges/README.md](../../../challenges/README.md) -
   `challenge.yaml` and the score formula.
 - Commands for both:
   [docs/reference/cli/learning.md](../../../docs/reference/cli/learning.md).
 
-Checks use the same types as scenario checks — see
+Checks use the same types as scenario checks - see
 [the scenario schema](../../../docs/reference/scenario-schema.md#checks).
 
 ## What makes a path or challenge worth doing
@@ -27,7 +27,7 @@ Checks use the same types as scenario checks — see
 Both are wrappers, and **neither is better than what it wraps**. A challenge
 over an incident inherits that incident's diagnosability; a path module running
 a scenario inherits that scenario's grading integrity. Review the underlying
-content first — polishing a clock and a score over a fault nobody can diagnose
+content first - polishing a clock and a score over a fault nobody can diagnose
 does not make a fair exam.
 
 What the wrapper owns is its own to get right:
@@ -38,14 +38,14 @@ paraphrases the command already in `action.ref` has added nothing; the learner
 finishes able to repeat commands and unable to explain them.
 
 **A challenge owns the clock and the score.** Both are easy to get wrong in ways
-that make every grade meaningless — a `parTime` guessed rather than measured, a
+that make every grade meaningless - a `parTime` guessed rather than measured, a
 submit that pays out for doing nothing.
 
 **The check must be provable by the learner's own work.** This is where this
 content class fails most often: a check that is green from the platform alone,
 before the learner lifts a finger. A module that activates the observability
 scenario and checks `GET http://prometheus/-/ready` passes on a lab that already
-runs Prometheus — which is every lab. Assert what *this module produced*: the
+runs Prometheus, which is every lab. Assert what *this module produced*: the
 dashboard the scenario installs, the metric it starts collecting.
 
 **A score must be defensible in both directions.** Submitting without fixing
@@ -73,7 +73,7 @@ modules:
 
 - `action.type: command` shows the `ref` verbatim for the learner to run.
 - `action.type: scenario` or `incident` points at content by name, which
-  `labctl validate` cross-checks — a dangling reference is an error.
+  `labctl validate` cross-checks - a dangling reference is an error.
 - Lab URLs in a check's `url` and in intro text use
   `http://<name>.{{.IngressURLSuffix}}`, as scenarios do: it carries the lab's
   domain and its ingress port, so the check grades this lab and the intro shows
@@ -100,9 +100,9 @@ hintPenalty: 5                  # % per hint (default 5)
 
 Prefer `useDetectionCheck: true`. The fault's detection check is already
 written as "what must be true when healthy", which is exactly the grading
-question — a second, hand-written set of checks drifts from it.
+question - a second, hand-written set of checks drifts from it.
 
-Set `parTime` from an actual timed run, not a guess — do the challenge yourself
+Set `parTime` from an actual timed run, not a guess - do the challenge yourself
 with a clock and no hints, and use that number. It drives the time deduction, so
 a wrong par time makes every score wrong. A par a correct solution cannot meet
 punishes everyone; a par nobody can exceed means the clock never bites:
@@ -146,19 +146,19 @@ nothing, scores it out of 5 and improves it until it reaches 4.8.
 ```
 
 Treat the score as part of the definition of done: below 4.8 it is a draft,
-whatever `validate` says. Two findings cap a review at 3.5 on their own — a path
+whatever `validate` says. Two findings cap a review at 3.5 on their own - a path
 with any premature-green check, and a challenge whose zero-work submit passes.
 
 ## Before you finish
 
 - [ ] `labctl validate` is clean; every `ref` resolves.
-- [ ] Every check fails before the work and passes after — tested by running it
+- [ ] Every check fails before the work and passes after - tested by running it
       *before* doing the module, not just after.
 - [ ] No check is green from the platform alone.
 - [ ] Every intro explains why the module exists, not just what to type.
 - [ ] A zero-work `challenge submit` scores ~0.
 - [ ] Modules leave the lab in the state the next module assumes.
-- [ ] `parTime` came from a real timed run — record the figure.
+- [ ] `parTime` came from a real timed run - record the figure.
 - [ ] `learning-review` scores it 4.8 or better.
 - [ ] Listed in the table in the relevant README.
 - [ ] `make docs-check` passes.

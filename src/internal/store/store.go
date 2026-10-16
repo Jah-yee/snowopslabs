@@ -215,7 +215,7 @@ func (s *Store) migrate(ctx context.Context) error {
 
 	// The database was migrated by a newer labctl; see ErrSchemaTooNew.
 	if applied > latest {
-		return fmt.Errorf("%w: %s is at schema %d, this build knows %d — "+
+		return fmt.Errorf("%w: %s is at schema %d, this build knows %d - "+
 			"upgrade labctl, or point SNOWOPS_HOME at a different directory",
 			ErrSchemaTooNew, s.path, applied, latest)
 	}

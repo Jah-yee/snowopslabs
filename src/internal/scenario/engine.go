@@ -209,7 +209,7 @@ func (e *Engine) Get(name string) (*Scenario, error) {
 func (e *Engine) Preflight(s *Scenario) error {
 	var errs []string
 
-	// 1. Runtime compatibility — only checked when the scenario restricts runtimes.
+	// 1. Runtime compatibility - only checked when the scenario restricts runtimes.
 	if len(s.Runtimes) > 0 && e.Profile != "" {
 		if !slices.Contains(s.Runtimes, e.Profile) {
 			errs = append(errs, fmt.Sprintf(
@@ -217,17 +217,17 @@ func (e *Engine) Preflight(s *Scenario) error {
 		}
 	}
 
-	// 2. Prerequisite apps — check apps/<name>/app.env exists.
+	// 2. Prerequisite apps - check apps/<name>/app.env exists.
 	for _, app := range e.ResolvedPrereqApps(s) {
 		appEnv := filepath.Join(e.ProjectRoot, "apps", app, "app.env")
 		if _, err := os.Stat(appEnv); err != nil {
 			errs = append(errs, fmt.Sprintf(
-				"prerequisite app %q not found — run 'labctl app build %s && labctl app deploy %s' (expected %s)",
+				"prerequisite app %q not found - run 'labctl app build %s && labctl app deploy %s' (expected %s)",
 				app, app, app, appEnv))
 		}
 	}
 
-	// 3. Workload capabilities — the bound app must declare every capability
+	// 3. Workload capabilities - the bound app must declare every capability
 	// the scenario requires.
 	var required []workload.Capability
 	for _, name := range s.Prerequisites.Capabilities {
@@ -244,16 +244,16 @@ func (e *Engine) Preflight(s *Scenario) error {
 			names[i] = string(m)
 		}
 		errs = append(errs, fmt.Sprintf(
-			"workload %q does not declare: %s — either bind an app that does (APP_NAME=<app>, see 'labctl app list') or add the capability to apps/%s/app.env once the app truly provides it",
+			"workload %q does not declare: %s - either bind an app that does (APP_NAME=<app>, see 'labctl app list') or add the capability to apps/%s/app.env once the app truly provides it",
 			e.Workload.Name, strings.Join(names, ", "), e.Workload.Name))
 	}
 
-	// 4. Prerequisite platform components — check platform/<category>/ directory exists.
+	// 4. Prerequisite platform components - check platform/<category>/ directory exists.
 	for _, p := range s.Prerequisites.Platform {
 		platformDir := filepath.Join(e.ProjectRoot, "platform", p)
 		if _, err := os.Stat(platformDir); err != nil {
 			errs = append(errs, fmt.Sprintf(
-				"prerequisite platform %q not found — run 'labctl platform up' (expected %s)",
+				"prerequisite platform %q not found - run 'labctl platform up' (expected %s)",
 				p, platformDir))
 		}
 	}
@@ -337,7 +337,7 @@ func (e *Engine) withActivationWorkload(name string) func() {
 	if err != nil {
 		// The recorded app is gone or broken. Carry on with the current
 		// binding, with a warning, so teardown can still run.
-		fmt.Fprintf(e.output(), "Warning: %v — continuing against %s.\n", err, e.Workload.Name)
+		fmt.Fprintf(e.output(), "Warning: %v - continuing against %s.\n", err, e.Workload.Name)
 	}
 	return restore
 }
@@ -468,7 +468,7 @@ func (e *Engine) Up(name string, exec CommandExecutor, force bool) error {
 
 	if len(s.Checks) > 0 {
 		fmt.Fprintf(e.output(), "\nThis scenario has %d verifiable checks. Run: labctl scenario verify %s\n", len(s.Checks), s.Name)
-		fmt.Fprintf(e.output(), "Pods may still be starting — add --watch to wait for them:\n  labctl scenario verify %s --watch\n", s.Name)
+		fmt.Fprintf(e.output(), "Pods may still be starting - add --watch to wait for them:\n  labctl scenario verify %s --watch\n", s.Name)
 	}
 
 	e.printExploreHints(s)
@@ -484,7 +484,7 @@ func (e *Engine) Verify(ctx context.Context, name string, runner *checks.Runner)
 		return nil, err
 	}
 	if len(s.Checks) == 0 {
-		return nil, fmt.Errorf("%w: %s (add a checks block — see docs/reference/scenario-schema.md)", ErrNoChecks, name)
+		return nil, fmt.Errorf("%w: %s (add a checks block - see docs/reference/scenario-schema.md)", ErrNoChecks, name)
 	}
 
 	runner.ScriptDir = s.Dir
@@ -746,7 +746,7 @@ func (e *Engine) loadInto(dir, source, key string) {
 		if existing.Source != "" {
 			from = existing.Source
 		}
-		e.loadErrors[key] = fmt.Errorf("scenario name %q already provided by %s — skipped", s.Name, from)
+		e.loadErrors[key] = fmt.Errorf("scenario name %q already provided by %s - skipped", s.Name, from)
 		return
 	}
 	s.Dir = dir
@@ -841,7 +841,7 @@ func (e *Engine) installHelm(s *Scenario, comp *Component, exec CommandExecutor)
 	// cannot change.
 	if comp.Adopt && helmReleaseExists(comp.Name, ns, exec) {
 		fmt.Fprintf(e.output(),
-			"  %s: release already installed in %s — adopting it instead of re-installing.\n", comp.Name, ns)
+			"  %s: release already installed in %s - adopting it instead of re-installing.\n", comp.Name, ns)
 		return nil
 	}
 
@@ -965,7 +965,7 @@ func (e *Engine) uninstallHelm(comp *Component, exec CommandExecutor) error {
 	// place.
 	if comp.Adopt {
 		fmt.Fprintf(e.output(),
-			"  %s: release is owned by the platform (adopted) — leaving it installed.\n", comp.Name)
+			"  %s: release is owned by the platform (adopted) - leaving it installed.\n", comp.Name)
 		return nil
 	}
 
@@ -1104,7 +1104,7 @@ func (e *Engine) uninstallGrafanaDashboard(s *Scenario, comp *Component, exec Co
 	dashDir := filepath.Join(s.Dir, comp.Path)
 	entries, err := os.ReadDir(dashDir)
 	if err != nil {
-		return nil //nolint:nilerr // no dashboard dir means nothing to delete — uninstall is a no-op
+		return nil //nolint:nilerr // no dashboard dir means nothing to delete - uninstall is a no-op
 	}
 
 	// Resolve the namespace as install does.

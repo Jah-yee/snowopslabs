@@ -65,7 +65,7 @@ func (m *Manager) List() []RuntimeInfo {
 
 		expectedCtx := m.expectedContext(name)
 		if expectedCtx == "" {
-			// No reliable context name available — report as not active.
+			// No reliable context name available - report as not active.
 			infos = append(infos, info)
 			continue
 		}

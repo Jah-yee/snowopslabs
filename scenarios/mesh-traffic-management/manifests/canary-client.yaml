@@ -2,7 +2,7 @@
 #
 # It has to live inside the mesh and inside the workload namespace: an unmeshed
 # client has no sidecar, so its requests carry no mTLS identity and STRICT mode
-# rejects them — which is precisely what the mTLS check proves separately. That
+# rejects them, which is precisely what the mTLS check proves separately. That
 # is also why the shared `labctl traffic` generator is not used here; it runs
 # unmeshed in its own namespace and would be refused the moment the learner
 # applies the PeerAuthentication.

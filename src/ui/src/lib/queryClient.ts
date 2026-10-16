@@ -17,7 +17,7 @@ export const queryClient = new QueryClient({
       // triggers a refetch via explicit invalidation.
       staleTime: 15_000,
       // One retry smooths a transient blip without masking a real outage for
-      // long — the designed error state should appear promptly when the server
+      // long - the designed error state should appear promptly when the server
       // is actually down.
       retry: 1,
       retryDelay: 800,

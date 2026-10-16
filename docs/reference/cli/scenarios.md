@@ -47,13 +47,13 @@ scenario is not active). A path outside the scenario's directory is refused.
 |---|---|---|
 | `--deploy-prereqs` | off | install prerequisite platform components and build and deploy prerequisite apps that are not running yet. Without it, a missing prerequisite stops `scenario up` with the command that installs it. |
 | `--force` | off | reinstall even when the scenario is already active |
-| `--set key=value` | — | override a scenario parameter; repeatable |
+| `--set key=value` | - | override a scenario parameter; repeatable |
 
 ```bash
 labctl scenario up autoscaling-under-load --set threshold=15 --set maxReplicas=4
 ```
 
-Parameters a scenario accepts are declared in its `parameters` block — see the
+Parameters a scenario accepts are declared in its `parameters` block - see the
 [schema](../scenario-schema.md#parameters).
 
 ## Running several at once
@@ -96,7 +96,7 @@ labctl scenario up autoscaling-under-load --app java-api
 
 The app is **recorded with the activation**. `verify` and `down` read it back, so
 a scenario brought up against `java-api` is graded and torn down against
-`java-api` — not against whatever `APP_NAME` happens to say in the shell you come
+`java-api`: not against whatever `APP_NAME` happens to say in the shell you come
 back to an hour later.
 
 The UI asks the same question in its activation dialog, and marks any app that
@@ -128,7 +128,7 @@ labctl scenario verify observability-sre --watch --interval 10s --timeout 5m
 | `--interval` | `10s` | delay between re-runs in watch mode |
 | `--timeout` | `5m` | overall watch deadline |
 | `--check-timeout` | `30s` | per-check timeout |
-| `--record` | — | write what the lab answered the declared checks, the variables they were rendered with and each result, to this file (the last attempt under `--watch`); the scenario's replay tests read it ([TESTING](../../TESTING.md#real-cluster)) |
+| `--record` | - | write what the lab answered the declared checks, the variables they were rendered with and each result, to this file (the last attempt under `--watch`); the scenario's replay tests read it ([TESTING](../../TESTING.md#real-cluster)) |
 
 `promql` checks query Prometheus at `http://prometheus.<DOMAIN_SUFFIX>`;
 override with `PROMETHEUS_URL`.
@@ -139,11 +139,11 @@ override with `PROMETHEUS_URL`.
 - A failing check with a `remediation` prints it under **Next step(s)**. The
   generic "a pod may still be starting" hint now appears only for a genuine
   failure that has no remediation of its own.
-- A failing check marked `pending` renders as **PENDING**, not **FAIL** — it
+- A failing check marked `pending` renders as **PENDING**, not **FAIL** - it
   means "you have not done this drill step yet". `verify` still exits non-zero,
   but without the alarming "checks failed" wording.
 
-REST: `POST /api/v2/scenarios/{name}/verify` — synchronous, with the same 30s
+REST: `POST /api/v2/scenarios/{name}/verify` - synchronous, with the same 30s
 per-check default as the CLI and the whole run bounded at 5 minutes. A check cut
 off by that bound says so, rather than blaming its own `timeoutSeconds`. Use the
 CLI's `--watch` for long convergence.
@@ -162,8 +162,8 @@ Walkthrough: [your first scenario](../../authoring/first-scenario.md).
 
 ## `labctl validate`
 
-Loads and validates every declarative content item — scenarios, incidents,
-learning paths and challenges — against the content model. It checks required
+Loads and validates every declarative content item (scenarios, incidents,
+learning paths and challenges) against the content model. It checks required
 fields, cross-references (a path or challenge must point at content that
 exists) and templates (an unknown variable is an error). Problems are reported
 as `file:line: [kind/name] message`, and it exits non-zero if there are any.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check-cpu-request.sh — the CPU request must sit ABOVE observed peak usage and
+# check-cpu-request.sh - the CPU request must sit ABOVE observed peak usage and
 # BELOW the waste ceiling.
 #
 # Both bounds are the point. An upper bound alone makes `--requests=cpu=1m` a
@@ -18,7 +18,7 @@ CONTAINER="${CONTAINER:-$APP}"
 MAX_CPU_MILLICORES="${MAX_CPU_MILLICORES:-100}"
 
 if ! kubectl get deployment "$APP" -n "$NAMESPACE" >/dev/null 2>&1; then
-  echo "FAIL: deployment ${NAMESPACE}/${APP} not found — deploy it first (labctl app deploy ${APP})." >&2
+  echo "FAIL: deployment ${NAMESPACE}/${APP} not found - deploy it first (labctl app deploy ${APP})." >&2
   exit 1
 fi
 
@@ -33,7 +33,7 @@ fi
 if [ -z "$raw" ]; then
   echo "FAIL: no CPU request set on ${NAMESPACE}/${APP} (container '${CONTAINER}')." >&2
   echo "A pod with no CPU request is scheduled with no reservation at all, which is not" >&2
-  echo "right-sizing — it is opting out of scheduling guarantees. Set one:" >&2
+  echo "right-sizing - it is opting out of scheduling guarantees. Set one:" >&2
   echo "  kubectl -n ${NAMESPACE} set resources deployment ${APP} --requests=cpu=50m" >&2
   exit 1
 fi

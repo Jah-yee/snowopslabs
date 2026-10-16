@@ -1,4 +1,4 @@
-# ADR 0015 — The workload binding, where the learner touches it
+# ADR 0015: The workload binding, where the learner touches it
 
 **Status:** Accepted
 **Date:** 2026-09-11

@@ -1,4 +1,4 @@
-# Stage 2 — the pressure. Re-applies the producer Deployment (same name) at 3
+# Stage 2 - the pressure. Re-applies the producer Deployment (same name) at 3
 # replicas emitting five times as fast: roughly 29 orders/second against a
 # consumer group that can process about 18. Lag then climbs at ~11/s, which is
 # what the learner has to diagnose and drain.

@@ -126,7 +126,7 @@ case "$kind" in
     "$labctl" incident inject "$name" --app "$app" || fail "the second incident inject $name"
     solve
     elapsed=0
-    until "$labctl" incident status 2>&1 | grep -q "^RESOLVED — detection check"; do
+    until "$labctl" incident status 2>&1 | grep -q "^RESOLVED - detection check"; do
       [ "$elapsed" -lt "$wait_seconds" ] || fail "the detection check does not pass on the fixed lab after ${wait_seconds}s"
       sleep "${POLL_SECONDS:-10}"
       elapsed=$((elapsed + ${POLL_SECONDS:-10}))

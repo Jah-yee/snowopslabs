@@ -67,7 +67,7 @@ func runScenarioReset(cmd *cobra.Command, name string) error {
 	}
 
 	if s, gerr := scenes.Get(name); gerr == nil && s.Active {
-		fmt.Fprintf(out, "Resetting %s — tearing down first…\n\n", name)
+		fmt.Fprintf(out, "Resetting %s - tearing down first…\n\n", name)
 		if err := streamSubmittedRun(ctx, out, st, "deactivate "+name, func() (string, error) {
 			return svc.Deactivate(ctx, name)
 		}); err != nil {

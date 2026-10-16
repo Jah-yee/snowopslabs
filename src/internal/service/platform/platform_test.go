@@ -199,7 +199,7 @@ func TestInstall_ConflictsPerComponentButNotAcrossComponents(t *testing.T) {
 		t.Fatalf("same-component op err = %v, want *run.LockConflictError", err)
 	}
 
-	// A different component installs concurrently — different lock key.
+	// A different component installs concurrently - different lock key.
 	other, err := h.svc.Install(context.Background(), "monitoring/metrics", "prometheus")
 	if err != nil {
 		t.Fatalf("different-component install should be accepted, got: %v", err)
@@ -261,7 +261,7 @@ func TestStatus_InstalledAfterInstall(t *testing.T) {
 
 func TestStatus_IsPerComponent(t *testing.T) {
 	h := newHarness(t)
-	// Install traefik; prometheus stays unknown — state must not leak across
+	// Install traefik; prometheus stays unknown - state must not leak across
 	// components that share the same run Kind.
 	id, _ := h.svc.Install(context.Background(), "ingress", "traefik")
 	h.waitFor(id, store.StatusSucceeded)

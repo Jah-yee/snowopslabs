@@ -39,5 +39,5 @@ if kubectl get scaledobject -A --no-headers 2>/dev/null | grep -q .; then
   echo "Managed HPAs:"
   kubectl get hpa -A 2>/dev/null | grep -E "keda-hpa|NAMESPACE" || echo "  (none yet)"
 else
-  echo "  (none — define one with a ScaledObject; see the autoscaling-under-load scenario)"
+  echo "  (none - define one with a ScaledObject; see the autoscaling-under-load scenario)"
 fi

@@ -113,7 +113,7 @@ func TestNewRegistry_MissingDir(t *testing.T) {
 func TestNewRegistry_SkipsNonService(t *testing.T) {
 	root := t.TempDir()
 
-	// Create a directory without install.sh — should be excluded
+	// Create a directory without install.sh - should be excluded
 	dir := filepath.Join(root, "src", "services", "not-a-service")
 	os.MkdirAll(dir, 0755)
 	os.WriteFile(filepath.Join(dir, "README.md"), []byte("nope"), 0644)

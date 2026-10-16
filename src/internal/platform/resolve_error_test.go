@@ -90,8 +90,8 @@ func TestProviderNamespace_DefaultMonitoringWhenEmpty(t *testing.T) {
 
 // Shared-namespace providers can't be detected by namespace existence (they all
 // live in the monitoring namespace), so SharesNamespace must flag exactly the
-// monitoring/logging/tracing categories — including nested ones like
-// monitoring/metrics — and nothing else.
+// monitoring/logging/tracing categories - including nested ones like
+// monitoring/metrics - and nothing else.
 func TestProviderSharesNamespace(t *testing.T) {
 	tests := []struct {
 		category string
@@ -195,6 +195,6 @@ implementations:
 		t.Fatalf("GetProvider(mesh/istio): %v", err)
 	}
 	if got := p.Namespace(); got != "istio-system" {
-		t.Errorf("Namespace() = %q, want %q — the scan did not read the declaration", got, "istio-system")
+		t.Errorf("Namespace() = %q, want %q - the scan did not read the declaration", got, "istio-system")
 	}
 }

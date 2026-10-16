@@ -28,7 +28,7 @@ TXT
 
 if [ ! -s "$LOG" ]; then
   echo "FAIL: no boot-id was recorded, so there is no 'before' to compare against." >&2
-  echo "  Take the backup while the data-writer is running — that is when the fingerprint is captured:" >&2
+  echo "  Take the backup while the data-writer is running - that is when the fingerprint is captured:" >&2
   echo "    bash ${PROJECT_ROOT:-.}/scenarios/backup-restore-drill/scripts/backup.sh ${NS}" >&2
   exit 1
 fi

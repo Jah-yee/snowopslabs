@@ -7,10 +7,10 @@ set -euo pipefail
 #
 # "Actually running" is checked at three levels, because each catches a
 # different real-world failure:
-#   1. Deployment .spec  — what you asked for
-#   2. Rollout status    — whether the ask converged (a wedged rollout leaves
+#   1. Deployment .spec - what you asked for
+#   2. Rollout status - whether the ask converged (a wedged rollout leaves
 #                          .spec at vNEXT while the pods still serve vPREV)
-#   3. Pod .status image — what the kubelet reports it is really running
+#   3. Pod .status image - what the kubelet reports it is really running
 #
 # This is the same invariant GitOps tools call drift: desired vs live state.
 
@@ -70,7 +70,7 @@ for env_name in $ENVS; do
   #
   # Deliberately .spec, not .status.containerStatuses[].image: when several tags
   # share one digest in the node's image store (the lab builds tag both vX.Y.Z
-  # and :latest), the kubelet reports whichever tag it resolved — commonly
+  # and :latest), the kubelet reports whichever tag it resolved - commonly
   # "docker.io/library/<app>:latest" for a pod that correctly requested
   # <app>:v1.1.0. Comparing tags against that field reports drift that is not
   # there.

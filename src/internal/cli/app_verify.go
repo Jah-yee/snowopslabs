@@ -24,7 +24,7 @@ var appVerifyCmd = &cobra.Command{
 
 Two phases. The declaration phase reads apps/<name>/app.env and reports the
 contract it claims; it needs no cluster. The evidence phase runs the checks that
-claim implies against the deployed workload — a claim on its own is only a
+claim implies against the deployed workload - a claim on its own is only a
 claim. Use --static for the declaration phase alone.
 
 An app is only checked for what it claims, so it is never failed for lacking a

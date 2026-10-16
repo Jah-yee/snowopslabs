@@ -9,7 +9,7 @@ import { server, API } from './test/server'
 
 // Render the app at a specific URL. App declares <Routes> (not a Router) and its
 // views read from the query cache, so the test supplies both the MemoryRouter
-// (standing in for main.tsx's BrowserRouter) and a fresh QueryClient — fresh so
+// (standing in for main.tsx's BrowserRouter) and a fresh QueryClient - fresh so
 // no cached data leaks between tests. Retries off so an error surfaces at once.
 function renderAt(path: string) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -25,7 +25,7 @@ function renderAt(path: string) {
 describe('routing', () => {
   it('deep-links directly to a section from its URL', async () => {
     renderAt('/scenarios')
-    // The Scenarios nav link is marked active because the URL selected it —
+    // The Scenarios nav link is marked active because the URL selected it -
     // proving the view is chosen by the route, not by in-memory tab state.
     const link = await screen.findByRole('link', { name: 'Scenarios' })
     await waitFor(() => expect(link).toHaveClass('active'))

@@ -2,7 +2,7 @@ apiVersion: scenario.snowops.net/v2
 name: event-driven-arch
 verified: true
 displayName: "Event-Driven Architecture"
-description: "An 'orders' topic on Kafka (Strimzi) with a producer/consumer flow already running — and producers ramped to five times what the consumer group can process. Orders are piling up. Diagnose the backlog from Kafka's own tooling and from the lag dashboard, then restore throughput by scaling the group up to the topic's partition count — and no further, because a fourth consumer gets no partition and adds nothing."
+description: "An 'orders' topic on Kafka (Strimzi) with a producer/consumer flow already running, and producers ramped to five times what the consumer group can process. Orders are piling up. Diagnose the backlog from Kafka's own tooling and from the lag dashboard, then restore throughput by scaling the group up to the topic's partition count, and no further, because a fourth consumer gets no partition and adds nothing."
 category: data
 prerequisites:
   platform:
@@ -97,7 +97,7 @@ checks:
     query: 'count(kafka_server_replicamanager_partitioncount)'
     operator: ">="
     value: "1"
-    remediation: "Prometheus is not scraping the Kafka brokers. Check that the Kafka CR has spec.kafka.metricsConfig ({{.ProjectRoot}}/platform/data/kafka/install.sh applies the kafka-metrics ConfigMap), and that the kafka-broker PodMonitor is selected: kubectl -n kafka get podmonitor kafka-broker -o yaml — it needs the release label the Prometheus CR's podMonitorSelector expects."
+    remediation: "Prometheus is not scraping the Kafka brokers. Check that the Kafka CR has spec.kafka.metricsConfig ({{.ProjectRoot}}/platform/data/kafka/install.sh applies the kafka-metrics ConfigMap), and that the kafka-broker PodMonitor is selected: kubectl -n kafka get podmonitor kafka-broker -o yaml - it needs the release label the Prometheus CR's podMonitorSelector expects."
 
   - name: consumer-lag-metrics-scraped
     type: promql
@@ -107,7 +107,7 @@ checks:
     remediation: "The kafka-exporter metrics are missing. Confirm the exporter pod is running (kubectl -n kafka get pods -l strimzi.io/name=lab-kafka-kafka-exporter) and that Prometheus selected the kafka-exporter PodMonitor (Status > Targets in the Prometheus UI)."
 
   # Members, not pod replicas: a consumer pod can be Ready and still not be in
-  # the group — wrong group id, or a rebalance it never completed. Kafka's own
+  # the group - wrong group id, or a rebalance it never completed. Kafka's own
   # view of the group is the one that decides whether partitions get served.
   - name: consumer-group-at-full-width
     type: promql
@@ -119,7 +119,7 @@ checks:
     operator: ">="
     value: "3"
     pending: true
-    remediation: "Fewer than three consumers have joined 'order-processors', so at least one partition is being served by a consumer that is already saturated. Scale up: kubectl -n kafka scale deployment/orders-consumer --replicas=3 — then confirm the group, not just the pods: kubectl -n kafka exec lab-kafka-dual-role-0 -- bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group order-processors"
+    remediation: "Fewer than three consumers have joined 'order-processors', so at least one partition is being served by a consumer that is already saturated. Scale up: kubectl -n kafka scale deployment/orders-consumer --replicas=3, then confirm the group, not just the pods: kubectl -n kafka exec lab-kafka-dual-role-0 -- bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group order-processors"
 
   # The other bound of the same band, and the lesson of the scenario. Expressed
   # against kafka_topic_partitions rather than a hardcoded 3, so it stays true
@@ -134,7 +134,7 @@ checks:
     jsonpath: "{.spec.replicas}"
     operator: "<="
     value: "3"
-    remediation: "The group has more consumers than 'orders' has partitions. A partition is assigned to exactly one consumer in a group, so the extras sit idle holding a group slot and adding rebalance churn — throughput does not improve. Scale back to the partition count: kubectl -n kafka scale deployment/orders-consumer --replicas=3"
+    remediation: "The group has more consumers than 'orders' has partitions. A partition is assigned to exactly one consumer in a group, so the extras sit idle holding a group slot and adding rebalance churn - throughput does not improve. Scale back to the partition count: kubectl -n kafka scale deployment/orders-consumer --replicas=3"
 
   # A backlog has to have existed before draining it means anything. Without
   # this the drained check is green at t=0, when the group is a few seconds old
@@ -146,7 +146,7 @@ checks:
     operator: ">="
     value: "1500"
     pending: true
-    remediation: "No backlog has built up yet. The ramped producers outrun a single consumer by about 11 orders a second, so give it two or three minutes and watch it climb on the lag dashboard before you fix it — diagnosing the backlog is the first half of this scenario."
+    remediation: "No backlog has built up yet. The ramped producers outrun a single consumer by about 11 orders a second, so give it two or three minutes and watch it climb on the lag dashboard before you fix it - diagnosing the backlog is the first half of this scenario."
 
   - name: backlog-drained
     type: promql
@@ -158,7 +158,7 @@ checks:
     operator: "<"
     value: "400"
     pending: true
-    remediation: "The 'order-processors' group is still behind. One consumer processes ~18 orders/second and the ramped producers emit ~29, so a single consumer can never catch up — the backlog only drains once the group is wide enough. Scale it and give it a couple of minutes: kubectl -n kafka scale deployment/orders-consumer --replicas=3"
+    remediation: "The 'order-processors' group is still behind. One consumer processes ~18 orders/second and the ramped producers emit ~29, so a single consumer can never catch up - the backlog only drains once the group is wide enough. Scale it and give it a couple of minutes: kubectl -n kafka scale deployment/orders-consumer --replicas=3"
 
 snippets:
   - label: "The 'orders' Kafka topic (3 partitions)"
@@ -168,34 +168,34 @@ snippets:
     description: "Read the consumer's args: it sleeps 50ms per message, standing in for the work a real order processor does. That per-message cost is what bounds one consumer to ~18 orders/second."
     path: manifests/producer-consumer.yaml
   - label: "The ramp that created the backlog"
-    description: "Three producers at 5x rate — about 29 orders/second. This stays applied; draining by removing the load does not count."
+    description: "Three producers at 5x rate - about 29 orders/second. This stays applied; draining by removing the load does not count."
     path: manifests/ramp-producers.yaml
 
 references:
-  - label: "Kafka — consumer groups and partition assignment"
+  - label: "Kafka - consumer groups and partition assignment"
     url: "https://kafka.apache.org/documentation/#intro_consumers"
     note: "Why a partition goes to exactly one consumer in a group, which is the partition ceiling this scenario grades."
-  - label: "Strimzi — KafkaTopic and the topic operator"
+  - label: "Strimzi - KafkaTopic and the topic operator"
     url: "https://strimzi.io/docs/operators/latest/deploying#con-creating-managing-topics-str"
     note: "How partitions are declared, and why increasing them is one-way."
-  - label: "KEDA — Apache Kafka scaler"
+  - label: "KEDA - Apache Kafka scaler"
     url: "https://keda.sh/docs/latest/scalers/apache-kafka/"
     note: "The automated version of this exercise: lagThreshold plus a maxReplicaCount that must not exceed the partition count."
 
 explore:
   urls:
-    - label: "Grafana — Kafka consumer-lag dashboard (start here: lag, produce vs consume rate)"
+    - label: "Grafana - Kafka consumer-lag dashboard (start here: lag, produce vs consume rate)"
       url: "http://grafana.{{.IngressURLSuffix}}/d/event-driven-arch"
-    - label: "Grafana — Kafka Overview (cluster health, throughput, per-topic rates)"
+    - label: "Grafana - Kafka Overview (cluster health, throughput, per-topic rates)"
       url: "http://grafana.{{.IngressURLSuffix}}/d/kafka-overview"
-    - label: "Prometheus — are the Kafka targets being scraped?"
+    - label: "Prometheus - are the Kafka targets being scraped?"
       url: "http://prometheus.{{.IngressURLSuffix}}/targets"
   commands:
     - label: "Diagnose first: per-partition lag for the group"
       command: "kubectl -n kafka exec lab-kafka-dual-role-0 -- bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group order-processors"
     - label: "How many partitions does 'orders' have? This is your ceiling"
       command: "kubectl -n kafka exec lab-kafka-dual-role-0 -- bin/kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic orders"
-    - label: "What the consumer is getting through — it reports every 50 orders"
+    - label: "What the consumer is getting through - it reports every 50 orders"
       command: "kubectl -n kafka logs deploy/orders-consumer --tail=20"
     - label: "Scale the group to the partition count"
       command: "kubectl -n kafka scale deployment/orders-consumer --replicas=3"
@@ -206,14 +206,14 @@ explore:
     - label: "Confirm Prometheus picked up both Kafka PodMonitors"
       command: "kubectl -n kafka get podmonitor && kubectl -n {{.MonitoringNamespace}} get prometheus -o jsonpath='{.items[0].spec.podMonitorSelector}'"
   tips:
-    - "Lag is messages produced but not yet committed by the group. Read it per partition, not just as a total — an uneven backlog means one consumer is wedged, not that the group is too small."
+    - "Lag is messages produced but not yet committed by the group. Read it per partition, not just as a total - an uneven backlog means one consumer is wedged, not that the group is too small."
     - "The numbers: the ramped producers emit about 29 orders/second, and one consumer processes about 18. That gap is why a single consumer never recovers, however long you wait."
     - "'orders' has 3 partitions, and a partition is served by exactly one consumer in a group. Three consumers is the ceiling; a fourth joins the group, gets nothing, and adds rebalance churn. Both bounds are graded."
-    - "Right after you scale, kafka-consumer-groups.sh may print an empty table for a few seconds — that is the group rebalancing, not the group disappearing. Re-run it."
+    - "Right after you scale, kafka-consumer-groups.sh may print an empty table for a few seconds - that is the group rebalancing, not the group disappearing. Re-run it."
     - "Stopping the producers drops lag to zero and is not a fix. 'producers-still-ramped' fails if you try it."
-    - "Draining takes a minute or two once the group is wide enough — the backlog is thousands of messages deep and drains at roughly the surplus rate, not instantly."
+    - "Draining takes a minute or two once the group is wide enough - the backlog is thousands of messages deep and drains at roughly the surplus rate, not instantly."
     - "For the automated version, install autoscaling/keda and add a Kafka-lag ScaledObject. Set maxReplicaCount to 3: KEDA will happily scale past the partition count and gain nothing."
-    - "Two dashboards: 'Event-Driven — Kafka Consumer Lag' (uid event-driven-arch) for the exercise, 'Kafka Overview' (uid kafka-overview) for cluster health."
-    - "Kafka metrics come from TWO sources and you need both. The brokers expose JMX via spec.kafka.metricsConfig on the Kafka CR (throughput, under-replicated partitions, request latency); the separate kafka-exporter sidecar exposes consumer-group lag and topic offsets. A Kafka CR without metricsConfig publishes no broker metrics at all — the dashboard renders, and every broker panel stays empty."
+    - "Two dashboards: 'Event-Driven - Kafka Consumer Lag' (uid event-driven-arch) for the exercise, 'Kafka Overview' (uid kafka-overview) for cluster health."
+    - "Kafka metrics come from TWO sources and you need both. The brokers expose JMX via spec.kafka.metricsConfig on the Kafka CR (throughput, under-replicated partitions, request latency); the separate kafka-exporter sidecar exposes consumer-group lag and topic offsets. A Kafka CR without metricsConfig publishes no broker metrics at all - the dashboard renders, and every broker panel stays empty."
     - "If a panel is empty, check the scrape before the query: Prometheus > Status > Targets. kube-prometheus-stack only selects PodMonitors matching its podMonitorSelector, so a PodMonitor can exist and still be ignored."
-    - "Broker pod name is lab-kafka-dual-role-0 — the cluster's KRaft dual-role node pool."
+    - "Broker pod name is lab-kafka-dual-role-0 - the cluster's KRaft dual-role node pool."

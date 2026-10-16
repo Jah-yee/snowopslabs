@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# check-no-cordon.sh — exit 0 only if no node is left cordoned
+# check-no-cordon.sh - exit 0 only if no node is left cordoned
 # (SchedulingDisabled). The drill must always return the cluster to full
 # scheduling capacity; a lingering cordon means the drain did not clean up.
 

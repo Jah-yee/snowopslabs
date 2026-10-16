@@ -16,7 +16,7 @@
     "displayName": { "type": "string" },
     "description": { "type": "string" },
     "category": { "type": "string" },
-    "verified": { "type": "boolean", "description": "True when this scenario has been confirmed end-to-end (activates, checks pass, tears down cleanly) on a fresh cluster. Absent/false means unverified — usable but not yet vouched for." },
+    "verified": { "type": "boolean", "description": "True when this scenario has been confirmed end-to-end (activates, checks pass, tears down cleanly) on a fresh cluster. Absent/false means unverified - usable but not yet vouched for." },
     "prerequisites": {
       "type": "object",
       "additionalProperties": false,

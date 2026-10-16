@@ -6,7 +6,7 @@ interface NotificationListProps {
   onDismiss: (id: number) => void
 }
 
-/** Cap how many toasts stack up at once — older ones are collapsed into a
+/** Cap how many toasts stack up at once - older ones are collapsed into a
  *  "+N earlier" row rather than crowding the screen. */
 const MAX_VISIBLE = 5
 

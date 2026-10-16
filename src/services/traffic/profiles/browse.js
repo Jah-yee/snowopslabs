@@ -1,4 +1,4 @@
-// Browse profile — a realistic read-mix across several endpoints, not a single
+// Browse profile - a realistic read-mix across several endpoints, not a single
 // hammered path. Shows how real traffic spreads over routes. TRAFFIC_TARGET is
 // treated as a BASE origin (scheme://host:port); the paths below are appended.
 import http from 'k6/http';
@@ -11,7 +11,7 @@ const rps = Number(__ENV.TRAFFIC_RPS || 10);
 const duration = __ENV.TRAFFIC_DURATION || '10m';
 
 // Weighted endpoint mix: mostly the landing page, some version checks, a few
-// health polls — the shape of everyday read traffic.
+// health polls - the shape of everyday read traffic.
 const endpoints = [
   { path: '/', weight: 70 },
   { path: '/version', weight: 20 },

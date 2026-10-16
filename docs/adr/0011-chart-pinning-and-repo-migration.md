@@ -1,4 +1,4 @@
-# ADR 0011 — Pin every chart; migrate off the deprecated Grafana charts
+# ADR 0011: Pin every chart; migrate off the deprecated Grafana charts
 
 **Status:** Accepted
 **Date:** 2026-09-04
@@ -40,7 +40,7 @@ are gone.
    platform's existing values against the new chart before the switch.
 3. Promtail stays on `grafana/promtail`, pinned at 6.17.1, and keeps shipping
    logs. It is deprecated and EOL, so this is a dated decision, not a
-   preference — see ADR-0012 for how Alloy enters the stack ahead of the log
+   preference - see ADR-0012 for how Alloy enters the stack ahead of the log
    migration.
 4. Strimzi moves from 0.47.0 to 1.2.0, which is KRaft-only. The lab's CRs are
    already KRaft + `KafkaNodePool`, but 1.2.0 ships broker images for Kafka
@@ -61,11 +61,11 @@ are gone.
 
 - Upgrading a component is a reviewable one-line change with a known blast
   radius.
-- `config/versions.env` becomes a required stop when adding a platform component
-  — enforced by review, and stated in `CLAUDE.md`.
+- `config/versions.env` becomes a required stop when adding a platform component -
+   enforced by review, and stated in `CLAUDE.md`.
 - **The Strimzi 1.x jump cannot be done in place, and this was proven on a real
   cluster (R13).** Three separate walls, in order:
-  1. `helm upgrade` never updates a chart's CRDs — `crds/` is install-only. The
+  1. `helm upgrade` never updates a chart's CRDs - `crds/` is install-only. The
      operator came up querying `core.strimzi.io/v1` against a cluster that only
      served `v1beta2` and crash-looped. `install.sh` now applies the pinned
      chart's CRDs with server-side apply before upgrading, but only when the
@@ -77,7 +77,7 @@ are gone.
      detects that specific error and stops with instructions instead of ten
      unreadable CRD errors.
   3. `helm uninstall` does not delete CRDs either, so `platform down data/kafka`
-     used to report success while leaving ten cluster-scoped CRDs behind — which
+     used to report success while leaving ten cluster-scoped CRDs behind, which
      made the documented "down then up" recovery fail too. `uninstall.sh` now
      removes them (`KAFKA_KEEP_CRDS=true` to opt out).
 

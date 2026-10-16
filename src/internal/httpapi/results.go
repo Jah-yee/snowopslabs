@@ -44,7 +44,7 @@ func dashOr(v string) string {
 	return v
 }
 
-// GET /api/v2/results — all records, newest first.
+// GET /api/v2/results - all records, newest first.
 func (s *Server) handleResults(w http.ResponseWriter, r *http.Request) {
 	store := resultsStore(s)
 	recs, err := store.All()
@@ -62,7 +62,7 @@ func (s *Server) handleResults(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, recs)
 }
 
-// GET /api/v2/results/{kind} — records for a specific kind.
+// GET /api/v2/results/{kind} - records for a specific kind.
 func (s *Server) handleResultsByKind(w http.ResponseWriter, r *http.Request) {
 	kind := mux.Vars(r)["kind"]
 	switch kind {
@@ -88,7 +88,7 @@ func (s *Server) handleResultsByKind(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, recs)
 }
 
-// GET /api/v2/leaderboard — per-user aggregate ranking for team mode.
+// GET /api/v2/leaderboard - per-user aggregate ranking for team mode.
 func (s *Server) handleLeaderboard(w http.ResponseWriter, r *http.Request) {
 	store := resultsStore(s)
 	board, err := store.Leaderboard()
@@ -102,7 +102,7 @@ func (s *Server) handleLeaderboard(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, board)
 }
 
-// GET /api/v2/progress — learn module completions grouped by path.
+// GET /api/v2/progress - learn module completions grouped by path.
 func (s *Server) handleProgress(w http.ResponseWriter, r *http.Request) {
 	store := resultsStore(s)
 	progress, err := store.Progress()

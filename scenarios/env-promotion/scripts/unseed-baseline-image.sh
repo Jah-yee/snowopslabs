@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Teardown for the images this scenario built.
 #
-# It removes the versioned tags — and only those. ':latest' is the tag every
+# It removes the versioned tags - and only those. ':latest' is the tag every
 # other scenario's workload runs on, so deleting it here would break the lab
 # from a teardown, which is the opposite of hygiene.
 #
@@ -20,7 +20,7 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 # Only remove tags this scenario built. A versioned tag that was here before it
-# started belongs to someone else — the workload's own deployed image is one —
+# started belongs to someone else - the workload's own deployed image is one -
 # and deleting it strands the app on the next node that has to pull it.
 REMOVED=0
 for tag in $(docker images "$APP" --format '{{.Tag}}' 2>/dev/null || true); do
@@ -29,7 +29,7 @@ for tag in $(docker images "$APP" --format '{{.Tag}}' 2>/dev/null || true); do
     *) continue ;;
   esac
   if [ -f "$STATE" ] && grep -qx "$tag" "$STATE"; then
-    echo "Keeping ${APP}:${tag} — it was here before this scenario ran."
+    echo "Keeping ${APP}:${tag} - it was here before this scenario ran."
     continue
   fi
   if docker rmi "${APP}:${tag}" >/dev/null 2>&1; then

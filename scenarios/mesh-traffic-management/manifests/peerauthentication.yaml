@@ -1,8 +1,8 @@
-# Exercise: nothing installs this file — the learner applies it.
+# Exercise: nothing installs this file - the learner applies it.
 #
 # STRICT mode means the canary pods accept mTLS connections only. A client with
 # no sidecar has no workload identity to present, so its plaintext connection is
-# refused at the proxy — before it ever reaches the application.
+# refused at the proxy - before it ever reaches the application.
 #
 # The meshed load client keeps working after you apply this, because it is in
 # the mesh. That contrast is the lesson: enrolment, not network position, is

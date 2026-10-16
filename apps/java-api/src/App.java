@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //
-// java-api — a second technology stack for SnowOps Labs.
+// java-api - a second technology stack for SnowOps Labs.
 //
 // It exists to prove the workload contract is not Go-shaped: the same scenarios
 // and faults run against this application unchanged, and its JVM behaviour (slow
@@ -8,8 +8,8 @@
 // cross-stack comparison worth doing.
 //
 // Deliberately dependency-free: the JDK's own HTTP server plus a hand-written
-// Prometheus exposition. A real service would use Micrometer — README.md gives
-// the mapping — but a build that downloads a dependency tree would make the lab
+// Prometheus exposition. A real service would use Micrometer - README.md gives
+// the mapping - but a build that downloads a dependency tree would make the lab
 // slow and online-only, and none of that is what the contract is about.
 
 import com.sun.net.httpserver.HttpExchange;
@@ -141,8 +141,8 @@ public final class App {
      * conventions: http.server.request.duration, exposed in Prometheus form as
      * http_server_request_duration_seconds.
      *
-     * Semconv defines no request counter — the histogram's _count series is the
-     * count — so the status code is a label here. That is what lets an error rate
+     * Semconv defines no request counter - the histogram's _count series is the
+     * count - so the status code is a label here. That is what lets an error rate
      * be derived from the same series.
      */
     static final class Metrics {

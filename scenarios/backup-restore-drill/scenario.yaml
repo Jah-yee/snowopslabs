@@ -70,7 +70,7 @@ checks:
     type: script
     script: checks/backup-archive-usable.sh
     pending: true
-    remediation: "Capture the namespace first — you cannot restore what you never took: bash {{.ProjectRoot}}/scenarios/backup-restore-drill/scripts/backup.sh {{.WorkloadNamespace}}"
+    remediation: "Capture the namespace first - you cannot restore what you never took: bash {{.ProjectRoot}}/scenarios/backup-restore-drill/scripts/backup.sh {{.WorkloadNamespace}}"
 
   # Live state cannot tell "restored it" from "never broke it". The loss has to
   # be witnessed while it is happening, which is what the verify in step 4 is for.
@@ -84,7 +84,7 @@ checks:
     type: script
     script: checks/restore-round-tripped.sh
     pending: true
-    remediation: "Put the marker back from the archive — a re-created marker carries a different token: bash {{.ProjectRoot}}/scenarios/backup-restore-drill/scripts/restore.sh {{.WorkloadNamespace}}"
+    remediation: "Put the marker back from the archive - a re-created marker carries a different token: bash {{.ProjectRoot}}/scenarios/backup-restore-drill/scripts/restore.sh {{.WorkloadNamespace}}"
 
   # The two halves of the drill's lesson, graded as a pair: the claim comes back
   # (below), and the data on it does not (next).
@@ -104,21 +104,21 @@ checks:
     remediation: "Destroy the volume and restore only the objects: kubectl -n {{.WorkloadNamespace}} delete deploy data-writer && kubectl -n {{.WorkloadNamespace}} delete pvc restore-data, then bash {{.ProjectRoot}}/scenarios/backup-restore-drill/scripts/restore.sh {{.WorkloadNamespace}}"
 
 references:
-  - label: "Kubernetes — Persistent volumes: reclaiming and binding"
+  - label: "Kubernetes - Persistent volumes: reclaiming and binding"
     url: "https://kubernetes.io/docs/concepts/storage/persistent-volumes/"
     note: "Why a claim whose spec.volumeName is stripped binds to a NEW volume, which is the whole of this drill's lesson."
-  - label: "Kubernetes — Server-side apply"
+  - label: "Kubernetes - Server-side apply"
     url: "https://kubernetes.io/docs/reference/using-api/server-side-apply/"
     note: "Why the restore uses --server-side --force-conflicts instead of the default client-side apply."
-  - label: "Velero — backup and restore, including volume data"
+  - label: "Velero - backup and restore, including volume data"
     url: "https://velero.io/docs/main/how-velero-works/"
-    note: "What you graduate to when the manifest archive's limit — the one this drill measures — starts to matter."
+    note: "What you graduate to when the manifest archive's limit, the one this drill measures, starts to matter."
 
 snippets:
-  - label: "backup.sh — read what a manifest backup actually is"
-    description: "The backup is a real 'kubectl get … -o json | jq <scrub>' pipeline. Read it: this is the command you would run, or adapt, on any cluster — no labctl magic. It scrubs server-managed fields and a PVC's volume binding so the manifests re-apply cleanly."
+  - label: "backup.sh - read what a manifest backup actually is"
+    description: "The backup is a real 'kubectl get … -o json | jq <scrub>' pipeline. Read it: this is the command you would run, or adapt, on any cluster, no labctl magic. It scrubs server-managed fields and a PVC's volume binding so the manifests re-apply cleanly."
     path: scripts/backup.sh
-  - label: "restore.sh — restore is just kubectl apply"
+  - label: "restore.sh - restore is just kubectl apply"
     description: "Restore is 'kubectl apply --server-side --force-conflicts -f archive', plus a namespace-recreate if the whole namespace went. Read it so you know exactly what a restore does to the cluster."
     path: scripts/restore.sh
   - label: "The data-writer whose bytes the backup cannot save"
@@ -127,35 +127,35 @@ snippets:
 
 explore:
   urls:
-    - label: "Grafana — objects come back, data does not"
+    - label: "Grafana - objects come back, data does not"
       url: "http://grafana.{{.IngressURLSuffix}}/d/backup-restore"
   commands:
-    # Real kubectl and jq throughout — the drill teaches the tools, not labctl.
+    # Real kubectl and jq throughout - the drill teaches the tools, not labctl.
     # labctl only stages the marker and the writer, and grades the result.
-    - label: "1. Back up the namespace — run the tool, then read it: it is 'kubectl get -o json | jq'"
+    - label: "1. Back up the namespace - run the tool, then read it: it is 'kubectl get -o json | jq'"
       command: "bash {{.ProjectRoot}}/scenarios/backup-restore-drill/scripts/backup.sh {{.WorkloadNamespace}}"
-    - label: "2. Simulate accidental loss — delete the marker with kubectl"
+    - label: "2. Simulate accidental loss - delete the marker with kubectl"
       command: "kubectl -n {{.WorkloadNamespace}} delete configmap restore-marker"
-    - label: "3. Confirm the loss WHILE IT IS LOST — this run is the evidence the drill grades"
+    - label: "3. Confirm the loss WHILE IT IS LOST - this run is the evidence the drill grades"
       command: "labctl scenario verify backup-restore-drill"
-    - label: "4. Restore with kubectl — server-side apply the archive"
+    - label: "4. Restore with kubectl - server-side apply the archive"
       command: "kubectl apply --server-side --force-conflicts -f {{.StateDir}}/backups/{{.WorkloadNamespace}}-latest.json"
-    - label: "5. Verify the round-trip — the restored marker carries the archive's token"
+    - label: "5. Verify the round-trip - the restored marker carries the archive's token"
       command: "labctl scenario verify backup-restore-drill"
     - label: "6. Now the hard half: destroy the volume, keeping the objects backed up"
       command: "kubectl -n {{.WorkloadNamespace}} delete deploy data-writer && kubectl -n {{.WorkloadNamespace}} delete pvc restore-data"
-    - label: "7. Restore — the PVC object comes straight back from the archive"
+    - label: "7. Restore - the PVC object comes straight back from the archive"
       command: "bash {{.ProjectRoot}}/scenarios/backup-restore-drill/scripts/restore.sh {{.WorkloadNamespace}}"
-    - label: "8. Read the boot-id — it CHANGED: the claim came back, the disk behind it did not"
+    - label: "8. Read the boot-id - it CHANGED: the claim came back, the disk behind it did not"
       command: "bash {{.ProjectRoot}}/scenarios/backup-restore-drill/scripts/observe-pv-data.sh {{.WorkloadNamespace}}"
     - label: "Inspect the archive you have been restoring from"
       command: "jq '.items[] | \"\\(.kind)/\\(.metadata.name)\"' {{.StateDir}}/backups/{{.WorkloadNamespace}}-latest.json"
   tips:
     - "Run the backup BEFORE the destructive step. 'You cannot restore what you never captured' is the first thing this drill grades."
-    - "The marker carries a token minted once, when the scenario activated. It exists in exactly two places — the cluster and your archive — so a marker that came back with the same token was restored, and one with a different token was re-created. 'labctl scenario up --force' is not a restore, and the check knows."
+    - "The marker carries a token minted once, when the scenario activated. It exists in exactly two places, the cluster and your archive, so a marker that came back with the same token was restored, and one with a different token was re-created. 'labctl scenario up --force' is not a restore, and the check knows."
     - "Step 3 is not optional. Nothing in a healthy namespace distinguishes 'I restored it' from 'I never broke it', so the loss has to be verified while it is still lost."
-    - "This is a manifest-level backup: it round-trips Kubernetes objects, NOT the data on a PersistentVolume. The boot-id proves it — unchanged after a ConfigMap delete, different after the claim is re-provisioned. For stateful data you need a volume snapshot, or Velero with restic."
+    - "This is a manifest-level backup: it round-trips Kubernetes objects, NOT the data on a PersistentVolume. The boot-id proves it - unchanged after a ConfigMap delete, different after the claim is re-provisioned. For stateful data you need a volume snapshot, or Velero with restic."
     - "The backup deliberately strips spec.volumeName and the binder annotations from a PVC. Keeping them would leave the restored claim dangling on a volume that no longer exists; dropping them gets you a working claim on an empty disk. Neither option gives you the data back."
     - "jq does the scrubbing. If it is missing, backup.sh says so and 'labctl doctor' lists it with the rest of the toolchain."
-    - "You can go further and delete the whole namespace — restore.sh recreates it before applying. Be aware it also removes the Helm release metadata for {{.WorkloadName}}, which the archive skips on purpose, so finish with 'labctl app deploy {{.WorkloadName}}' to put the app's release back under management."
+    - "You can go further and delete the whole namespace - restore.sh recreates it before applying. Be aware it also removes the Helm release metadata for {{.WorkloadName}}, which the archive skips on purpose, so finish with 'labctl app deploy {{.WorkloadName}}' to put the app's release back under management."
     - "Archives live in the lab state directory (~/.snowops/state/<cluster>/backups/), outside your clone. Teardown removes them along with the marker: the token they are keyed to goes with it, so a kept archive would only grade red next time."

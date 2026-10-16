@@ -1,8 +1,8 @@
 # The scoped exemption for legacy-reporter. Exercise: the learner applies it.
 #
 # A PolicyException is the grown-up answer to "this workload cannot comply".
-# The alternative — widening the policy's own exclude list, or demoting it back
-# to Audit — turns off enforcement for everyone to accommodate one workload.
+# The alternative - widening the policy's own exclude list, or demoting it back
+# to Audit - turns off enforcement for everyone to accommodate one workload.
 #
 # Scope is the whole point, and it is what the grading checks: this matches a
 # LABEL, not a namespace and not a name. Anything in {{.WorkloadName}} without

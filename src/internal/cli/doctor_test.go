@@ -47,7 +47,7 @@ func TestRunDoctor(t *testing.T) {
 	// first so `docker info` matches it rather than the generic `docker` version
 	// rule (first match wins).
 	healthy := func() *toolchain.Fake {
-		return fakeEnv("16 17179869184") // 16 CPU, 16 GiB — well above the minimum
+		return fakeEnv("16 17179869184") // 16 CPU, 16 GiB - well above the minimum
 	}
 
 	t.Run("a healthy environment succeeds", func(t *testing.T) {
@@ -180,7 +180,7 @@ func TestRunDoctor(t *testing.T) {
 
 	t.Run("an under-provisioned Docker VM is a blocking problem", func(t *testing.T) {
 		var out bytes.Buffer
-		// 2 CPU / 2 GiB — the default colima VM, which cannot hold the lab.
+		// 2 CPU / 2 GiB - the default colima VM, which cannot hold the lab.
 		err := runDoctor(ctx, &out, fakeEnv("2 2147483648"))
 		if err == nil {
 			t.Fatalf("an undersized VM must fail doctor:\n%s", out.String())
@@ -201,7 +201,7 @@ func TestRunDoctor(t *testing.T) {
 		if err := runDoctor(ctx, &out, fakeEnv("2 4294967296")); err != nil {
 			t.Fatalf("runDoctor: %v\n%s", err, out.String())
 		}
-		if !strings.Contains(out.String(), "2 CPU / 4 GB — meets the minimum") {
+		if !strings.Contains(out.String(), "2 CPU / 4 GB - meets the minimum") {
 			t.Errorf("the Docker line should show the size:\n%s", out.String())
 		}
 	})
@@ -227,7 +227,7 @@ func TestDockerCapacity(t *testing.T) {
 	}{
 		{
 			name: "enough resources", fake: fake("4 8307675136", 0, "colima"), goos: "darwin",
-			wantLine: "4 CPU / 7.7 GB — meets the minimum",
+			wantLine: "4 CPU / 7.7 GB - meets the minimum",
 		},
 		{
 			name: "undersized colima prints the colima resize", fake: fake("2 2054160384", 0, "colima"), goos: "darwin",

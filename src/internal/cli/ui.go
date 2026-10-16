@@ -58,7 +58,7 @@ var uiCmd = &cobra.Command{
 
 		ln, err := net.Listen("tcp", addr)
 		if err != nil {
-			return fmt.Errorf("cannot bind %s: %w\nAnother `labctl ui` may already be running — stop it first (e.g. pkill -f 'labctl ui'), or choose another --port", addr, err)
+			return fmt.Errorf("cannot bind %s: %w\nAnother `labctl ui` may already be running - stop it first (e.g. pkill -f 'labctl ui'), or choose another --port", addr, err)
 		}
 		_ = ln.Close()
 

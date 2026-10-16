@@ -41,7 +41,7 @@ func TestPinsWorkload(t *testing.T) {
 	}
 }
 
-// A deeply nested subcommand must still be pinned — the check walks to the root
+// A deeply nested subcommand must still be pinned - the check walks to the root
 // rather than looking only at the immediate parent.
 func TestPinsWorkloadWalksToRoot(t *testing.T) {
 	root := &cobra.Command{Use: "labctl"}

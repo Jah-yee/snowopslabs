@@ -29,4 +29,4 @@ spec:
             severity: critical
           annotations:
             summary: "Service ${TARGET_NAMESPACE}/${TARGET_WORKLOAD} has no ready endpoints"
-            description: "Nothing is behind this Service, so the ingress has nowhere to send traffic and every request returns 503. The pods may well be healthy — check whether the Service still selects them."
+            description: "Nothing is behind this Service, so the ingress has nowhere to send traffic and every request returns 503. The pods may well be healthy - check whether the Service still selects them."

@@ -20,8 +20,8 @@ var labResetYes bool
 var labCmd = &cobra.Command{
 	Use:   "lab",
 	Short: "Snapshot, restore, and reset the whole lab",
-	Long: `Lab-level state operations. A snapshot records intent — which
-platform components, apps, and scenarios are active — as a small YAML file
+	Long: `Lab-level state operations. A snapshot records intent - which
+platform components, apps, and scenarios are active - as a small YAML file
 in ~/.snowops/state/<cluster>/snapshots/. Restore replays the idempotent install paths to
 converge back to it; reset tears everything down to post-init (cluster +
 ingress only).`,
@@ -110,7 +110,7 @@ var labRestoreCmd = &cobra.Command{
 	Short: "Re-converge the lab to a snapshot's state",
 	Long: `Replays the snapshot through the normal install paths: platform
 components (ingress first), then apps, then scenarios. Everything is
-idempotent — restoring over a half-converged lab is safe, and already-active
+idempotent - restoring over a half-converged lab is safe, and already-active
 pieces are skipped.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -121,7 +121,7 @@ pieces are skipped.`,
 		printSnapshot(snap)
 		plan := lab.RestorePlan(snap)
 		if len(plan) == 0 {
-			fmt.Println("Snapshot is empty — nothing to restore.")
+			fmt.Println("Snapshot is empty - nothing to restore.")
 			return nil
 		}
 		fmt.Printf("\nRestoring %d steps...\n", len(plan))
@@ -151,7 +151,7 @@ var labResetCmd = &cobra.Command{
 	Short: "Tear the lab back to post-init (cluster + ingress only)",
 	Long: `Stops traffic, deactivates every scenario, destroys deployed apps,
 and uninstalls platform components (keeping ingress). The cluster itself
-stays up. Tip: take a snapshot first — labctl lab snapshot before-reset.`,
+stays up. Tip: take a snapshot first - labctl lab snapshot before-reset.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		current, warnings, err := collectCurrent("current")
 		if err != nil {

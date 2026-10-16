@@ -4,9 +4,9 @@ State:     unknown
 No lab operation recorded yet. Bring one up with: labctl lab up
 
 $ labctl lab up
-lab up started (run <run>). Following output — Ctrl-C stops it.
+lab up started (run <run>). Following output - Ctrl-C stops it.
 
-Run <run> — lab.up k3d (<state>)
+Run <run> - lab.up k3d (<state>)
 
 cluster up
 
@@ -94,9 +94,9 @@ $ labctl lab snapshots
 No snapshots. Take one with: labctl lab snapshot <name>
 
 $ labctl lab down
-lab down started (run <run>). Following output — Ctrl-C stops it.
+lab down started (run <run>). Following output - Ctrl-C stops it.
 
-Run <run> — lab.down k3d (<state>)
+Run <run> - lab.down k3d (<state>)
 
 cluster down
 

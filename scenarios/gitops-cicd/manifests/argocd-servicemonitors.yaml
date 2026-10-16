@@ -5,7 +5,7 @@
 ## Two details the chart does not make obvious, and both silently yield zero
 ## targets rather than an error: the metrics port is named `http-metrics`, not
 ## `metrics`, and each metrics endpoint is a SEPARATE Service from the workload
-## it belongs to — `argocd-repo-server-metrics`, not `argocd-repo-server`.
+## it belongs to - `argocd-repo-server-metrics`, not `argocd-repo-server`.
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:

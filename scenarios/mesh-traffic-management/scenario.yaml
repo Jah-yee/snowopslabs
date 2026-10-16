@@ -2,7 +2,7 @@ apiVersion: scenario.snowops.net/v2
 name: mesh-traffic-management
 verified: true
 displayName: "Mesh Traffic Management"
-description: "Run a canary release for {{.WorkloadName}} on Istio. labctl stages two versions behind one Service and a meshed load client; you write the routing. Shift a 90/10 weighted split, rehearse a slow release with a header-matched latency fault, and lock the canary down with STRICT mTLS — then prove each one from mesh telemetry rather than from the fact that a CR exists."
+description: "Run a canary release for {{.WorkloadName}} on Istio. labctl stages two versions behind one Service and a meshed load client; you write the routing. Shift a 90/10 weighted split, rehearse a slow release with a header-matched latency fault, and lock the canary down with STRICT mTLS, then prove each one from mesh telemetry rather than from the fact that a CR exists."
 category: networking
 prerequisites:
   platform:
@@ -78,7 +78,7 @@ checks:
     operator: ">"
     value: "0.02"
     pending: true
-    remediation: "v2 is serving almost nothing. Either no traffic has reached the canary yet — give the load client a minute — or the weights were shifted all the way back to v1. A canary at weight 0 is a rollback, not a release."
+    remediation: "v2 is serving almost nothing. Either no traffic has reached the canary yet, give the load client a minute, or the weights were shifted all the way back to v1. A canary at weight 0 is a rollback, not a release."
 
   - name: canary-is-a-weighted-minority
     type: promql
@@ -86,7 +86,7 @@ checks:
     operator: "<"
     value: "0.30"
     pending: true
-    remediation: "v2 is taking too large a share. Without a VirtualService the Service round-robins both subsets at roughly 50% — apply the weighted route, or lower v2's weight and re-apply."
+    remediation: "v2 is taking too large a share. Without a VirtualService the Service round-robins both subsets at roughly 50% - apply the weighted route, or lower v2's weight and re-apply."
 
   # reporter="source", unlike the split checks above: Istio applies a fault
   # delay at the sending proxy, so the receiving side never observes it and a
@@ -97,7 +97,7 @@ checks:
     operator: ">="
     value: "1500"
     pending: true
-    remediation: "Requests carrying 'x-canary: always' are not being delayed. Apply manifests/fault-injection.yaml from the snippets — and remember it replaces the VirtualService, so the header-matched route must sit above the weighted one."
+    remediation: "Requests carrying 'x-canary: always' are not being delayed. Apply manifests/fault-injection.yaml from the snippets, and remember it replaces the VirtualService, so the header-matched route must sit above the weighted one."
 
   - name: mtls-rejects-plaintext
     type: script
@@ -109,18 +109,18 @@ checks:
     remediation: "An unmeshed client was still served. Apply the STRICT PeerAuthentication from 'labctl scenario info mesh-traffic-management'."
 
 references:
-  - label: "Istio — Traffic management (VirtualService & DestinationRule)"
+  - label: "Istio - Traffic management (VirtualService & DestinationRule)"
     url: "https://istio.io/latest/docs/concepts/traffic-management/"
     note: "Subsets, weighted routes, and how first-match ordering in http[] decides which rule wins."
-  - label: "Istio — Fault injection"
+  - label: "Istio - Fault injection"
     url: "https://istio.io/latest/docs/tasks/traffic-management/fault-injection/"
     note: "Why a delay attaches to a whole HTTPRoute, which is what forces the header-matched route in this scenario."
-  - label: "Istio — Mutual TLS (PeerAuthentication)"
+  - label: "Istio - Mutual TLS (PeerAuthentication)"
     url: "https://istio.io/latest/docs/tasks/security/authentication/mtls-migration/"
     note: "PERMISSIVE to STRICT migration, and why a sidecar-less client is refused under STRICT."
 
 snippets:
-  - label: "1. Canary VirtualService — the 90/10 weighted split"
+  - label: "1. Canary VirtualService - the 90/10 weighted split"
     description: "The weighted route is what sends 10% of requests to v2 and the rest to v1. Until it exists the Service round-robins both versions evenly and the subsets go unused. Promote the canary by shifting the weights (they must sum to 100) and re-applying."
     path: manifests/virtualservice.yaml
     exercise: true
@@ -129,16 +129,16 @@ snippets:
     path: manifests/fault-injection.yaml
     exercise: true
   - label: "3. STRICT mTLS on the canary"
-    description: "After this, only clients with a sidecar identity can reach the canary pods: a plaintext client is refused at the proxy before it reaches the app. The meshed load client keeps working — enrolment, not network position, is what grants access."
+    description: "After this, only clients with a sidecar identity can reach the canary pods: a plaintext client is refused at the proxy before it reaches the app. The meshed load client keeps working - enrolment, not network position, is what grants access."
     path: manifests/peerauthentication.yaml
     exercise: true
 
 explore:
   urls:
-    - label: "Grafana — mesh traffic: split, latency and mTLS coverage"
+    - label: "Grafana - mesh traffic: split, latency and mTLS coverage"
       url: "http://grafana.{{.IngressURLSuffix}}/d/mesh-traffic"
   commands:
-    - label: "Apply the weighted split (do this first — nothing else stages it)"
+    - label: "Apply the weighted split (do this first, nothing else stages it)"
       command: "labctl scenario render mesh-traffic-management manifests/virtualservice.yaml --app {{.WorkloadName}} | kubectl apply -f -"
     - label: "Which version is serving? The staged client is already generating load"
       command: "kubectl -n {{.WorkloadNamespace}} logs deploy/{{.WorkloadName}}-v2 -c {{.WorkloadName}} --tail=5"
@@ -149,7 +149,7 @@ explore:
     - label: "Confirm mTLS mode once you have applied it"
       command: "kubectl -n {{.WorkloadNamespace}} get peerauthentication {{.WorkloadName}}-mtls -o jsonpath='{.spec.mtls.mode}{\"\\n\"}'"
   tips:
-    - "Start by applying the VirtualService. Without it the two subsets are defined but unreferenced, and the Service load-balances ~50/50 — which is why the split check fails before you do anything."
+    - "Start by applying the VirtualService. Without it the two subsets are defined but unreferenced, and the Service load-balances ~50/50, which is why the split check fails before you do anything."
     - "Promote the canary by shifting the weights and re-applying: 90/10 → 50/50 → 0/100. The weights must sum to 100."
     - "Istio takes the first matching entry in spec.http, so a header-matched route has to sit above the catch-all weighted route or it never fires."
     - "The fault delays only requests carrying 'x-canary: always'. The staged client sends one in twenty, which is what makes the v2 p99 climb while the median stays fast."

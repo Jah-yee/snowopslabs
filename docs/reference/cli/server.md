@@ -21,8 +21,8 @@ labctl ui --ui-dir src/ui/dist        # serve the UI live from disk during devel
 | `--port` | `3939` | port to serve on |
 | `--bind` | `127.0.0.1` | address to bind. `0.0.0.0` exposes it on the network and requires auth |
 | `--ui-dir` | `$LABCTL_UI_DIR` | serve the UI from this directory instead of the embedded bundle |
-| `--tls-cert` | — | TLS certificate (PEM); enables HTTPS when set with `--tls-key` |
-| `--tls-key` | — | TLS private key (PEM) |
+| `--tls-cert` | - | TLS certificate (PEM); enables HTTPS when set with `--tls-key` |
+| `--tls-key` | - | TLS private key (PEM) |
 
 The server refuses a network-exposed bind while authentication is off, because
 that would put cluster-control endpoints on the network.
@@ -35,7 +35,7 @@ Go rebuild.
 
 ## The API
 
-Everything the UI does is available under **`/api/v2`** — the only API surface.
+Everything the UI does is available under **`/api/v2`** - the only API surface.
 There is no unversioned `/api`; a request there gets the SPA shell, not JSON
 ([ADR-0013](../../adr/0013-remove-unversioned-api.md)).
 
@@ -57,7 +57,7 @@ Conventions, from [ADR-0006](../../adr/0006-api-conventions.md):
   200) and an opaque `?cursor`. Page until `nextCursor` comes back empty.
 - **Catalog reads carry an `ETag`** and honour `If-None-Match` (→ 304).
 - **Every request carries `X-Request-ID`**, echoed back and present on every log
-  line — a sane inbound value is honoured, otherwise one is minted.
+  line - a sane inbound value is honoured, otherwise one is minted.
 - **Events stream** over WebSocket at `/api/v2/ws`, with an SSE fallback at
   `/api/v2/stream`. Both are cursor-based: pass `?after=<seq>` to resume without
   a gap.
@@ -85,13 +85,13 @@ text format with no auth, so a local Prometheus can scrape it.
 | `labctl_http_request_duration_seconds` | histogram | `method`, `route` | API request latency |
 | `labctl_runs_total` | counter | `kind`, `status` | run-engine runs by kind and terminal outcome |
 | `labctl_run_duration_seconds` | histogram | `kind` | run-engine execution time |
-| `labctl_runs_in_flight` | gauge | — | runs currently executing |
+| `labctl_runs_in_flight` | gauge | - | runs currently executing |
 | `labctl_build_info` | gauge | `version` | always 1; carries the build version |
 
 Metrics and access logs are installed as middleware around the whole mux, so a
 new route cannot ship unmeasured.
 
-## `labctl users` — team mode
+## `labctl users`: team mode
 
 Accounts for the API and UI. Authentication is **off by default**; the server
 enforces it only when started with `LABCTL_AUTH=true`. These commands edit
@@ -125,7 +125,7 @@ The UI then shows a login screen, and the API requires a session cookie or
 authenticated user.
 
 > OIDC and SSO are out of scope. Sessions are held in memory, so restarting the
-> server logs everyone out. Serve behind TLS for anything beyond localhost — the
+> server logs everyone out. Serve behind TLS for anything beyond localhost - the
 > cookie is `HttpOnly` and `SameSite=Strict`, and `Secure` only when the request
 > arrived over TLS. See the
 > [security posture](../../architecture/ARCHITECTURE.md#security-posture) for

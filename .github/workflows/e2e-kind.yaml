@@ -1,4 +1,4 @@
-# End-to-end test on kind — the real-cluster gate (docs/TESTING.md).
+# End-to-end test on kind - the real-cluster gate (docs/TESTING.md).
 #
 # kind is a headless, CI-friendly runtime, so we can run a real lab lifecycle in
 # GitHub Actions: create a cluster, load the app image, activate a scenario,
@@ -8,8 +8,8 @@
 # slower than the unit suite, and a flake should not block merges.
 #
 # It uses the env-promotion scenario on purpose: its checks are all kubectl-based
-# (namespaces, deployment readiness, ConfigMaps) — no Prometheus or ingress
-# traffic required — so the run is deterministic on a vanilla kind cluster.
+# (namespaces, deployment readiness, ConfigMaps) - no Prometheus or ingress
+# traffic required - so the run is deterministic on a vanilla kind cluster.
 name: e2e-kind
 
 on:
@@ -75,7 +75,7 @@ jobs:
         # env-promotion's newer-release-reached-prod check is declared
         # `pending: true`: it only passes once a release newer than the v1.0.0
         # baseline has reached prod, so `verify` on a freshly activated scenario
-        # can never exit 0. Walk the drill the way a learner does — that is what
+        # can never exit 0. Walk the drill the way a learner does - that is what
         # this job is actually here to prove works end to end: build a versioned
         # image, load it into the cluster, roll it out per environment, and
         # record the release in each env's ConfigMap.

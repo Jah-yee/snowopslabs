@@ -24,10 +24,10 @@ case "$*" in
     ;;
   "incident status")
     if [ -f "$LAB/active" ] && { [ -f "$LAB/fixed" ] || [ "$DETECTION_PASSES_BROKEN" = yes ]; }; then
-      echo 'RESOLVED — detection check "c" passes. Nice work.'
+      echo 'RESOLVED - detection check "c" passes. Nice work.'
       rm -f "$LAB/active"
     elif [ -f "$LAB/active" ]; then
-      echo 'NOT RESOLVED — detection check "c" fails'
+      echo 'NOT RESOLVED - detection check "c" fails'
     else
       echo 'No incident is active.'
     fi

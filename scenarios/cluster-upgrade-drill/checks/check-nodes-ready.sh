@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# check-nodes-ready.sh — exit 0 only if every node is Ready and none is
+# check-nodes-ready.sh - exit 0 only if every node is Ready and none is
 # cordoned. After a rolling upgrade the cluster must be back to full, healthy
 # capacity; a NotReady or SchedulingDisabled node means the roll did not finish.
 

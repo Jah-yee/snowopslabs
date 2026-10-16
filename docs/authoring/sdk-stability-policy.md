@@ -6,14 +6,14 @@ lets **content and engine evolve on independent clocks**.
 
 ## What is covered (the public surface)
 
-- **The content schemas** — `scenario.yaml`, `fault.yaml`,
+- **The content schemas**: `scenario.yaml`, `fault.yaml`,
   `path.yaml` and `challenge.yaml`, each identified by `apiVersion`
   (e.g. `scenario.snowops.net/v2`) and published as a JSON Schema under
   [`sdk/schemas/`](../../src/sdk/schemas/).
-- **The check types** — `http`, `kubectl`, `promql`, `script` and their fields.
-- **The platform provider contract** — the four scripts and the environment
+- **The check types**: `http`, `kubectl`, `promql`, `script` and their fields.
+- **The platform provider contract**: the four scripts and the environment
   variables that select a provider.
-- **The public Go SDK** — packages under [`pkg/`](../../src/pkg/):
+- **The public Go SDK**: packages under [`pkg/`](../../src/pkg/):
   `pkg/checks`, `pkg/scenario`, `pkg/extension`.
 
 Anything under `internal/` is **not** public and may change at any time.

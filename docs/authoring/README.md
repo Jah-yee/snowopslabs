@@ -1,28 +1,28 @@
 # Authoring Guide
 
-How to create content for SnowOps Labs — scenarios, incidents, learning paths,
-platform modules — and the stability guarantees you can rely on.
+How to create content for SnowOps Labs (scenarios, incidents, learning paths,
+platform modules) and the stability guarantees you can rely on.
 
-> New here? Start with [Your First Scenario](first-scenario.md) — `labctl
+> New here? Start with [Your First Scenario](first-scenario.md) - `labctl
 > scenario new` scaffolds valid, verify-ready content in seconds.
 
 ## Contents
 
-- [Your First Scenario](first-scenario.md) — the fast path: scaffold → edit →
+- [Your First Scenario](first-scenario.md): the fast path: scaffold → edit →
   validate → verify → share.
-- [Scenario Review](scenario-review.md) — the end-to-end quality gate: activate
+- [Scenario Review](scenario-review.md): the end-to-end quality gate: activate
   on a live lab, tamper-test the checks, score out of 5, improve to 4.8.
-- [Incident Review](incident-review.md) — the same gate for a fault: diagnose it
+- [Incident Review](incident-review.md): the same gate for a fault: diagnose it
   blind, false-fix test the detection check, exercise the escape hatch.
-- [Learning Review](learning-review.md) — the same gate for a path or challenge:
+- [Learning Review](learning-review.md): the same gate for a path or challenge:
   sweep for checks that are green before the learner works, calibrate par time
   against a real run.
-- [Extension Seams](extensions.md) — the resolver and hook interfaces that let
+- [Extension Seams](extensions.md): the resolver and hook interfaces that let
   custom builds plug in without forking the engine.
-- [SDK & Schema Stability Policy](sdk-stability-policy.md) — what we keep stable
+- [SDK & Schema Stability Policy](sdk-stability-policy.md): what we keep stable
   and how the schema versions.
 - JSON Schema (for editor validation): the per-kind schemas under
-  [`sdk/schemas/`](../../src/sdk/schemas/) — `scenario`, `incident`, `path`,
+  [`sdk/schemas/`](../../src/sdk/schemas/): `scenario`, `incident`, `path`,
   `challenge`, and the shared `check`.
 - Validate all content with `labctl validate` (checks schema, cross-references
   and templates; exits non-zero with `file:line: [kind/name] message`). See
@@ -50,7 +50,7 @@ platform modules — and the stability guarantees you can rely on.
   [scenario schema → References and snippets](../reference/scenario-schema.md#references-and-snippets).
 - A **platform provider** is `platform/<category>/<provider>/` with
   `install.sh`, `uninstall.sh`, `status.sh` and `values.yaml`.
-- Content is **cross-platform, idempotent and declarative** — never hardcode
+- Content is **cross-platform, idempotent and declarative**, never hardcode
   logic in Go (see [CONTRIBUTING.md](../../CONTRIBUTING.md) golden rules).
 
 ## Distribution

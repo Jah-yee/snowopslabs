@@ -2,7 +2,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { defineConfig, devices } from '@playwright/test'
 
-// Journey-layer test config (test layer 4b — see docs/TESTING.md).
+// Journey-layer test config (test layer 4b - see docs/TESTING.md).
 //
 // Playwright drives a real browser in two projects. `chromium` runs against
 // the built SPA served by `vite preview`, with backend responses stubbed by
@@ -91,7 +91,7 @@ export default defineConfig({
   webServer: [{
     // Bind the preview to 127.0.0.1 explicitly. Left to its default host,
     // `vite preview` binds `localhost`, which on macOS resolves to IPv6 `::1`
-    // only — while `url`/`baseURL` below reach for IPv4 `127.0.0.1`, so the
+    // only - while `url`/`baseURL` below reach for IPv4 `127.0.0.1`, so the
     // health check never connects and the run times out. Pinning the host to
     // 127.0.0.1 keeps server and client on the same address on macOS and Linux
     // alike (golden rule 1).

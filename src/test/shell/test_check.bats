@@ -14,7 +14,7 @@ teardown() {
   rm -rf "$WORK"
 }
 
-# check <changed-file>... — run the gate over a list of changed paths.
+# check <changed-file>... - run the gate over a list of changed paths.
 check() {
   CHANGED_FILES="$(printf '%s\n' "$@")" COMMIT_MESSAGES="${MESSAGES:-}" \
     TESTS_NOT_NEEDED="${WAIVER:-}" run sh "$CHECK"

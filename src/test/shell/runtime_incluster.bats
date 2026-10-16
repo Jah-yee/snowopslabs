@@ -3,7 +3,7 @@
 #
 # The in-cluster runtime (team mode) completes the runtime coverage alongside
 # runtime_lifecycle.bats (k3d, kind). Its whole contract is negative: it must
-# use the hosting cluster and must NEVER create or delete one — deleting the
+# use the hosting cluster and must NEVER create or delete one - deleting the
 # cluster the server runs in would be catastrophic. These tests pin that.
 
 load 'helpers/stub'

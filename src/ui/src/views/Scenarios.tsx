@@ -19,8 +19,8 @@ interface ScenariosProps {
 }
 
 /** A snippet/component path is stored relative to the scenario's own directory
- *  (e.g. "manifests/scaledobject.yaml"). Show it from the repo root instead —
- *  "scenarios/<name>/manifests/scaledobject.yaml" — so a learner can find the
+ *  (e.g. "manifests/scaledobject.yaml"). Show it from the repo root instead -
+ *  "scenarios/<name>/manifests/scaledobject.yaml" - so a learner can find the
  *  file directly. Paths already rooted at "scenarios/" are left untouched. */
 function repoPath(scenarioName: string, path: string): string {
   return path.startsWith('scenarios/') ? path : `scenarios/${scenarioName}/${path}`
@@ -90,7 +90,7 @@ export function Scenarios({ notify, requestConfirm }: ScenariosProps) {
     try { s = await api.getScenario(name) } catch { /* fall back to a plain confirm */ }
     const plat = s?.prerequisites?.platform ?? []
     // Apps the scenario names literally. An app that came from the workload
-    // binding is not a prerequisite — it is the choice offered below.
+    // binding is not a prerequisite - it is the choice offered below.
     const pinned = s?.pinnedApps ?? []
     const comps = allComponents(s)
     const paramDefs = s?.parameters ?? []
@@ -113,7 +113,7 @@ export function Scenarios({ notify, requestConfirm }: ScenariosProps) {
           />
           {paramDefs.length > 0 && (
             <div>
-              <div className="field-label">Parameters <span className="hint-text">(tune these to experiment — defaults reproduce the standard scenario)</span></div>
+              <div className="field-label">Parameters <span className="hint-text">(tune these to experiment - defaults reproduce the standard scenario)</span></div>
               <ParamForm parameters={paramDefs} valuesRef={activateParamsRef} />
             </div>
           )}
@@ -133,7 +133,7 @@ export function Scenarios({ notify, requestConfirm }: ScenariosProps) {
               <ul>
                 {plat.map(p => <li key={`p-${p}`}>Platform: <code>{p}</code></li>)}
               </ul>
-              <div className="field-help">Platform components are not installed automatically — add any missing ones in the Platform tab, then activate.</div>
+              <div className="field-help">Platform components are not installed automatically - add any missing ones in the Platform tab, then activate.</div>
             </div>
           )}
         </div>
@@ -163,7 +163,7 @@ export function Scenarios({ notify, requestConfirm }: ScenariosProps) {
         notify('success', 'All checks passed', `${name} is in its expected state.`)
       } else {
         const failed = res.results.filter(c => !c.pass).length
-        notify('info', `${failed} of ${res.results.length} checks failing`, 'Checks can fail while pods are still starting — re-run in a moment to let them settle.')
+        notify('info', `${failed} of ${res.results.length} checks failing`, 'Checks can fail while pods are still starting - re-run in a moment to let them settle.')
       }
     } catch (e) {
       notify('error', 'Verify failed', e instanceof Error ? e.message : String(e))
@@ -177,7 +177,7 @@ export function Scenarios({ notify, requestConfirm }: ScenariosProps) {
       await navigator.clipboard.writeText(cmd)
       notify('success', 'Copied to clipboard', '')
     } catch {
-      notify('error', 'Copy failed', 'Clipboard access denied — copy the command manually.')
+      notify('error', 'Copy failed', 'Clipboard access denied - copy the command manually.')
     }
   }
 
@@ -208,7 +208,7 @@ export function Scenarios({ notify, requestConfirm }: ScenariosProps) {
       {loadError && (
         <div className="banner banner-warn" role="alert">
           <Icon name="alert-triangle" size={16} className="banner-icon" />
-          <span className="banner-body">Refresh failed ({loadError}) — showing last known data.</span>
+          <span className="banner-body">Refresh failed ({loadError}) - showing last known data.</span>
           <span className="banner-actions">
             <button className="btn btn-sm" onClick={load} disabled={refreshing}>Retry</button>
           </span>
@@ -360,7 +360,7 @@ export function Scenarios({ notify, requestConfirm }: ScenariosProps) {
 }
 
 /** The scenario detail body, grouped into tabs. A rich scenario carries ten
- *  sections at once — flat, that is a long scroll with the action footer far
+ *  sections at once - flat, that is a long scroll with the action footer far
  *  from the content it acts on. Four tabs match how the sections are used: read
  *  it, see how it is built, poke at the running cluster, grade it. A tab with
  *  nothing behind it is not rendered. */
@@ -657,8 +657,8 @@ function CheckResults({ result }: { result: ScenarioVerifyResult }) {
         <Icon name={result.passed ? 'check-circle' : 'alert-triangle'} size={16} className="banner-icon" />
         <span className="banner-body">
           {result.passed
-            ? <>All {total} checks passed — the scenario is in its expected state.</>
-            : <>{passed} of {total} checks passing. Checks can fail while pods are still starting — re-run in a moment.</>}
+            ? <>All {total} checks passed - the scenario is in its expected state.</>
+            : <>{passed} of {total} checks passing. Checks can fail while pods are still starting - re-run in a moment.</>}
         </span>
       </div>
       <div className="table-scroll">
@@ -671,8 +671,8 @@ function CheckResults({ result }: { result: ScenarioVerifyResult }) {
               <tr key={c.name}>
                 <td>{c.name}{c.type ? <span className="hint-text"> ({c.type})</span> : null}</td>
                 <td><Badge variant={c.pass ? 'running' : 'stopped'}>{c.pass ? 'PASS' : 'FAIL'}</Badge></td>
-                <td className="td-muted">{c.error ? <span className="verify-error">{c.error}</span> : (c.got || '—')}</td>
-                <td className="td-muted">{c.want || '—'}</td>
+                <td className="td-muted">{c.error ? <span className="verify-error">{c.error}</span> : (c.got || '-')}</td>
+                <td className="td-muted">{c.want || '-'}</td>
               </tr>
             ))}
           </tbody>

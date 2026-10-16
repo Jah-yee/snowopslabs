@@ -4,8 +4,8 @@
 # Reliability guard for platform teardown (W3, reliability-first slice).
 #
 # Every provider's uninstall.sh must (1) be a safe idempotent no-op under
-# stubs — running it when nothing is installed, or running it twice, must not
-# error — and (2) never issue an *unbounded* `kubectl delete namespace`, which
+# stubs - running it when nothing is installed, or running it twice, must not
+# error - and (2) never issue an *unbounded* `kubectl delete namespace`, which
 # blocks forever on a namespace stuck Terminating and hangs `labctl lab down`.
 # These run over ALL providers so a new one cannot regress the guarantee.
 

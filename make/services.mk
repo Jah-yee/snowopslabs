@@ -1,4 +1,4 @@
-# Services targets — manage shared services (redis, postgres, etc.)
+# Services targets - manage shared services (redis, postgres, etc.)
 # Each service lives under src/services/<name>/ and has install.sh, uninstall.sh, status.sh
 
 SERVICES_DIR := src/services
