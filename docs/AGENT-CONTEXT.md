@@ -43,6 +43,7 @@ contradict themselves, or you are editing the code in question.
 | Fix a dashboard, metric or trace | [R13](runbooks/R13-observability-pipeline.md) | - |
 | Understand the run engine | [architecture §3](architecture/ARCHITECTURE.md), [R01](runbooks/R01-run-engine-and-cancellation.md) | `src/internal/run/` |
 | Write or change Go code | [Go conventions](GO-CONVENTIONS.md) | - |
+| Write or edit docs, content text or user-facing messages | [WRITING](WRITING.md), the `docs-sync` skill | - |
 | Write tests | [TESTING.md](TESTING.md) | - |
 | Ship a release | [RELEASING.md](../RELEASING.md) | - |
 | Accept a branch for release on a live lab | [release acceptance](release-acceptance.md) | - |
@@ -119,6 +120,9 @@ These hold everywhere. Breaking one is a review rejection, not a discussion.
   story behind a change.
 - No em dashes in any tracked file. Use a comma, a colon, parentheses or a
   plain " - ". `make docs-check` runs `scripts/em-dash-check.sh`.
+- Text a person reads follows [WRITING](WRITING.md). `make docs-check` runs
+  `scripts/prose-check.sh`, which rejects the most common padding and hype
+  phrases; the rest is for the writer and the reviewer.
 
 ---
 
@@ -128,11 +132,15 @@ These hold everywhere. Breaking one is a review rejection, not a discussion.
    `make test-e2e` too for a UI change). `make test` ends with
    [the gates on a change](TESTING.md#gates-on-a-change): the change brought
    tests with it, and at least 85% of the lines it touches are tested.
-2. Every doc the change touches is updated: schema, CLI reference, runbook.
+2. Every doc the change touches is updated, using the table in the
+   `docs-sync` skill (`.claude/skills/docs-sync/SKILL.md`): schema, CLI
+   reference, install guides, troubleshooting, runbooks. New or changed text
+   follows [WRITING](WRITING.md).
 3. A notable decision gets an ADR under `docs/adr/`.
-4. `make docs-check` passes. It fails a change to `src/` or content with no
-   matching documentation change, catches doc paths the website publishes
-   that no longer exist, and rejects em dashes.
+4. `make docs-check` passes. It checks that relative links resolve, that every
+   path the website publishes still exists, and that no tracked file has an
+   em dash or a listed padding phrase. It cannot tell whether a doc is still
+   true, so step 2 is on you.
 5. If you moved or renamed a published doc, update `scripts/docs-manifest.mjs`
    in the `snowopslabs-web` repository. The website reads these files directly;
    a rename with no manifest entry silently drops the page.

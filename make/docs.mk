@@ -1,10 +1,10 @@
 # Documentation gates. Documentation is the source of truth, so it is checked
 # like code is.
 
-.PHONY: docs-check docs-links docs-manifest docs-dashes
+.PHONY: docs-check docs-links docs-manifest docs-dashes docs-prose
 
 ## docs-check: every documentation gate
-docs-check: docs-links docs-manifest docs-dashes
+docs-check: docs-links docs-manifest docs-dashes docs-prose
 
 ## docs-links: no relative link in the docs points at a missing file
 docs-links:
@@ -17,3 +17,7 @@ docs-manifest:
 ## docs-dashes: no tracked text file contains an em dash
 docs-dashes:
 	@sh scripts/em-dash-check.sh
+
+## docs-prose: no padding or hype phrases in docs and content (docs/WRITING.md)
+docs-prose:
+	@sh scripts/prose-check.sh

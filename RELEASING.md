@@ -113,7 +113,10 @@ squash merge removes the release commit, so the workflow fails and says to run
    [`Stable` workflow](.github/workflows/stable.yaml) then fast-forwards the
    `stable` branch to the tag, which is what learners clone and merge. A
    pre-release does not move `stable`.
-6. Announce; update docs if needed.
+6. The same workflow asks snowopslabs-web to sync, so labs.snowops.net shows
+   the new release's docs, catalog and notes within minutes (see
+   [The website](#the-website)).
+7. Announce the release.
 
 ## Verifying a download
 
@@ -123,9 +126,26 @@ Reviewers can verify an artifact against the published checksums:
 sha256sum -c checksums.txt   # (shasum -a 256 -c on macOS)
 ```
 
-## Not yet automated (post-first-delivery)
+## The website
 
-Deferred until after the first feedback round - tracked in the W8 tasks:
+labs.snowops.net is built from the private snowopslabs-web repository. It
+publishes the docs, the catalog and the release notes from `stable`, so what
+the site says always matches the release people install.
+
+When `stable` moves, [`notify-website.yaml`](.github/workflows/notify-website.yaml)
+runs `scripts/notify-website.sh`, which sends a `repository_dispatch` to the
+website. The website's sync workflow then pulls `stable`, builds, and deploys.
+It also runs once a day, so a missed dispatch only delays the update.
+
+The dispatch needs the `WEBSITE_DISPATCH_TOKEN` repository secret here: a
+fine-grained personal access token with **Contents: read and write** on
+`snowopscloud/snowopslabs-web` only. Without it the workflow passes with a
+notice. When the token expires, the workflow fails with HTTP 401 or 403;
+create a new one and update the secret.
+
+## Not yet automated
+
+Deferred until after the first feedback round:
 
 - **cosign** signing of artifacts and an **SBOM** (goreleaser supports both; they
   need signing-key and tooling setup).

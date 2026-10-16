@@ -30,3 +30,12 @@ jobs:
           TAG: ${{ github.event.release.tag_name }}
         run: |
           git push origin "refs/tags/${TAG}^{commit}:refs/heads/stable"
+
+  # labs.snowops.net publishes from stable, so ask it to sync now rather than
+  # on its daily schedule.
+  website:
+    name: tell the website
+    needs: stable
+    uses: ./.github/workflows/notify-website.yaml
+    secrets:
+      WEBSITE_DISPATCH_TOKEN: ${{ secrets.WEBSITE_DISPATCH_TOKEN }}

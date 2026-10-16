@@ -84,6 +84,11 @@ most often broken:
   "no longer", no task or ticket numbers. That belongs in the commit message.
 - No em dashes anywhere: docs, content, comments, CLI and UI text. Use a comma,
   a colon, parentheses or a plain " - ". `make docs-check` enforces it.
+- Everything a person reads (docs, READMEs, scenario and fault text, CLI and UI
+  messages) follows [WRITING](docs/WRITING.md): plain, specific, written like
+  an engineer talking to a colleague. No hype words, no filler, no opening or
+  closing paragraphs that say nothing. `make docs-check` rejects the worst
+  phrases.
 - Every change ships its tests in the same commit, at the layer that owns the
   behaviour. [TESTING](docs/TESTING.md#what-each-change-needs) has the table of
   what each kind of change needs; `make test-check` and the changed-lines gate
@@ -99,6 +104,10 @@ most often broken:
   credentials.
 - No new coverage exceptions or exclusions. Floors only go up.
 - Never land code without updating the docs it affects in the same change.
+  The `docs-sync` skill has the table of what to update for each kind of
+  change; use it at the end of every task that touched code, content or
+  config. The website publishes these docs from the `stable` branch, so what
+  you write here is what users read after the next release.
 - Don't commit build artifacts (`bin/`, `dist/`, `coverage.out`, `src/ui/dist/`).
 
 ## Traps that cost a day each
