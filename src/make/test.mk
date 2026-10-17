@@ -87,13 +87,7 @@ test-e2e:
 
 ## fuzz: short fuzz run over every fuzz target
 fuzz:
-	@echo "==> Fuzzing parsers ($(or $(FUZZTIME),20s) each)"
-	@for pkg in $$(go list ./... ); do \
-	  for target in $$(go test -list 'Fuzz.*' $$pkg 2>/dev/null | grep '^Fuzz' || true); do \
-	    echo "  $$pkg $$target"; \
-	    go test -run '^$$' -fuzz "^$$target$$" -fuzztime=$(or $(FUZZTIME),20s) $$pkg || exit 1; \
-	  done; \
-	done
+	@FUZZTIME="$(FUZZTIME)" sh scripts/fuzz.sh
 
 ## lint: the Go and UI static-analysis gates for this module. The repo-wide
 ## shell gate (lint-shell) and gofmt sweep (fmt-check) run from the root
