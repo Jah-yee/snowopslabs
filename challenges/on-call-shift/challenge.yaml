@@ -1,0 +1,16 @@
+name: on-call-shift
+displayName: "On-call shift"
+description: >
+  You have just taken the pager. go-api has been down since the overnight
+  maintenance, and the people who ran it have gone home. More than one
+  change went out, and nobody wrote down which. Get go-api serving, and keep
+  it serving: the shift ends when every change that broke it is fixed.
+category: workload
+parTime: "12m"
+silent: true
+setup:
+  type: incident
+  refs: [missing-secret-key, liveness-probe-kill]
+grading:
+  useDetectionCheck: true
+hintPenalty: 5

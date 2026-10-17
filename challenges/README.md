@@ -48,6 +48,7 @@ hintPenalty: 5                     # % score deducted per hint (default 5)
 | `restore-broken-deploy` | workload | 6m | `bad-deploy-rollout` incident |
 | `find-the-memory-leak` | resources | 8m | `oom-kill` incident |
 | `make-the-slo-green` | config | 8m | `service-selector-broken` incident |
+| `on-call-shift` | workload | 12m | two incidents from different categories, injected together and not named (`silent`) |
 
 ### Several faults at once
 
