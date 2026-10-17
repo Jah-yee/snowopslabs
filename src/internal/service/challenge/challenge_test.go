@@ -632,3 +632,43 @@ func TestGrader_NextHint(t *testing.T) {
 		}
 	})
 }
+
+// A silent challenge's check names and messages name its faults, so they are
+// withheld until the run passes. Which faults are still broken is shown.
+func TestGrader_Submit_SilentWithholdsTheFaultsUntilAPass(t *testing.T) {
+	l := newLab(t)
+	l.start(t, "shift")
+	if err := os.Remove(filepath.Join(l.root, "BROKEN")); err != nil {
+		t.Fatal(err)
+	}
+	sub, err := l.grader.Submit(t.Context(), "olive")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []struct {
+		name string
+		pass bool
+	}{{"fault 1 of 2", true}, {"fault 2 of 2", false}}
+	for i, w := range want {
+		r := sub.Checks[i]
+		if r.Name != w.name || r.Pass != w.pass {
+			t.Errorf("check %d = %q pass=%v, want %q pass=%v", i, r.Name, r.Pass, w.name, w.pass)
+		}
+		for _, leak := range []string{"marker", "batch", "BATCH"} {
+			if strings.Contains(r.Name+r.Error+r.Explanation+r.Got+r.Want+r.Remediation, leak) {
+				t.Errorf("check %d names the fault (%q): %+v", i, leak, r)
+			}
+		}
+	}
+
+	if err := os.Remove(filepath.Join(l.root, "BATCH")); err != nil {
+		t.Fatal(err)
+	}
+	sub, err = l.grader.Submit(t.Context(), "olive")
+	if err != nil || !sub.Passed {
+		t.Fatalf("Submit() = %+v, %v; want a pass", sub, err)
+	}
+	if sub.Checks[0].Name != "marker-gone" || sub.Checks[1].Name != "batch-marker-gone" {
+		t.Errorf("a passing run still hides its checks: %q, %q", sub.Checks[0].Name, sub.Checks[1].Name)
+	}
+}

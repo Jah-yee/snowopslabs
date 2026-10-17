@@ -85,6 +85,9 @@ func (g *Grader) Submit(ctx context.Context, user string) (*Submission, error) {
 	sub := &Submission{Challenge: c, Checks: results}
 
 	if passed < len(results) {
+		if c.Silent {
+			sub.Checks = withheld(results)
+		}
 		sub.Record, err = g.Engine.Attempt(passed, len(results))
 		return sub, err
 	}
@@ -258,4 +261,17 @@ func (g *Grader) turnHint(refs []string, used int) (*incident.Hint, error) {
 			n++
 		}
 	}
+}
+
+// withheld is a silent challenge's results with what names its faults taken
+// out: each check is "fault N of M", passing or not.
+func withheld(results []checks.Result) []checks.Result {
+	out := make([]checks.Result, len(results))
+	for i, r := range results {
+		out[i] = checks.Result{Name: fmt.Sprintf("fault %d of %d", i+1, len(results)), Type: r.Type, Pass: r.Pass}
+		if !r.Pass {
+			out[i].Error = "not fixed yet"
+		}
+	}
+	return out
 }
