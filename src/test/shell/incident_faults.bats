@@ -33,6 +33,7 @@ if [ -n "${FAIL_ON:-}" ]; then
   case "$*" in *"$FAIL_ON"*) echo "error: stubbed failure" >&2; exit 1 ;; esac
 fi
 healthy_selector='{"app.kubernetes.io/name":"cart","tier":"web"}'
+healthy_probe='{"httpGet":{"path":"/health","port":"http"}}'
 case "$*" in
   *"apply -n monitoring -f -"*) cat >>"$STUB_DIR/applied-monitoring.yaml" ;;
   *"apply"*"-f -"*) cat >>"$STUB_DIR/applied.yaml" ;;
@@ -85,6 +86,16 @@ case "$*" in
   *"get nodes"*"allocatable.cpu"*) printf '%s' "${NODE_ALLOCATABLE-4 3800m }" ;;
   *"get pods"*"spec.nodeName="*) [ -z "${UNSCHEDULED_PODS-}" ] || printf '%s\n' "$UNSCHEDULED_PODS" ;;
 
+  # liveness-probe-kill
+  *"get deploy"*"livenessProbe.httpGet.path}"*) printf '%s' "${LIVENESS_PATH-/health}" ;;
+  *"get deploy"*"livenessProbe.httpGet.port}"*) printf 'http' ;;
+  *"get deploy"*"livenessProbe.httpGet.scheme}"*) printf 'HTTP' ;;
+  *"get deploy"*"livenessProbe}"*) printf '%s' "${LIVENESS_PROBE-$healthy_probe}" ;;
+  *"get deploy"*'ports[?(@.name=="http")].containerPort}'*) printf '8080' ;;
+  *"get pods"*"status.phase=Running"*) printf 'cart-abc' ;;
+  *"get --raw"*) [ "${POD_GET:-ok}" = ok ] || exit 1 ;;
+  *"get svc cart"*"ports[0].port}"*) printf '8080' ;;
+
   # noisy-neighbor
   *"get pods"*"custom-columns=NAME"*) [ -z "${VICTIM_PODS-set}" ] || echo "${VICTIM_PODS-cart-abc node-1 Running}" ;;
   *"get nodes"*) echo "node/node-1" ;;
@@ -114,6 +125,7 @@ oom-kill|set resources deploy/cart
 network-blackhole|rollout restart deploy/cart
 noisy-neighbor|apply -f -
 pending-unschedulable|patch deploy cart --type=strategic
+liveness-probe-kill|patch deploy cart --type=json
 EOF
 }
 
@@ -711,4 +723,75 @@ neighbor() {
   [[ "$output" == *"set resources deploy/cart --requests=cpu=<value>"* ]] || false
   refute_called kubectl "set resources"
   refute_called kubectl "scale deploy"
+}
+
+# ── liveness-probe-kill ───────────────────────────────────────────────────────
+
+@test "liveness-probe-kill: inject renames the probe path and records the original probe" {
+  inject liveness-probe-kill
+  [ "$status" -eq 0 ]
+  assert_called kubectl '"path":"/spec/template/spec/containers/0/livenessProbe/httpGet/path","value":"/healthz"'
+  assert_called kubectl "--from-literal=original-path=/health"
+  assert_called kubectl '--from-literal=original-probe={"httpGet":{"path":"/health","port":"http"}}'
+}
+
+@test "liveness-probe-kill: inject starts traffic at the workload's Service" {
+  inject liveness-probe-kill
+  assert_called kubectl "delete job traffic-k6"
+  grep -q 'http://cart.shop.svc.cluster.local:8080/' "$STUB_DIR/applied.yaml"
+}
+
+@test "liveness-probe-kill: inject refuses a workload with no HTTP liveness probe" {
+  LIVENESS_PATH="" inject liveness-probe-kill
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"has no HTTP liveness probe"* ]] || false
+  refute_called kubectl "patch"
+  refute_called kubectl "create configmap"
+}
+
+@test "liveness-probe-kill: a second inject changes nothing" {
+  LIVENESS_PATH=/healthz inject liveness-probe-kill
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already injected"* ]] || false
+  refute_called kubectl "patch"
+  refute_called kubectl "create configmap"
+}
+
+@test "liveness-probe-kill: resolve puts back the recorded path while the probe fails" {
+  RECORD_original_path=/health LIVENESS_PATH=/healthz POD_GET=fail resolve liveness-probe-kill
+  [ "$status" -eq 0 ]
+  assert_called kubectl '"op":"replace","path":"/spec/template/spec/containers/0/livenessProbe/httpGet/path","value":"/health"'
+}
+
+@test "liveness-probe-kill: resolve after a half fix to a path that still fails puts back the original" {
+  RECORD_original_path=/health LIVENESS_PATH=/healthy POD_GET=fail resolve liveness-probe-kill
+  [ "$status" -eq 0 ]
+  assert_called kubectl '"value":"/health"'
+}
+
+@test "liveness-probe-kill: resolve leaves a path the learner chose that the app answers" {
+  RECORD_original_path=/health LIVENESS_PATH=/ready resolve liveness-probe-kill
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already fixed"* ]] || false
+  refute_called kubectl "patch"
+  assert_called kubectl "delete configmap labfault-liveness-probe-kill"
+}
+
+@test "liveness-probe-kill: resolve puts back a probe the learner deleted" {
+  RECORD_original_path=/health RECORD_original_probe='{"httpGet":{"path":"/health","port":"http"}}' \
+    LIVENESS_PROBE="" LIVENESS_PATH="" resolve liveness-probe-kill
+  [ "$status" -eq 0 ]
+  assert_called kubectl '"op":"add","path":"/spec/template/spec/containers/0/livenessProbe","value":{"httpGet":{"path":"/health","port":"http"}}'
+}
+
+@test "liveness-probe-kill: resolve with no record changes nothing and says how to fix it" {
+  LIVENESS_PATH=/healthz POD_GET=fail resolve liveness-probe-kill
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"No record of the original probe path"* ]] || false
+  refute_called kubectl "patch"
+}
+
+@test "liveness-probe-kill: resolve stops the traffic inject started" {
+  resolve liveness-probe-kill
+  assert_called kubectl "delete job traffic-k6"
 }

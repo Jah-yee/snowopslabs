@@ -220,6 +220,7 @@ hatch from every state a learner can leave behind, and scores the result out of
 | `service-selector-broken` | config | medium | the workload's Service selector stops matching its pods - endpoints empty, pods perfectly healthy (sneaky) |
 | `noisy-neighbor` | resources | low | a batch tenant lands on the workload's node with big CPU requests and no limits, and takes the machine |
 | `pending-unschedulable` | resources | medium | a launch scales the workload to 4 and raises its CPU request past any node's allocatable CPU, so the new replicas stay Pending (`Insufficient cpu`) while the old ones serve; nothing crashes |
+| `liveness-probe-kill` | workload | high | a values update points the liveness probe at `/healthz`, a path the app does not serve; the kubelet kills a healthy app every 40 seconds or so (exit 0, `Liveness probe failed: ... statuscode: 404`) and k6 traffic sees bursts of 5xx |
 
 `dns-blackhole` and `pvc-full` were considered and dropped: DNS exec probes
 and PVC behaviour vary too much with the local storage and CNI setup for

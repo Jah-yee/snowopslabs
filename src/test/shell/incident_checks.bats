@@ -404,3 +404,107 @@ STUB
   [ "$status" -ne 0 ]
   [[ "$output" == *"deployment shop/cart not found"* ]] || false
 }
+
+# ── liveness-probe-kill ───────────────────────────────────────────────────────
+
+# PROBE is the container's liveness probe as JSON; PROBE_PATH, PORT and SCHEME
+# are its httpGet fields; GET=fail makes the pod answer the path with an error.
+liveness_stub() {
+  stub_script kubectl <<'STUB'
+default_probe='{"httpGet":{}}'
+case "$*" in
+  *"livenessProbe.httpGet.path}"*) printf '%s' "${PROBE_PATH-/health}" ;;
+  *"livenessProbe.httpGet.port}"*) printf '%s' "${PORT-http}" ;;
+  *"livenessProbe.httpGet.scheme}"*) printf '%s' "${SCHEME-HTTP}" ;;
+  *"livenessProbe}"*) printf '%s' "${PROBE-$default_probe}" ;;
+  *'ports[?(@.name=="http")].containerPort}'*) printf '8080' ;;
+  *"go-template"*) printf 'app.kubernetes.io/name=cart,' ;;
+  *"get pods"*"status.phase=Running"*) printf '%s' "${RUNNING-cart-abc}" ;;
+  *"get --raw /api/v1/namespaces/shop/pods/"*) [ "${GET:-ok}" = ok ] || exit 1 ;;
+  *"rollout status"*) [ "${ROLLED_OUT:-yes}" = yes ] || exit 1 ;;
+  *"get deploy"*"jsonpath={.spec.replicas}"*)
+    [ "${DEPLOY_EXISTS:-yes}" = yes ] || exit 1
+    echo "${REPLICAS:-1}"
+    ;;
+  *"get deploy"*"jsonpath={.status.readyReplicas}"*) echo "${READY-1}" ;;
+  *"get pods"*) echo "cart-abc   false   <none>   4" ;;
+esac
+STUB
+}
+
+@test "liveness-probe-kill passes when the probe's path answers and every replica is ready" {
+  liveness_stub
+  check liveness-probe-kill
+  [ "$status" -eq 0 ]
+  assert_called kubectl "get --raw /api/v1/namespaces/shop/pods/cart-abc:8080/proxy/health"
+}
+
+@test "liveness-probe-kill fails while the fault is in: the probe's path does not answer" {
+  liveness_stub
+  PROBE_PATH=/healthz GET=fail check liveness-probe-kill
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"GET /healthz on port 8080) does not succeed on cart-abc"* ]] || false
+}
+
+@test "liveness-probe-kill fails the wrong fix: a longer delay on a path that still 404s" {
+  liveness_stub
+  PROBE='{"httpGet":{"path":"/healthz"},"initialDelaySeconds":600}' PROBE_PATH=/healthz GET=fail \
+    check liveness-probe-kill
+  [ "$status" -ne 0 ]
+}
+
+@test "liveness-probe-kill fails the wrong fix: the probe deleted" {
+  liveness_stub
+  PROBE="" PROBE_PATH="" check liveness-probe-kill
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"has no liveness probe"* ]] || false
+}
+
+@test "liveness-probe-kill passes a probe that is not HTTP" {
+  liveness_stub
+  PROBE='{"tcpSocket":{"port":8080}}' PROBE_PATH="" check liveness-probe-kill
+  [ "$status" -eq 0 ]
+  refute_called kubectl "get --raw"
+}
+
+@test "liveness-probe-kill asks a numbered port and an HTTPS probe the way the kubelet does" {
+  liveness_stub
+  PORT=9443 SCHEME=HTTPS check liveness-probe-kill
+  [ "$status" -eq 0 ]
+  assert_called kubectl "get --raw /api/v1/namespaces/shop/pods/https:cart-abc:9443/proxy/health"
+}
+
+@test "liveness-probe-kill fails with a reason when the probe names an undeclared port" {
+  liveness_stub
+  PORT=metrics check liveness-probe-kill
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"names a port the container does not declare"* ]] || false
+}
+
+@test "liveness-probe-kill fails with a reason when no pod is running to try the probe on" {
+  liveness_stub
+  RUNNING="" check liveness-probe-kill
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"no pod of shop/cart is running"* ]] || false
+}
+
+@test "liveness-probe-kill fails while the rollout has not completed" {
+  liveness_stub
+  ROLLED_OUT=no READY=0 check liveness-probe-kill
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"rollout of shop/cart has not completed"* ]] || false
+}
+
+@test "liveness-probe-kill fails the wrong fix: scaled to zero" {
+  liveness_stub
+  REPLICAS=0 check liveness-probe-kill
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"scaled to 0 replicas"* ]] || false
+}
+
+@test "liveness-probe-kill fails when the workload is gone" {
+  liveness_stub
+  DEPLOY_EXISTS=no check liveness-probe-kill
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"deployment shop/cart not found"* ]] || false
+}

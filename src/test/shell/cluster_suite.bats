@@ -230,6 +230,7 @@ network-blackhole|-n go-api delete networkpolicy default-deny-ingress
 oom-kill|-n go-api set resources deploy/go-api --limits=memory=128Mi --requests=memory=32Mi
 noisy-neighbor|-n labfault-batch set resources deploy/report-batch --requests=cpu=100m --limits=cpu=200m
 pending-unschedulable|-n go-api set resources deploy/go-api --requests=cpu=100m --limits=cpu=500m
+liveness-probe-kill|-n go-api patch deploy go-api --type=json
 TABLE
 }
 

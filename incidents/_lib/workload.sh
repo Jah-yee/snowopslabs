@@ -22,3 +22,30 @@ cpu_millicores() {
     else if (q ~ /^[0-9]+(\.[0-9]+)?$/) { printf "%d", q * 1000 }
   }'
 }
+
+# container_port <namespace> <deployment> <port> - print the number behind a
+# probe's port, which is either a number or the name of a container port.
+container_port() {
+  case "$3" in
+    '' | *[!0-9]*)
+      kubectl -n "$1" get deploy "$2" \
+        -o "jsonpath={.spec.template.spec.containers[0].ports[?(@.name==\"$3\")].containerPort}" 2>/dev/null || true
+      ;;
+    *) printf '%s' "$3" ;;
+  esac
+}
+
+# running_pod <namespace> <selector> - print the name of one Running pod.
+running_pod() {
+  kubectl -n "$1" get pods -l "$2" --field-selector=status.phase=Running \
+    -o 'jsonpath={.items[0].metadata.name}' 2>/dev/null || true
+}
+
+# pod_get_ok <namespace> <pod> <port> <path> [scheme] - succeed when the pod
+# answers an HTTP GET on <path> with a 2xx, asked through the API server the
+# way the kubelet asks it directly: from inside the cluster, on the pod's IP.
+pod_get_ok() {
+  target="$2:$3"
+  [ "${5:-HTTP}" != HTTPS ] || target="https:$target"
+  kubectl get --raw "/api/v1/namespaces/$1/pods/$target/proxy$4" >/dev/null 2>&1
+}

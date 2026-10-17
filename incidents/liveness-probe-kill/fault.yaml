@@ -1,0 +1,39 @@
+name: liveness-probe-kill
+displayName: "Liveness probe kills a healthy app"
+description: "Since this morning's values update, {{.WorkloadName}} restarts every 40 seconds or so, and users get bursts of 503s between quiet spells. Every restart looks clean: the logs show the app starting, serving and shutting down on a signal, with no error. The app is not crashing on its own (no exit code 1) and is not being OOMKilled (no exit code 137)."
+category: workload
+severity: high
+target:
+  namespace: "{{.WorkloadNamespace}}"
+  workload: "{{.WorkloadName}}"
+prerequisites:
+  apps:
+    - "{{.WorkloadName}}"
+detection:
+  name: liveness-probe-answers
+  type: script
+  script: checks/resolved.sh
+  timeoutSeconds: 30
+expectAlert: LabFaultPodRestarting
+
+references:
+  - label: "Kubernetes - Configure liveness, readiness and startup probes"
+    url: "https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/"
+    note: "How the kubelet runs each probe, and what it does when a liveness probe fails failureThreshold times in a row."
+  - label: "Kubernetes - Pod lifecycle: container probes"
+    url: "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes"
+    note: "Which HTTP status codes count as success (200 to 399), and the difference between liveness, readiness and startup probes."
+  - label: "Kubernetes - Determine the reason for pod failure"
+    url: "https://kubernetes.io/docs/tasks/debug/debug-application/determine-reason-pod-failure/"
+    note: "Reading Last State and the exit code to tell a crash, an OOM kill and a kubelet restart apart."
+  - label: "Kubernetes - Debug running pods"
+    url: "https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/"
+    note: "Other causes of a liveness kill: a probe timeout under load, a slow start with no startupProbe, a probe that checks a dependency."
+
+snippets:
+  - label: "Point {{.WorkloadName}}'s liveness probe back at its health endpoint (JSON patch)"
+    description: "Apply with: kubectl -n {{.WorkloadNamespace}} patch deployment {{.WorkloadName}} --type=json --patch-file <this>. Use the path the app really serves."
+    yaml: |
+      - op: replace
+        path: /spec/template/spec/containers/0/livenessProbe/httpGet/path
+        value: /health
