@@ -219,6 +219,7 @@ hatch from every state a learner can leave behind, and scores the result out of
 | `network-blackhole` | network | high | a deny-all-ingress NetworkPolicy lands in the workload's namespace - the service goes dark through the ingress |
 | `service-selector-broken` | config | medium | the workload's Service selector stops matching its pods - endpoints empty, pods perfectly healthy (sneaky) |
 | `noisy-neighbor` | resources | low | a batch tenant lands on the workload's node with big CPU requests and no limits, and takes the machine |
+| `pending-unschedulable` | resources | medium | a launch scales the workload to 4 and raises its CPU request past any node's allocatable CPU, so the new replicas stay Pending (`Insufficient cpu`) while the old ones serve; nothing crashes |
 
 `dns-blackhole` and `pvc-full` were considered and dropped: DNS exec probes
 and PVC behaviour vary too much with the local storage and CNI setup for

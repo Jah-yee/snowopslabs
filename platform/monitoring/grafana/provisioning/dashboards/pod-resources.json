@@ -476,6 +476,89 @@
       "title": "Containers not running, by reason",
       "type": "timeseries",
       "description": "Containers stuck waiting to run, with the reason Kubernetes gives: CrashLoopBackOff, ImagePullBackOff, CreateContainerConfigError and so on."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 40,
+            "gradientMode": "none",
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 25
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (namespace, pod) (kube_pod_status_unschedulable) > 0",
+          "format": "time_series",
+          "hide": false,
+          "legendFormat": "{{ namespace }} / {{ pod }}",
+          "refId": "A"
+        }
+      ],
+      "title": "Pods waiting for a node",
+      "type": "timeseries",
+      "description": "Pods the scheduler could not place on any node yet. They have no container, so they never appear under restarts or waiting reasons; kubectl describe pod names the reason in its FailedScheduling event."
     }
   ],
   "refresh": "30s",

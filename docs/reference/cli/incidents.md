@@ -80,8 +80,8 @@ labctl incident inject --random --category network
 
 ## On-call drills
 
-Faults that declare an `expectAlert` - `oom-kill`, `crashloop-bad-config` and
-`bad-deploy-rollout`: arm a PrometheusRule when injected. Alertmanager routes
+Every shipped fault declares an `expectAlert` and arms its PrometheusRule when
+injected (the alert names are in each `fault.yaml`). Alertmanager routes
 the firing alert to the in-cluster pager (`labctl service up pager`), or to
 `ALERT_WEBHOOK_URL` if that was set when `monitoring/metrics` was installed.
 

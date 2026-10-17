@@ -76,6 +76,15 @@ case "$*" in
     ;;
   *"get networkpolicy default-deny-ingress"*) [ -n "${BLACKHOLE_POLICY-}" ] || exit 1 ;;
 
+  # pending-unschedulable
+  *"get deploy"*"resources.requests.cpu}"*) printf '%s' "${CPU_REQUEST-50m}" ;;
+  *"get deploy"*"resources.limits.cpu}"*) printf '%s' "${CPU_LIMIT-200m}" ;;
+  *"get deploy"*"jsonpath={.spec.replicas}"*) printf '%s' "${REPLICAS-1}" ;;
+  *"get deploy"*"go-template"*) printf 'app.kubernetes.io/name=cart,' ;;
+  *"get hpa"*) [ -z "${HPA_TARGET-}" ] || printf '%s\n' "$HPA_TARGET" ;;
+  *"get nodes"*"allocatable.cpu"*) printf '%s' "${NODE_ALLOCATABLE-4 3800m }" ;;
+  *"get pods"*"spec.nodeName="*) [ -z "${UNSCHEDULED_PODS-}" ] || printf '%s\n' "$UNSCHEDULED_PODS" ;;
+
   # noisy-neighbor
   *"get pods"*"custom-columns=NAME"*) [ -z "${VICTIM_PODS-set}" ] || echo "${VICTIM_PODS-cart-abc node-1 Running}" ;;
   *"get nodes"*) echo "node/node-1" ;;
@@ -104,6 +113,7 @@ bad-deploy-rollout|set image deploy/cart
 oom-kill|set resources deploy/cart
 network-blackhole|rollout restart deploy/cart
 noisy-neighbor|apply -f -
+pending-unschedulable|patch deploy cart --type=strategic
 EOF
 }
 
@@ -572,4 +582,133 @@ neighbor() {
   resolve noisy-neighbor
   [ "$status" -eq 0 ]
   assert_called kubectl "delete namespace labfault-batch --ignore-not-found --wait=false"
+}
+
+# ── pending-unschedulable ─────────────────────────────────────────────────────
+
+@test "pending-unschedulable: inject asks for a core more than the largest node and records the originals" {
+  inject pending-unschedulable
+  [ "$status" -eq 0 ]
+  assert_called kubectl '"replicas":4,"template":'
+  assert_called kubectl '"name":"app","resources":{"requests":{"cpu":"5"},"limits":{"cpu":"5"}}}'
+  assert_called kubectl "--from-literal=original-replicas=1 --from-literal=original-request=50m --from-literal=original-limit=200m --from-literal=fault-request=5 --from-literal=launch-replicas=4"
+}
+
+@test "pending-unschedulable: inject scales and resizes in one change" {
+  REPLICAS=3 inject pending-unschedulable
+  [ "$status" -eq 0 ]
+  refute_called kubectl "scale deploy"
+  refute_called kubectl "set resources"
+  assert_call_count kubectl 1 "patch"
+}
+
+@test "pending-unschedulable: inject adds two replicas to a workload already at the launch size" {
+  REPLICAS=4 inject pending-unschedulable
+  [ "$status" -eq 0 ]
+  assert_called kubectl '"replicas":6,'
+}
+
+@test "pending-unschedulable: inject sets no limit on a workload that had none" {
+  CPU_LIMIT="" inject pending-unschedulable
+  assert_called kubectl '"resources":{"requests":{"cpu":"5"}}}'
+  assert_called kubectl "--from-literal=original-limit=none"
+}
+
+@test "pending-unschedulable: inject sizes the request from the largest node" {
+  NODE_ALLOCATABLE="2 16 7500m " inject pending-unschedulable
+  assert_called kubectl '"requests":{"cpu":"17"}'
+}
+
+@test "pending-unschedulable: inject refuses a workload an autoscaler scales" {
+  HPA_TARGET=cart inject pending-unschedulable
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"HorizontalPodAutoscaler manages shop/cart"* ]] || false
+  refute_called kubectl "patch"
+  refute_called kubectl "create configmap"
+}
+
+@test "pending-unschedulable: inject fails with a reason when the nodes cannot be read" {
+  NODE_ALLOCATABLE="" inject pending-unschedulable
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"cannot read the nodes' allocatable CPU"* ]] || false
+  refute_called kubectl "patch"
+}
+
+@test "pending-unschedulable: inject refuses when the cluster answers but the workload is missing" {
+  REPLICAS="" inject pending-unschedulable
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"deployment shop/cart not found"* ]] || false
+  refute_called kubectl "patch"
+}
+
+@test "pending-unschedulable: inject refuses a workload that already asks for more CPU than any node has" {
+  CPU_REQUEST=4500m inject pending-unschedulable
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"already requests 4500m CPU"* ]] || false
+  refute_called kubectl "patch"
+  refute_called kubectl "create configmap"
+}
+
+@test "pending-unschedulable: a second inject changes nothing" {
+  RECORD_fault_request=5 CPU_REQUEST=5 inject pending-unschedulable
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already injected"* ]] || false
+  refute_called kubectl "patch"
+  refute_called kubectl "create configmap"
+}
+
+@test "pending-unschedulable: resolve puts back the request, limit and replica count" {
+  RECORD_original_replicas=1 RECORD_original_request=50m RECORD_original_limit=200m \
+    RECORD_fault_request=5 RECORD_launch_replicas=4 CPU_REQUEST=5 CPU_LIMIT=5 REPLICAS=4 \
+    resolve pending-unschedulable
+  [ "$status" -eq 0 ]
+  assert_called kubectl "set resources deploy/cart --requests=cpu=50m --limits=cpu=200m"
+  assert_called kubectl "scale deploy/cart --replicas=1"
+}
+
+@test "pending-unschedulable: resolve removes CPU settings the workload never had" {
+  RECORD_original_replicas=1 RECORD_original_request=none RECORD_original_limit=none \
+    RECORD_fault_request=5 RECORD_launch_replicas=4 CPU_REQUEST=5 CPU_LIMIT="" REPLICAS=4 \
+    resolve pending-unschedulable
+  [ "$status" -eq 0 ]
+  assert_called kubectl '"op":"remove","path":"/spec/template/spec/containers/0/resources/requests/cpu"'
+  refute_called kubectl "set resources"
+}
+
+@test "pending-unschedulable: resolve after a hand fix keeps the learner's request and scale" {
+  RECORD_original_replicas=1 RECORD_original_request=50m RECORD_original_limit=200m \
+    RECORD_fault_request=5 RECORD_launch_replicas=4 CPU_REQUEST=100m CPU_LIMIT=500m REPLICAS=4 \
+    resolve pending-unschedulable
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already fixed"* ]] || false
+  refute_called kubectl "set resources"
+  refute_called kubectl "scale deploy"
+  assert_called kubectl "delete configmap labfault-pending-unschedulable"
+}
+
+@test "pending-unschedulable: resolve after a half fix puts back only the limit the fault raised" {
+  RECORD_original_replicas=1 RECORD_original_request=50m RECORD_original_limit=200m \
+    RECORD_fault_request=5 RECORD_launch_replicas=4 CPU_REQUEST=100m CPU_LIMIT=5 REPLICAS=4 \
+    resolve pending-unschedulable
+  [ "$status" -eq 0 ]
+  assert_called kubectl "set resources deploy/cart --limits=cpu=200m"
+  refute_called kubectl "--requests"
+  refute_called kubectl "scale deploy"
+}
+
+@test "pending-unschedulable: resolve after a half fix that still does not schedule puts back the originals" {
+  RECORD_original_replicas=1 RECORD_original_request=50m RECORD_original_limit=200m \
+    RECORD_fault_request=5 RECORD_launch_replicas=4 CPU_REQUEST=4500m CPU_LIMIT=5 REPLICAS=4 \
+    UNSCHEDULED_PODS=pod/cart-new-1 resolve pending-unschedulable
+  [ "$status" -eq 0 ]
+  assert_called kubectl "set resources deploy/cart --requests=cpu=50m --limits=cpu=200m"
+  assert_called kubectl "scale deploy/cart --replicas=1"
+}
+
+@test "pending-unschedulable: resolve with no record changes nothing and says how to fix it" {
+  CPU_REQUEST=5 resolve pending-unschedulable
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"set resources deploy/cart --requests=cpu=<value>"* ]] || false
+  refute_called kubectl "set resources"
+  refute_called kubectl "scale deploy"
 }

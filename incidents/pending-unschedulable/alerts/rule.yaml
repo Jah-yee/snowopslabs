@@ -1,0 +1,25 @@
+# Applied by inject.sh into the monitoring namespace; the `release:
+# prometheus` label is required by kube-prometheus-stack's rule selector,
+# and the `labfault` alert label routes it to the pager.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: labfault-pending-unschedulable
+  labels:
+    release: prometheus
+    labfault: "true"
+spec:
+  groups:
+    - name: labfault-pending-unschedulable
+      rules:
+        - alert: LabFaultReplicasUnavailable
+          expr: |
+            kube_deployment_spec_replicas{namespace="${TARGET_NAMESPACE}", deployment="${TARGET_WORKLOAD}"}
+              > kube_deployment_status_replicas_available{namespace="${TARGET_NAMESPACE}", deployment="${TARGET_WORKLOAD}"}
+          for: 1m
+          labels:
+            labfault: "true"
+            severity: warning
+          annotations:
+            summary: "${TARGET_WORKLOAD} has fewer replicas available than it asked for"
+            description: "Deployment ${TARGET_NAMESPACE}/${TARGET_WORKLOAD} wants more replicas than are available. Compare READY with the desired count, then find out what the missing replicas are doing."

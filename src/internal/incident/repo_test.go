@@ -54,6 +54,7 @@ var shippedFaults = []string{
 	"network-blackhole",
 	"noisy-neighbor",
 	"oom-kill",
+	"pending-unschedulable",
 	"service-selector-broken",
 }
 

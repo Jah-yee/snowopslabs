@@ -326,3 +326,81 @@ STUB
   [ "$status" -eq 0 ]
   [[ "$output" == *"capped at 500m, 1000m in total on a 4000m node"* ]] || false
 }
+
+# ── pending-unschedulable ─────────────────────────────────────────────────────
+
+# PENDING lists the workload's Pending pods; PODS=fail makes listing them fail.
+pending_stub() {
+  stub_script kubectl <<'STUB'
+case "$*" in
+  *"go-template"*) printf '%s' "${SELECTOR-app.kubernetes.io/name=cart,tier=web,}" ;;
+  *"get pods -l app.kubernetes.io/name=cart,tier=web --field-selector=status.phase=Pending,spec.nodeName= "*)
+    [ "${PODS:-ok}" = ok ] || exit 1
+    [ -z "${PENDING:-}" ] || printf '%s\n' $PENDING
+    ;;
+  *"rollout status"*) [ "${ROLLED_OUT:-yes}" = yes ] || exit 1 ;;
+  *"get deploy"*"jsonpath={.spec.replicas}"*)
+    [ "${DEPLOY_EXISTS:-yes}" = yes ] || exit 1
+    echo "${REPLICAS:-4}"
+    ;;
+  *"get deploy"*"jsonpath={.status.readyReplicas}"*) echo "${READY-4}" ;;
+  *"get pods"*) echo "cart-7d9f-abcde   true   <none>   0" ;;
+esac
+STUB
+}
+
+@test "pending-unschedulable passes when every replica is scheduled and ready" {
+  pending_stub
+  check pending-unschedulable
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"every replica of shop/cart is scheduled and ready"* ]] || false
+}
+
+@test "pending-unschedulable fails while the fault is in: replicas are Pending" {
+  pending_stub
+  PENDING="pod/cart-new-1 pod/cart-new-2 pod/cart-new-3" ROLLED_OUT=no READY=2 check pending-unschedulable
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"3 pod(s) of shop/cart are Pending"* ]] || false
+}
+
+@test "pending-unschedulable fails the wrong fix: scaled back to the old count, one new pod still Pending" {
+  pending_stub
+  PENDING="pod/cart-new-1" REPLICAS=2 READY=2 ROLLED_OUT=no check pending-unschedulable
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"1 pod(s) of shop/cart are Pending"* ]] || false
+}
+
+@test "pending-unschedulable fails while recreated pods have not finished rolling out" {
+  pending_stub
+  ROLLED_OUT=no READY=2 check pending-unschedulable
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"rollout of shop/cart has not completed"* ]] || false
+}
+
+@test "pending-unschedulable fails the wrong fix: scaled to zero" {
+  pending_stub
+  REPLICAS=0 check pending-unschedulable
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"scaled to 0 replicas"* ]] || false
+}
+
+@test "pending-unschedulable fails with a reason when the pods cannot be listed" {
+  pending_stub
+  PODS=fail check pending-unschedulable
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"could not list the pods of shop/cart"* ]] || false
+}
+
+@test "pending-unschedulable fails with a reason when the selector cannot be read" {
+  pending_stub
+  SELECTOR="" check pending-unschedulable
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"cannot read the pod selector of shop/cart"* ]] || false
+}
+
+@test "pending-unschedulable fails when the workload is gone" {
+  pending_stub
+  DEPLOY_EXISTS=no check pending-unschedulable
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"deployment shop/cart not found"* ]] || false
+}

@@ -1,0 +1,52 @@
+name: pending-unschedulable
+displayName: "Pending: replicas no node can hold"
+description: "We scaled {{.WorkloadName}} to 4 for a launch, and READY has said 3/4 ever since. Two pods from the change have never started, and the nodes are mostly idle. Nothing is crashing, restarting or being killed, and every request still gets an answer, but there is no headroom for the launch traffic. The pager says the Deployment has fewer replicas available than it asked for."
+category: resources
+severity: medium
+target:
+  namespace: "{{.WorkloadNamespace}}"
+  workload: "{{.WorkloadName}}"
+prerequisites:
+  apps:
+    - "{{.WorkloadName}}"
+detection:
+  name: every-replica-scheduled
+  type: script
+  script: checks/resolved.sh
+  timeoutSeconds: 30
+expectAlert: LabFaultReplicasUnavailable
+
+references:
+  - label: "Kubernetes - Debug Pods: my pod stays pending"
+    url: "https://kubernetes.io/docs/tasks/debug/debug-application/debug-pods/#my-pod-stays-pending"
+    note: "The first place to look: the scheduler writes why it could not place a pod into the pod's events."
+  - label: "Kubernetes - Resource management for pods and containers"
+    url: "https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#how-pods-with-resource-requests-are-scheduled"
+    note: "The scheduler places a pod by its requests against each node's allocatable capacity, never by what the pod uses."
+  - label: "Kubernetes - Assigning pods to nodes"
+    url: "https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/"
+    note: "Another common cause of Pending: a nodeSelector or affinity rule no node satisfies."
+  - label: "Kubernetes - Taints and tolerations"
+    url: "https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/"
+    note: "Another common cause: every node carries a taint the pod does not tolerate."
+  - label: "Kubernetes - Persistent volumes: binding"
+    url: "https://kubernetes.io/docs/concepts/storage/persistent-volumes/#binding"
+    note: "Another common cause: a PersistentVolumeClaim that never binds keeps its pod Pending."
+  - label: "Kubernetes - Pod priority and preemption"
+    url: "https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/"
+    note: "What the 'preemption: … No preemption victims found' half of the scheduler's message means."
+
+snippets:
+  - label: "Size {{.WorkloadName}}'s CPU request to what it needs (strategic-merge patch)"
+    description: "A request the nodes can hold. Apply with: kubectl -n {{.WorkloadNamespace}} patch deployment {{.WorkloadName}} --patch-file <this>"
+    yaml: |
+      spec:
+        template:
+          spec:
+            containers:
+              - name: "{{.WorkloadName}}"
+                resources:
+                  requests:
+                    cpu: "100m"
+                  limits:
+                    cpu: "500m"
