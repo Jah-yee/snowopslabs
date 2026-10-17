@@ -52,6 +52,7 @@ var shippedFaults = []string{
 	"bad-deploy-rollout",
 	"cpu-throttling",
 	"crashloop-bad-config",
+	"dns-egress-blocked",
 	"liveness-probe-kill",
 	"missing-secret-key",
 	"network-blackhole",
@@ -225,7 +226,9 @@ func TestRepoFaults_RenderForAnyWorkload(t *testing.T) {
 				if m := unexpanded.FindString(text); m != "" {
 					t.Errorf("an unexpanded template variable reaches the learner: %s", m)
 				}
-				if i := strings.Index(text, workload.DefaultApp); i >= 0 {
+				// A fault whose target pins the default app names it on purpose.
+				pinned := f.Target.Workload == workload.DefaultApp
+				if i := strings.Index(text, workload.DefaultApp); i >= 0 && !pinned {
 					t.Errorf("names %q although bound to %q: …%s…",
 						workload.DefaultApp, bound.Name, text[max(0, i-60):min(len(text), i+40)])
 				}

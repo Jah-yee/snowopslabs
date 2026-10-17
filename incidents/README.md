@@ -223,6 +223,7 @@ hatch from every state a learner can leave behind, and scores the result out of
 | `liveness-probe-kill` | workload | high | a values update points the liveness probe at `/healthz`, a path the app does not serve; the kubelet kills a healthy app every 40 seconds or so (exit 0, `Liveness probe failed: ... statuscode: 404`) and k6 traffic sees bursts of 5xx |
 | `missing-secret-key` | config | high | a credential rotation renames the key the workload reads from its Secret, then a node rotation replaces the pods; none can start (`CreateContainerConfigError`, `couldn't find key ... in Secret`), a full outage with no logs |
 | `cpu-throttling` | resources | medium | the CPU limit is cut to a third of what the workload uses under the steady k6 load it starts; no restarts, no errors, every pod Ready, but `kubectl top` pins at the limit, throttling climbs and p99 latency goes to seconds |
+| `dns-egress-blocked` | network | high | a default-deny egress policy added for security allows the upstream's port but not DNS; inbound traffic and `/health` work, every pod is Ready, and requests that call the upstream fail with a failed lookup. Unlike `network-blackhole`, the requests arrive |
 
 `dns-blackhole` and `pvc-full` were considered and dropped: DNS exec probes
 and PVC behaviour vary too much with the local storage and CNI setup for

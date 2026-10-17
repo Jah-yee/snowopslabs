@@ -113,6 +113,14 @@ case "$*" in
   *"get secret"*"go-template"*) printf '%s\n' "${SECRET_KEYS-api-token}" ;;
   *"get secret"*"jsonpath={.data."*) printf 'dG9rZW4=' ;;
 
+  # dns-egress-blocked: EGRESS_POLICY is the policy's egress rules, if any
+  *"get networkpolicy default-deny-egress -o jsonpath"*)
+    [ -n "${EGRESS_POLICY-}" ] || exit 1
+    printf '%s' "$EGRESS_POLICY"
+    ;;
+  *"get networkpolicy default-deny-egress"*) [ -n "${EGRESS_POLICY-}" ] || exit 1 ;;
+  *"get deploy"*'env[?(@.name=="UPSTREAM_URL")].value}'*) printf '%s' "${UPSTREAM_NOW-}" ;;
+
   # noisy-neighbor
   *"get pods"*"custom-columns=NAME"*) [ -z "${VICTIM_PODS-set}" ] || echo "${VICTIM_PODS-cart-abc node-1 Running}" ;;
   *"get nodes"*) echo "node/node-1" ;;
@@ -145,6 +153,7 @@ pending-unschedulable|patch deploy cart --type=strategic
 liveness-probe-kill|patch deploy cart --type=json
 missing-secret-key|patch secret cart-secret --type=json
 cpu-throttling|set resources deploy/cart --limits=cpu=
+dns-egress-blocked|apply -n shop -f -
 EOF
 }
 
@@ -1007,5 +1016,72 @@ LIMITS
 
 @test "cpu-throttling: resolve stops the traffic inject started" {
   resolve cpu-throttling
+  assert_called kubectl "delete job traffic-k6"
+}
+
+# ── dns-egress-blocked ────────────────────────────────────────────────────────
+
+no_dns='[{"ports":[{"port":8080,"protocol":"TCP"}],"to":[{"namespaceSelector":{}}]}]'
+with_dns='[{"ports":[{"port":8080,"protocol":"TCP"}]},{"ports":[{"port":53,"protocol":"UDP"}]}]'
+upstream=http://echo-server.echo-server.svc.cluster.local:8080/
+
+@test "dns-egress-blocked: inject denies egress but the upstream's port, and points the app at it" {
+  inject dns-egress-blocked
+  [ "$status" -eq 0 ]
+  grep -q 'name: default-deny-egress' "$STUB_DIR/applied.yaml"
+  grep -q 'namespace: shop' "$STUB_DIR/applied.yaml"
+  grep -q 'kubernetes.io/metadata.name: echo-server' "$STUB_DIR/applied.yaml"
+  grep -q 'port: 8080' "$STUB_DIR/applied.yaml"
+  ! grep -q -e 'port: 53' -e 'labels:' -e 'UPSTREAM_' -e 'TARGET_' "$STUB_DIR/applied.yaml"
+  assert_called kubectl "set env deploy/cart UPSTREAM_URL=$upstream"
+  assert_called kubectl "--from-literal=policy=default-deny-egress --from-literal=original-upstream=none --from-literal=upstream=$upstream"
+}
+
+@test "dns-egress-blocked: inject keeps an upstream the app already calls and turns its pods over" {
+  UPSTREAM_NOW=http://payments.shop.svc:9000/ inject dns-egress-blocked
+  [ "$status" -eq 0 ]
+  refute_called kubectl "set env"
+  assert_called kubectl "-n shop rollout restart deploy/cart"
+  assert_called kubectl "--from-literal=original-upstream=http://payments.shop.svc:9000/ --from-literal=upstream=http://payments.shop.svc:9000/"
+}
+
+@test "dns-egress-blocked: a second inject changes nothing" {
+  EGRESS_POLICY="$no_dns" inject dns-egress-blocked
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already injected"* ]] || false
+  refute_called kubectl "apply -n shop"
+  refute_called kubectl "set env"
+}
+
+@test "dns-egress-blocked: inject refuses to overwrite a working policy of that name it did not create" {
+  EGRESS_POLICY="$with_dns" inject dns-egress-blocked
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"already exists in shop"* ]] || false
+  refute_called kubectl "apply -n shop"
+}
+
+@test "dns-egress-blocked: resolve removes the recorded policy and the upstream it set" {
+  RECORD_policy=default-deny-egress RECORD_original_upstream=none resolve dns-egress-blocked
+  [ "$status" -eq 0 ]
+  assert_called kubectl "delete networkpolicy default-deny-egress -n shop --ignore-not-found"
+  assert_called kubectl "delete networkpolicy allow-dns -n shop --ignore-not-found"
+  assert_called kubectl "-n shop set env deploy/cart UPSTREAM_URL-"
+}
+
+@test "dns-egress-blocked: resolve puts back the upstream the app had" {
+  RECORD_policy=default-deny-egress RECORD_original_upstream=http://payments.shop.svc:9000/ resolve dns-egress-blocked
+  assert_called kubectl "-n shop set env deploy/cart UPSTREAM_URL=http://payments.shop.svc:9000/"
+}
+
+@test "dns-egress-blocked: resolve leaves a policy of that name it has no record of creating" {
+  EGRESS_POLICY="$no_dns" resolve dns-egress-blocked
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"leaving it in place"* ]] || false
+  refute_called kubectl "delete networkpolicy"
+  refute_called kubectl "set env"
+}
+
+@test "dns-egress-blocked: resolve stops the traffic inject started" {
+  resolve dns-egress-blocked
   assert_called kubectl "delete job traffic-k6"
 }

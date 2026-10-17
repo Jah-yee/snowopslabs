@@ -1,0 +1,64 @@
+name: dns-egress-blocked
+displayName: "DNS egress blocked: a security policy that forgot port 53"
+description: "Since this morning's security hardening, most requests to go-api fail with 502. /health answers, every pod is Ready and nothing restarts, and requests do arrive: unlike a network blackhole, the app answers, with an error from the dependency it calls. That dependency is up and healthy when you call it from anywhere else."
+category: network
+severity: high
+target:
+  namespace: go-api
+  workload: go-api
+prerequisites:
+  platform:
+    - ingress
+  apps:
+    - go-api
+    - echo-server
+detection:
+  name: upstream-reachable-by-name
+  type: script
+  script: checks/resolved.sh
+  timeoutSeconds: 30
+expectAlert: LabFaultErrorRate
+
+references:
+  - label: "Kubernetes - Network policies"
+    url: "https://kubernetes.io/docs/concepts/services-networking/network-policies/"
+    note: "A policy that selects a pod for Egress allows only what its rules list, and that includes DNS."
+  - label: "Kubernetes - Declare network policy: default deny egress"
+    url: "https://kubernetes.io/docs/concepts/services-networking/network-policies/#default-deny-all-egress-traffic"
+    note: "The baseline this fault starts from, and why it needs a DNS rule beside it."
+  - label: "Kubernetes - Debugging DNS resolution"
+    url: "https://kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/"
+    note: "Testing name resolution from a throwaway pod with nslookup, and the other causes of failed lookups."
+  - label: "Kubernetes - DNS for Services and Pods"
+    url: "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/"
+    note: "How a Service name resolves, and why every lookup goes to the cluster DNS Service on port 53."
+  - label: "Kubernetes - Debug Services"
+    url: "https://kubernetes.io/docs/tasks/debug/debug-application/debug-service/"
+    note: "Other causes of a dependency that cannot be reached: no endpoints, the wrong port, a CoreDNS outage."
+
+snippets:
+  - label: "Allow the namespace's pods to reach cluster DNS (NetworkPolicy)"
+    description: "Kept beside the deny baseline, it lets lookups through and nothing else. Apply with: kubectl apply -f <this>"
+    yaml: |
+      apiVersion: networking.k8s.io/v1
+      kind: NetworkPolicy
+      metadata:
+        name: allow-dns
+        namespace: go-api
+      spec:
+        podSelector: {}
+        policyTypes:
+          - Egress
+        egress:
+          - to:
+              - namespaceSelector:
+                  matchLabels:
+                    kubernetes.io/metadata.name: kube-system
+                podSelector:
+                  matchLabels:
+                    k8s-app: kube-dns
+            ports:
+              - protocol: UDP
+                port: 53
+              - protocol: TCP
+                port: 53

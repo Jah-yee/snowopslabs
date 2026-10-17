@@ -685,3 +685,113 @@ STUB
   [ "$status" -ne 0 ]
   [[ "$output" == *"deployment shop/cart not found"* ]] || false
 }
+
+# ── dns-egress-blocked ────────────────────────────────────────────────────────
+
+# POLICIES is "<name>|<policyTypes>|<egress rules>" per policy; UPSTREAM the
+# app's UPSTREAM_URL; RECORDED the upstream the fault's record names.
+egress_stub() {
+  stub_script kubectl <<'STUB'
+url=http://echo-server.echo-server.svc.cluster.local:8080/
+baseline='default-deny-egress|["Egress"]|[{"ports":[{"port":8080,"protocol":"TCP"}]},{"ports":[{"port":53,"protocol":"UDP"}]}]'
+case "$*" in
+  *"get configmap labfault-dns-egress-blocked"*"data.upstream}"*) printf '%s' "${RECORDED-$url}" ;;
+  *'env[?(@.name=="UPSTREAM_URL")].value}'*) printf '%s' "${UPSTREAM-$url}" ;;
+  *"get networkpolicy"*)
+    [ "${CLUSTER:-up}" = up ] || exit 1
+    [ -z "${POLICIES-$baseline}" ] || printf '%s\n' "${POLICIES-$baseline}"
+    ;;
+  *"go-template"*) printf 'app.kubernetes.io/name=cart,' ;;
+  *"get pods"*"status.phase=Running"*) printf '%s' "${RUNNING-cart-abc}" ;;
+  *"containers[0].ports[0].containerPort}"*) printf '8080' ;;
+  *"get --raw /api/v1/namespaces/shop/pods/cart-abc:8080/proxy/"*) [ "${GET:-ok}" = ok ] || exit 1 ;;
+  *"rollout status"*) [ "${ROLLED_OUT:-yes}" = yes ] || exit 1 ;;
+  *"get deploy"*"jsonpath={.spec.replicas}"*)
+    [ "${DEPLOY_EXISTS:-yes}" = yes ] || exit 1
+    echo "${REPLICAS:-1}"
+    ;;
+  *"get deploy"*"jsonpath={.status.readyReplicas}"*) echo "${READY-1}" ;;
+  *"get pods"*) echo "cart-abc   true   <none>   0" ;;
+esac
+STUB
+}
+
+@test "dns-egress-blocked passes when the app reaches its upstream by name behind an egress baseline" {
+  egress_stub
+  check dns-egress-blocked
+  [ "$status" -eq 0 ]
+}
+
+@test "dns-egress-blocked fails while the fault is in: a request that calls the upstream fails" {
+  egress_stub
+  GET=fail check dns-egress-blocked
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"calls its upstream still fails on cart-abc"* ]] || false
+}
+
+@test "dns-egress-blocked passes a DNS rule in a policy of its own" {
+  egress_stub
+  POLICIES="$(printf 'default-deny-egress|["Egress"]|[{"ports":[{"port":8080}]}]\nallow-dns|["Egress"]|[{"ports":[{"port":53,"protocol":"UDP"}],"to":[{"namespaceSelector":{}}]}]')" \
+    check dns-egress-blocked
+  [ "$status" -eq 0 ]
+}
+
+@test "dns-egress-blocked fails the wrong fix: the egress policy deleted" {
+  egress_stub
+  POLICIES="" check dns-egress-blocked
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"nothing restricts egress from shop any more"* ]] || false
+}
+
+@test "dns-egress-blocked fails the wrong fix: a rule that allows all egress" {
+  egress_stub
+  POLICIES='default-deny-egress|["Egress"]|[{"ports":[{"port":8080}]},{}]' check dns-egress-blocked
+  [ "$status" -ne 0 ]
+  POLICIES="$(printf 'default-deny-egress|["Egress"]|[{"ports":[{"port":8080}]}]\nallow-all|["Egress"]|[{}]')" check dns-egress-blocked
+  [ "$status" -ne 0 ]
+}
+
+@test "dns-egress-blocked fails the wrong fix: the upstream addressed by IP" {
+  egress_stub
+  UPSTREAM=http://10.43.207.135:8080/ check dns-egress-blocked
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"no longer calls its upstream at http://echo-server"* ]] || false
+}
+
+@test "dns-egress-blocked fails the wrong fix: the upstream call switched off" {
+  egress_stub
+  UPSTREAM="" check dns-egress-blocked
+  [ "$status" -ne 0 ]
+  [[ "$output" == *'UPSTREAM_URL is ""'* ]] || false
+}
+
+@test "dns-egress-blocked passes a healthy lab with no record and no policy" {
+  egress_stub
+  RECORDED="" UPSTREAM="" POLICIES="" check dns-egress-blocked
+  [ "$status" -eq 0 ]
+}
+
+@test "dns-egress-blocked fails with a reason when the policies cannot be listed" {
+  egress_stub
+  CLUSTER=down check dns-egress-blocked
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"could not list the NetworkPolicies in shop"* ]] || false
+}
+
+@test "dns-egress-blocked fails with a reason when no pod is running" {
+  egress_stub
+  RUNNING="" check dns-egress-blocked
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"no pod of shop/cart is running"* ]] || false
+}
+
+@test "dns-egress-blocked fails while the rollout has not completed, or scaled to zero, or gone" {
+  egress_stub
+  ROLLED_OUT=no READY=0 check dns-egress-blocked
+  [[ "$output" == *"rollout of shop/cart has not completed"* ]] || false
+  REPLICAS=0 check dns-egress-blocked
+  [[ "$output" == *"scaled to 0 replicas"* ]] || false
+  DEPLOY_EXISTS=no check dns-egress-blocked
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"deployment shop/cart not found"* ]] || false
+}
