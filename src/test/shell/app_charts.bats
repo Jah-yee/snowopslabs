@@ -65,3 +65,23 @@ charts() {
   [[ "$output" != *"secretKeyRef"* ]] || false
   [[ "$output" != *"kind: Secret"* ]] || false
 }
+
+@test "go-api's behaviour switches set nothing by default" {
+  needs_helm
+  run helm template t "$ROOT/apps/go-api/deploy/helm" -f "$ROOT/apps/go-api/deploy/helm/values-dev.yaml"
+  [ "$status" -eq 0 ] || { echo "$output"; false; }
+  for var in UPSTREAM_URL STARTUP_DELAY_SECONDS CPU_WORK_MS; do
+    [[ "$output" != *"$var"* ]] || { echo "$var is set by default"; false; }
+  done
+}
+
+@test "go-api's behaviour switches each set their variable" {
+  needs_helm
+  run helm template t "$ROOT/apps/go-api/deploy/helm" \
+    --set upstreamURL=http://echo-server.echo-server.svc.cluster.local:8080/ \
+    --set startupDelaySeconds=45 --set cpuWorkMs=3
+  [ "$status" -eq 0 ] || { echo "$output"; false; }
+  [[ "$output" == *$'- name: UPSTREAM_URL\n          value: "http://echo-server.echo-server.svc.cluster.local:8080/"'* ]] || false
+  [[ "$output" == *$'- name: STARTUP_DELAY_SECONDS\n          value: "45"'* ]] || false
+  [[ "$output" == *$'- name: CPU_WORK_MS\n          value: "3"'* ]] || false
+}

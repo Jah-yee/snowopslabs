@@ -47,6 +47,23 @@ docker run -p 8080:8080 -e READINESS_FAILURE=true go-api
 - `READINESS_FAILURE` - Simulate readiness failures (default: `false`)
 - `SHUTDOWN_TIMEOUT` - Graceful shutdown timeout (default: `30s`)
 
+Three behaviour switches exist for faults and scenarios. Each is off by
+default, and the app behaves exactly as above until one is set:
+
+- `UPSTREAM_URL` - a dependency `/` and `/ready` call on every request. When
+  the call fails or answers 5xx, `/` answers 502 with the error
+  (`{"error":"upstream: ..."}`) and logs it. `/ready` reports the result in an
+  `upstream` field and stays 200, so a dependency outage does not take every
+  replica out of the Service. `/` waits up to 8s for the upstream, under the
+  server's 10s write timeout; `/ready` waits up to 1s, under any probe's
+  timeout.
+- `STARTUP_DELAY_SECONDS` - how long the app waits before it listens, as a
+  slow start would. Probes get `connection refused` until then.
+- `CPU_WORK_MS` - CPU work `/` does per request, measured in milliseconds of
+  an unthrottled core at startup. Under a CPU limit the same work takes longer.
+
+The chart sets them with `upstreamURL`, `startupDelaySeconds` and `cpuWorkMs`.
+
 ### Command-line Flags
 
 - `-failure` - Enable readiness check failure simulation

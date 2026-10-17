@@ -87,6 +87,9 @@ Edit `values.yaml` to customize:
 | `secrets.enabled` | true | Create the chart's Secret, `go-api-secret` |
 | `secrets.stringData` | `api-token: lab-only-api-token` | Keys and values of that Secret |
 | `secrets.env` | `API_TOKEN: api-token` | Environment variables read from a key of that Secret |
+| `upstreamURL` | `""` | Sets `UPSTREAM_URL`: a dependency `/` and `/ready` call |
+| `startupDelaySeconds` | `0` | Sets `STARTUP_DELAY_SECONDS`: wait before listening |
+| `cpuWorkMs` | `0` | Sets `CPU_WORK_MS`: CPU work per request to `/` |
 
 ### Using Custom Values
 

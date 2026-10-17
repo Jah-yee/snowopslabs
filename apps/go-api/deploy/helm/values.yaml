@@ -92,6 +92,15 @@ env:
   READINESS_FAILURE: "false"
   SHUTDOWN_TIMEOUT: "30s"
 
+# Behaviour switches for faults and scenarios. Each is off at its default and
+# sets nothing in the pod then.
+# upstreamURL: a dependency "/" and "/ready" call on every request (UPSTREAM_URL).
+upstreamURL: ""
+# startupDelaySeconds: how long the app waits before it listens (STARTUP_DELAY_SECONDS).
+startupDelaySeconds: 0
+# cpuWorkMs: CPU work "/" does per request, in ms of an unthrottled core (CPU_WORK_MS).
+cpuWorkMs: 0
+
 # Node selector
 nodeSelector: {}
 
