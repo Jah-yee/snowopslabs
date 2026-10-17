@@ -16,6 +16,7 @@
   <a href="https://github.com/sagar2395/snowopslabs/releases"><img alt="Release" src="https://img.shields.io/github/v/release/sagar2395/snowopslabs?color=818cf8&sort=semver"></a>
   <img alt="Platforms: macOS, Linux, WSL2" src="https://img.shields.io/badge/platforms-macOS%20·%20Linux%20·%20WSL2-64748b">
   <a href="https://www.youtube.com/watch?v=XtItNiMiQy8"><img alt="Watch the setup video on YouTube" src="https://img.shields.io/badge/Watch-setup_video-ff0000?logo=youtube&logoColor=white"></a>
+  <a href="https://codespaces.new/sagar2395/snowopslabs/tree/stable?quickstart=1"><img alt="Open in GitHub Codespaces" src="https://img.shields.io/badge/Open_in-Codespaces-24292f?logo=github&logoColor=white"></a>
   <a href="CONTRIBUTING.md"><img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-4ade80.svg"></a>
 </p>
 
@@ -139,9 +140,17 @@ Details and per-scenario figures: [Resources](docs/resources.md).
 
 Your OS in detail: [macOS](docs/getting-started/macos.md) ·
 [Linux](docs/getting-started/linux.md) ·
-[Windows (WSL2)](docs/getting-started/wsl.md).
+[Windows (WSL2)](docs/getting-started/wsl.md) ·
+[GitHub Codespaces](docs/getting-started/codespaces.md).
 
 ## Install
+
+> **Nothing to install: run it in your browser.**
+> [Open in GitHub Codespaces](https://codespaces.new/sagar2395/snowopslabs/tree/stable?quickstart=1)
+> builds the lab in a 4-core codespace on your GitHub account, running the
+> same `install.sh` and `labctl init` as below. Then skip to
+> [Your first lab](#your-first-lab). Details:
+> [GitHub Codespaces](docs/getting-started/codespaces.md).
 
 > **Prefer to watch first?** The [setup video](https://www.youtube.com/watch?v=XtItNiMiQy8)
 > walks through setting up the lab locally; the steps below are the same.
@@ -313,7 +322,7 @@ in `labctl app list` and can be bound to scenarios with `--app <name>`
 
 | | |
 |---|---|
-| [Getting started: macOS](docs/getting-started/macos.md) · [Linux](docs/getting-started/linux.md) · [WSL2](docs/getting-started/wsl.md) | Installing and running on your OS |
+| [Getting started: macOS](docs/getting-started/macos.md) · [Linux](docs/getting-started/linux.md) · [WSL2](docs/getting-started/wsl.md) · [Codespaces](docs/getting-started/codespaces.md) | Installing and running on your OS, or in the browser |
 | [Setup video](https://www.youtube.com/watch?v=XtItNiMiQy8) | What SnowOps Labs is and how to set it up locally, on YouTube |
 | [Resources](docs/resources.md) | How much CPU and memory each scenario needs |
 | [Troubleshooting](docs/troubleshooting.md) | Fixes by symptom |

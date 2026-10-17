@@ -276,6 +276,12 @@ panics:
 When the fuzzer finds a failing input it writes it under the package's
 `testdata/fuzz/`; commit that file with the fix.
 
+`make fuzz` runs `src/scripts/fuzz.sh`. Go's fuzz coordinator can report its
+own `-fuzztime` timeout as a failure whose only message is
+`context deadline exceeded`; such a target fuzzed for its full time and found
+nothing, so the script passes it and says so. Any other failure, and any run
+that writes a failing input or fails a seed, fails the job.
+
 ### Goroutine leaks
 
 `internal/run`, `internal/executor` and `internal/httpapi` run their tests
