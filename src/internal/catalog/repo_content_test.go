@@ -70,6 +70,7 @@ func TestVerifiedContentSet(t *testing.T) {
 	// here until its review passes.
 	unverifiedIncidents := map[string]bool{
 		"liveness-probe-kill":   true,
+		"missing-secret-key":    true,
 		"pending-unschedulable": true,
 	}
 	verifiedIncidents := 0

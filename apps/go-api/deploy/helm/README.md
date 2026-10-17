@@ -84,6 +84,9 @@ Edit `values.yaml` to customize:
 | `autoscaling.minReplicas` | 2 | Minimum pod replicas |
 | `autoscaling.maxReplicas` | 5 | Maximum pod replicas |
 | `prometheus.enabled` | true | Enable Prometheus metrics |
+| `secrets.enabled` | true | Create the chart's Secret, `go-api-secret` |
+| `secrets.stringData` | `api-token: lab-only-api-token` | Keys and values of that Secret |
+| `secrets.env` | `API_TOKEN: api-token` | Environment variables read from a key of that Secret |
 
 ### Using Custom Values
 
@@ -201,6 +204,11 @@ env:
   READINESS_FAILURE: "false"  # Simulate readiness failure for testing
   SHUTDOWN_TIMEOUT: "30s"
 ```
+
+`API_TOKEN` comes from key `api-token` of the chart's own Secret through
+`env[].valueFrom.secretKeyRef`, so a pod whose Secret lacks the key never
+starts (`CreateContainerConfigError`). The `missing-secret-key` incident is
+built on it. Nothing in the lab checks the token's value.
 
 ## Health Checks
 

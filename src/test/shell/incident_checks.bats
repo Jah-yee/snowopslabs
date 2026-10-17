@@ -508,3 +508,94 @@ STUB
   [ "$status" -ne 0 ]
   [[ "$output" == *"deployment shop/cart not found"* ]] || false
 }
+
+# ── missing-secret-key ────────────────────────────────────────────────────────
+
+# REFS is "<env>|<secret>|<key>" per variable, KEYS the Secret's keys, and
+# RECORDED the variable the fault's record names.
+secret_stub() {
+  stub_script kubectl <<'STUB'
+default_refs="$(printf 'PORT||\nAPI_TOKEN|cart-secret|api-token')"
+case "$*" in
+  *"get configmap labfault-missing-secret-key"*"data.env}"*) printf '%s' "${RECORDED-}" ;;
+  *"secretKeyRef.key}"*) [ "${ENV_READ:-ok}" = ok ] || exit 1; printf '%s\n' "${REFS-$default_refs}" ;;
+  *"get secret cart-secret"*"go-template"*) printf '%s\n' "${KEYS-api-token}" ;;
+  *"rollout status"*) [ "${ROLLED_OUT:-yes}" = yes ] || exit 1 ;;
+  *"get deploy"*"jsonpath={.spec.replicas}"*)
+    [ "${DEPLOY_EXISTS:-yes}" = yes ] || exit 1
+    echo "${REPLICAS:-1}"
+    ;;
+  *"get deploy"*"jsonpath={.status.readyReplicas}"*) echo "${READY-1}" ;;
+  *"get pods"*) echo "cart-abc   false   CreateContainerConfigError   0" ;;
+esac
+STUB
+}
+
+@test "missing-secret-key passes when every Secret key it reads exists and the replicas are ready" {
+  secret_stub
+  RECORDED=API_TOKEN check missing-secret-key
+  [ "$status" -eq 0 ]
+}
+
+@test "missing-secret-key fails while the fault is in, showing only what get pods shows" {
+  secret_stub
+  RECORDED=API_TOKEN KEYS=API_TOKEN ROLLED_OUT=no READY=0 check missing-secret-key
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"rollout of shop/cart has not completed"* ]] || false
+  [[ "$output" == *"CreateContainerConfigError"* ]] || false
+  [[ "$output" != *"api-token"* ]] || false
+}
+
+@test "missing-secret-key passes when the reference names the key the Secret has now" {
+  secret_stub
+  RECORDED=API_TOKEN REFS="API_TOKEN|cart-secret|API_TOKEN" KEYS=API_TOKEN check missing-secret-key
+  [ "$status" -eq 0 ]
+}
+
+@test "missing-secret-key fails the wrong fix: the reference marked optional, pods up without the key" {
+  secret_stub
+  RECORDED=API_TOKEN KEYS=API_TOKEN check missing-secret-key
+  [ "$status" -ne 0 ]
+  [[ "$output" == *'API_TOKEN reads key "api-token" of Secret cart-secret, which does not have it'* ]] || false
+}
+
+@test "missing-secret-key fails the wrong fix: the variable removed" {
+  secret_stub
+  RECORDED=API_TOKEN REFS="PORT||" KEYS=API_TOKEN check missing-secret-key
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"API_TOKEN no longer comes from a Secret"* ]] || false
+}
+
+@test "missing-secret-key fails the wrong fix: the value hardcoded in the pod template" {
+  secret_stub
+  RECORDED=API_TOKEN REFS="$(printf 'PORT||\nAPI_TOKEN||')" KEYS=API_TOKEN check missing-secret-key
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"API_TOKEN no longer comes from a Secret"* ]] || false
+}
+
+@test "missing-secret-key passes a healthy lab with no record" {
+  secret_stub
+  check missing-secret-key
+  [ "$status" -eq 0 ]
+}
+
+@test "missing-secret-key fails with a reason when the environment cannot be read" {
+  secret_stub
+  ENV_READ=fail check missing-secret-key
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"could not read the environment of shop/cart"* ]] || false
+}
+
+@test "missing-secret-key fails the wrong fix: scaled to zero" {
+  secret_stub
+  REPLICAS=0 check missing-secret-key
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"scaled to 0 replicas"* ]] || false
+}
+
+@test "missing-secret-key fails when the workload is gone" {
+  secret_stub
+  DEPLOY_EXISTS=no check missing-secret-key
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"deployment shop/cart not found"* ]] || false
+}

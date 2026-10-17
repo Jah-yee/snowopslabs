@@ -156,10 +156,16 @@ configMap:
   enabled: false
   data: {}
 
-# Secret management
+# The chart's own Secret. Each entry in `env` is an environment variable the
+# container reads from one key of it. API_TOKEN is a lab credential; nothing
+# checks its value.
 secrets:
-  enabled: false
+  enabled: true
   data: {}
+  stringData:
+    api-token: "lab-only-api-token"
+  env:
+    API_TOKEN: api-token
 
 # PodDisruptionBudget
 podDisruptionBudget:

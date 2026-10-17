@@ -231,6 +231,7 @@ oom-kill|-n go-api set resources deploy/go-api --limits=memory=128Mi --requests=
 noisy-neighbor|-n labfault-batch set resources deploy/report-batch --requests=cpu=100m --limits=cpu=200m
 pending-unschedulable|-n go-api set resources deploy/go-api --requests=cpu=100m --limits=cpu=500m
 liveness-probe-kill|-n go-api patch deploy go-api --type=json
+missing-secret-key|-n go-api patch deploy go-api --type=strategic
 TABLE
 }
 

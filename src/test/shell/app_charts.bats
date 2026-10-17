@@ -48,3 +48,20 @@ charts() {
   grep -q -- '--set "ingress.host=${APP_NAME}.${DOMAIN_SUFFIX:-${CLUSTER_NAME:-snowops}.localhost}"' \
     "$ROOT/src/engine/deploy/helm.sh"
 }
+
+@test "go-api reads API_TOKEN from a key of its own Secret, and the Secret holds that key" {
+  needs_helm
+  run helm template t "$ROOT/apps/go-api/deploy/helm" -f "$ROOT/apps/go-api/deploy/helm/values-dev.yaml"
+  [ "$status" -eq 0 ] || { echo "$output"; false; }
+  [[ "$output" == *$'- name: API_TOKEN\n          valueFrom:\n            secretKeyRef:\n              name: go-api-secret\n              key: "api-token"'* ]] || { echo "$output"; false; }
+  [[ "$output" == *$'kind: Secret\nmetadata:\n  name: go-api-secret'* ]] || false
+  [[ "$output" == *$'stringData:\n  api-token: lab-only-api-token'* ]] || false
+}
+
+@test "go-api with its Secret turned off renders no Secret and no secret reference" {
+  needs_helm
+  run helm template t "$ROOT/apps/go-api/deploy/helm" --set secrets.enabled=false
+  [ "$status" -eq 0 ] || { echo "$output"; false; }
+  [[ "$output" != *"secretKeyRef"* ]] || false
+  [[ "$output" != *"kind: Secret"* ]] || false
+}

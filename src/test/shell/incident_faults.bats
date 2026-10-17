@@ -34,6 +34,7 @@ if [ -n "${FAIL_ON:-}" ]; then
 fi
 healthy_selector='{"app.kubernetes.io/name":"cart","tier":"web"}'
 healthy_probe='{"httpGet":{"path":"/health","port":"http"}}'
+healthy_refs="$(printf 'PORT||\nAPI_TOKEN|cart-secret|api-token')"
 case "$*" in
   *"apply -n monitoring -f -"*) cat >>"$STUB_DIR/applied-monitoring.yaml" ;;
   *"apply"*"-f -"*) cat >>"$STUB_DIR/applied.yaml" ;;
@@ -96,6 +97,11 @@ case "$*" in
   *"get --raw"*) [ "${POD_GET:-ok}" = ok ] || exit 1 ;;
   *"get svc cart"*"ports[0].port}"*) printf '8080' ;;
 
+  # missing-secret-key: ENV_REFS is "<env>|<secret>|<key>" per variable
+  *"get deploy"*"secretKeyRef.key}"*) printf '%s\n' "${ENV_REFS-$healthy_refs}" ;;
+  *"get secret"*"go-template"*) printf '%s\n' "${SECRET_KEYS-api-token}" ;;
+  *"get secret"*"jsonpath={.data."*) printf 'dG9rZW4=' ;;
+
   # noisy-neighbor
   *"get pods"*"custom-columns=NAME"*) [ -z "${VICTIM_PODS-set}" ] || echo "${VICTIM_PODS-cart-abc node-1 Running}" ;;
   *"get nodes"*) echo "node/node-1" ;;
@@ -126,6 +132,7 @@ network-blackhole|rollout restart deploy/cart
 noisy-neighbor|apply -f -
 pending-unschedulable|patch deploy cart --type=strategic
 liveness-probe-kill|patch deploy cart --type=json
+missing-secret-key|patch secret cart-secret --type=json
 EOF
 }
 
@@ -794,4 +801,90 @@ neighbor() {
 @test "liveness-probe-kill: resolve stops the traffic inject started" {
   resolve liveness-probe-kill
   assert_called kubectl "delete job traffic-k6"
+}
+
+# ── missing-secret-key ────────────────────────────────────────────────────────
+
+@test "missing-secret-key: inject renames the key the workload reads and replaces its pods" {
+  inject missing-secret-key
+  [ "$status" -eq 0 ]
+  assert_called kubectl '-n shop patch secret cart-secret --type=json -p'
+  assert_called kubectl '{"op":"add","path":"/data/API_TOKEN","value":"dG9rZW4="},{"op":"remove","path":"/data/api-token"}'
+  assert_called kubectl "--from-literal=env=API_TOKEN --from-literal=secret=cart-secret --from-literal=original-key=api-token --from-literal=new-key=API_TOKEN"
+  patched="$(line_of "patch secret cart-secret")"
+  deleted="$(line_of "delete pod -l app.kubernetes.io/name=cart --wait=false")"
+  [ -n "$deleted" ]
+  [ "$patched" -lt "$deleted" ]
+}
+
+@test "missing-secret-key: inject gives an already variable-style key a new name" {
+  ENV_REFS="TOKEN|cart-secret|TOKEN" SECRET_KEYS=TOKEN inject missing-secret-key
+  assert_called kubectl '"path":"/data/TOKEN_V2"'
+}
+
+@test "missing-secret-key: inject refuses a workload that reads no Secret key" {
+  ENV_REFS="PORT||" inject missing-secret-key
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"reads no environment variable from a Secret key"* ]] || false
+  refute_called kubectl "patch"
+  refute_called kubectl "delete pod"
+}
+
+@test "missing-secret-key: a second inject changes nothing" {
+  RECORD_new_key=API_TOKEN SECRET_KEYS=API_TOKEN inject missing-secret-key
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already injected"* ]] || false
+  refute_called kubectl "patch"
+  refute_called kubectl "delete pod"
+}
+
+record_rotation() {
+  export RECORD_env=API_TOKEN RECORD_secret=cart-secret RECORD_original_key=api-token RECORD_new_key=API_TOKEN
+}
+
+@test "missing-secret-key: resolve renames the key back and restores the reference" {
+  record_rotation
+  SECRET_KEYS=API_TOKEN resolve missing-secret-key
+  [ "$status" -eq 0 ]
+  assert_called kubectl '{"op":"add","path":"/data/api-token","value":"dG9rZW4="},{"op":"remove","path":"/data/API_TOKEN"}'
+  assert_called kubectl '"secretKeyRef":{"name":"cart-secret","key":"api-token","optional":null}'
+}
+
+@test "missing-secret-key: resolve after the reference was pointed at the new key leaves both alone" {
+  record_rotation
+  ENV_REFS="API_TOKEN|cart-secret|API_TOKEN" SECRET_KEYS=API_TOKEN resolve missing-secret-key
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already fixed"* ]] || false
+  refute_called kubectl "patch"
+  assert_called kubectl "delete configmap labfault-missing-secret-key"
+}
+
+@test "missing-secret-key: resolve after the key was put back leaves the Secret alone" {
+  record_rotation
+  SECRET_KEYS="$(printf 'api-token\nAPI_TOKEN')" resolve missing-secret-key
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already fixed"* ]] || false
+  refute_called kubectl "patch"
+}
+
+@test "missing-secret-key: resolve puts back a variable the learner removed" {
+  record_rotation
+  ENV_REFS="PORT||" SECRET_KEYS=API_TOKEN resolve missing-secret-key
+  [ "$status" -eq 0 ]
+  assert_called kubectl '"env":[{"name":"API_TOKEN","value":null,"valueFrom":{"secretKeyRef":{"name":"cart-secret","key":"api-token"'
+}
+
+@test "missing-secret-key: resolve with no key to restore from says to re-apply the chart" {
+  record_rotation
+  SECRET_KEYS=other resolve missing-secret-key
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"labctl app deploy cart"* ]] || false
+  refute_called kubectl "patch secret"
+}
+
+@test "missing-secret-key: resolve with no record changes nothing and says how to look" {
+  SECRET_KEYS=API_TOKEN resolve missing-secret-key
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"No record of the rotated Secret key"* ]] || false
+  refute_called kubectl "patch"
 }

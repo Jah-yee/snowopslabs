@@ -52,6 +52,7 @@ var shippedFaults = []string{
 	"bad-deploy-rollout",
 	"crashloop-bad-config",
 	"liveness-probe-kill",
+	"missing-secret-key",
 	"network-blackhole",
 	"noisy-neighbor",
 	"oom-kill",

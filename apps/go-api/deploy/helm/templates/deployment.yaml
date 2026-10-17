@@ -73,6 +73,15 @@ spec:
         - name: {{ $key }}
           value: "{{ $value }}"
         {{- end }}
+        {{- if .Values.secrets.enabled }}
+        {{- range $name, $key := .Values.secrets.env }}
+        - name: {{ $name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "go-api.fullname" $ }}-secret
+              key: {{ $key | quote }}
+        {{- end }}
+        {{- end }}
         {{- if .Values.tracing.enabled }}
         # The app exports OTLP to a collector, never straight to a trace backend.
         - name: OTEL_EXPORTER_OTLP_ENDPOINT
