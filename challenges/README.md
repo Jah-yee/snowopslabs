@@ -27,6 +27,9 @@ parTime: "10m"                     # Go duration string; omit for unscored time
 setup:
   type: incident                   # incident | scenario
   ref: bad-deploy-rollout          # fault name or scenario name
+  # OR several faults injected together, in order (incidents only, two or more):
+  # refs: [missing-secret-key, liveness-probe-kill]
+silent: false                      # true: info and the API name no fault, only how many
 grading:
   useDetectionCheck: true          # use the fault's own detection check as the grade check
   # OR explicit checks:
@@ -45,6 +48,20 @@ hintPenalty: 5                     # % score deducted per hint (default 5)
 | `restore-broken-deploy` | workload | 6m | `bad-deploy-rollout` incident |
 | `find-the-memory-leak` | resources | 8m | `oom-kill` incident |
 | `make-the-slo-green` | config | 8m | `service-selector-broken` incident |
+
+### Several faults at once
+
+`setup.refs` injects each fault in turn. The incident engine records one fault
+as active, so each one after the first is injected over the last, and
+`labctl incident status` follows only the last; grade with `labctl challenge
+submit`, which runs every fault's detection check with that fault's own target.
+Fixing one of two scores half, and the run stays open. `labctl challenge hint`
+takes the faults' ladders in turn, a rung of each, so no fault's answer comes
+before the others' first nudge. `abort` and a passing submit resolve them all,
+last injected first.
+
+Pick faults whose fixes do not interfere, and time `parTime` on the pair: the
+symptoms of one can hide the other, which is the realism and the difficulty.
 
 ## Using challenges
 

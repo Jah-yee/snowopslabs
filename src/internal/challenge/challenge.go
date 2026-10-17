@@ -25,8 +25,22 @@ var ErrNoActive = errors.New("no active challenge")
 
 // SetupSpec says how to prepare the lab before the timer starts.
 type SetupSpec struct {
-	Type string `yaml:"type" json:"type"` // scenario | incident
-	Ref  string `yaml:"ref" json:"ref"`   // scenario name or fault name
+	Type string `yaml:"type" json:"type"`         // scenario | incident
+	Ref  string `yaml:"ref,omitempty" json:"ref"` // scenario name or fault name
+	// Refs are faults injected together, in order. A challenge sets Ref or
+	// Refs, never both.
+	Refs []string `yaml:"refs,omitempty" json:"refs,omitempty"`
+}
+
+// All returns every scenario or fault the setup names, in setup order.
+func (s SetupSpec) All() []string {
+	if len(s.Refs) > 0 {
+		return s.Refs
+	}
+	if s.Ref == "" {
+		return nil
+	}
+	return []string{s.Ref}
 }
 
 // GradingSpec describes how to compute the score on submit.
@@ -58,7 +72,10 @@ type Challenge struct {
 	Setup       SetupSpec   `yaml:"setup"`
 	Grading     GradingSpec `yaml:"grading"`
 	HintPenalty int         `yaml:"hintPenalty"` // % per hint; default 5
-	dir         string
+	// Silent keeps the setup's names from the learner until the run ends:
+	// finding the faults is the exercise.
+	Silent bool `yaml:"silent,omitempty"`
+	dir    string
 }
 
 // Dir returns the directory this challenge was loaded from.
@@ -85,9 +102,7 @@ func (c *Challenge) Validate() []string {
 	if c.Setup.Type == "" {
 		errs = append(errs, "setup.type is required")
 	}
-	if c.Setup.Ref == "" {
-		errs = append(errs, "setup.ref is required")
-	}
+	errs = append(errs, c.Setup.validate()...)
 	if !c.Grading.UseDetectionCheck && len(c.Grading.Checks) == 0 {
 		errs = append(errs, "grading: either useDetectionCheck or checks must be set")
 	}
@@ -97,6 +112,31 @@ func (c *Challenge) Validate() []string {
 		}
 	}
 	return errs
+}
+
+// validate checks the setup names its content once: by ref, or by a list of
+// distinct faults in refs.
+func (s SetupSpec) validate() []string {
+	switch {
+	case s.Ref == "" && len(s.Refs) == 0:
+		return []string{"setup.ref is required (or setup.refs, for several faults)"}
+	case s.Ref != "" && len(s.Refs) > 0:
+		return []string{"setup: set ref or refs, not both"}
+	case len(s.Refs) == 0:
+		return nil
+	case s.Type != "incident":
+		return []string{"setup.refs: only incidents can be set up together"}
+	case len(s.Refs) < 2:
+		return []string{"setup.refs: list two or more faults, or use setup.ref for one"}
+	}
+	seen := map[string]bool{}
+	for _, r := range s.Refs {
+		if r == "" || seen[r] {
+			return []string{fmt.Sprintf("setup.refs: %q is empty or listed twice", r)}
+		}
+		seen[r] = true
+	}
+	return nil
 }
 
 // ActiveRun is the state of a currently running challenge.

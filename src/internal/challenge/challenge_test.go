@@ -448,3 +448,40 @@ func TestComputeScore_Exact(t *testing.T) {
 		})
 	}
 }
+
+func TestValidate_SetupRefs(t *testing.T) {
+	grading := GradingSpec{UseDetectionCheck: true}
+	tests := []struct {
+		name    string
+		setup   SetupSpec
+		wantErr string // "" means valid
+		wantAll []string
+	}{
+		{"one fault by ref", SetupSpec{Type: "incident", Ref: "a"}, "", []string{"a"}},
+		{"several faults by refs", SetupSpec{Type: "incident", Refs: []string{"a", "b"}}, "", []string{"a", "b"}},
+		{"neither", SetupSpec{Type: "incident"}, "setup.ref is required", nil},
+		{"both", SetupSpec{Type: "incident", Ref: "a", Refs: []string{"b", "c"}}, "not both", nil},
+		{"scenarios cannot be set up together", SetupSpec{Type: "scenario", Refs: []string{"a", "b"}}, "only incidents", nil},
+		{"a list of one", SetupSpec{Type: "incident", Refs: []string{"a"}}, "two or more", nil},
+		{"a fault listed twice", SetupSpec{Type: "incident", Refs: []string{"a", "a"}}, `"a" is empty or listed twice`, nil},
+		{"an empty name", SetupSpec{Type: "incident", Refs: []string{"a", ""}}, "is empty or listed twice", nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &Challenge{Name: "x", DisplayName: "X", Setup: tt.setup, Grading: grading}
+			errs := strings.Join(c.Validate(), "; ")
+			if tt.wantErr == "" {
+				if errs != "" {
+					t.Fatalf("Validate() = %q, want no errors", errs)
+				}
+				if got := strings.Join(tt.setup.All(), ","); got != strings.Join(tt.wantAll, ",") {
+					t.Errorf("All() = %q, want %q", got, strings.Join(tt.wantAll, ","))
+				}
+				return
+			}
+			if !strings.Contains(errs, tt.wantErr) {
+				t.Errorf("Validate() = %q, want it to contain %q", errs, tt.wantErr)
+			}
+		})
+	}
+}

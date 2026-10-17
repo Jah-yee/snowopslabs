@@ -60,14 +60,25 @@ the fraction of checks that pass. Details in
 `grading.useDetectionCheck: true`, `submit` resolves the fault's detection check
 exactly as `labctl incident status` does - template variables expanded, and the
 check's `script` resolved against the *fault's* directory rather than the
-project root. A challenge's own `grading.checks` are template-resolved too, with
+project root, and the fault's target (`TARGET_NAMESPACE`, `TARGET_WORKLOAD`) in
+its environment. A challenge that sets up several faults (`setup.refs`) is
+graded by every fault's detection check, each run that way, so fixing one of two
+scores half. A challenge's own `grading.checks` are template-resolved too, with
 their scripts relative to the project root. Without this a templated URL reaches
 the HTTP client verbatim and a detection script is looked up in the wrong place,
 so a correct fix scores zero.
 
+**Several faults, and silent challenges.** `start` injects a `setup.refs`
+challenge's faults in order; `abort`, or a passing `submit`, resolves every one.
+`hint` takes the faults' hint ladders in turn, one rung of each. A challenge with
+`silent: true` keeps its faults' names out of `info` and the API, which give
+only how many there are.
+
 REST: `GET /api/v2/challenges`, `GET /api/v2/challenges/{name}`,
 `GET /api/v2/challenges/status`, `GET /api/v2/challenges/history`,
 `POST /api/v2/challenges/complete`. A run's `elapsedSeconds` is whole seconds.
+`GET /api/v2/challenges/{name}` carries `silent`, and for a silent challenge its
+`setup` is `{"type", "count"}` instead of the names.
 
 `complete` is `labctl challenge submit` over HTTP. It takes no body: the server
 runs the challenge's checks against the lab and answers the scored run with

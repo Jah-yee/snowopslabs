@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sagar2395/snowopslabs/internal/challenge"
 	"github.com/sagar2395/snowopslabs/internal/labtest"
 )
 
@@ -180,5 +181,27 @@ func TestChallenge_IncidentHintsAreCharged(t *testing.T) {
 	l.mustRun("challenge", "hint")
 	if r := l.mustRun("challenge", "status"); !strings.Contains(r.stdout, "Hints used: 2") {
 		t.Errorf("status does not count both hints:\n%s", r.stdout)
+	}
+}
+
+func TestSetupSummary(t *testing.T) {
+	tests := []struct {
+		name string
+		c    challenge.Challenge
+		want string
+	}{
+		{"one fault", challenge.Challenge{Setup: challenge.SetupSpec{Type: "incident", Ref: "oom-kill"}}, "incident oom-kill"},
+		{"several faults", challenge.Challenge{Setup: challenge.SetupSpec{Type: "incident", Refs: []string{"a", "b"}}}, "incident a, b"},
+		{"silent: the count, not the names", challenge.Challenge{Silent: true, Setup: challenge.SetupSpec{Type: "incident", Refs: []string{"a", "b"}}},
+			"2 incidents, not named: finding them is the exercise"},
+		{"silent, one fault", challenge.Challenge{Silent: true, Setup: challenge.SetupSpec{Type: "incident", Ref: "a"}},
+			"1 incident, not named: finding them is the exercise"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := setupSummary(&tt.c); got != tt.want {
+				t.Errorf("setupSummary() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }

@@ -8,5 +8,6 @@
   "setup": {
     "ref": "demo-fault",
     "type": "incident"
-  }
+  },
+  "silent": false
 }

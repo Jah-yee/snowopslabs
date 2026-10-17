@@ -70,8 +70,18 @@ func (s *Server) handleChallengeInfo(w http.ResponseWriter, r *http.Request) {
 		"category":    c.Category,
 		"parTime":     c.ParTime,
 		"hintPenalty": c.HintPenalty,
-		"setup":       c.Setup,
+		"setup":       challengeSetupView(c),
+		"silent":      c.Silent,
 	})
+}
+
+// challengeSetupView is the setup a client may see. A silent challenge gives
+// its type and how many faults it injects, not their names.
+func challengeSetupView(c *challenge.Challenge) any {
+	if !c.Silent {
+		return c.Setup
+	}
+	return map[string]any{"type": c.Setup.Type, "count": len(c.Setup.All())}
 }
 
 func (s *Server) handleChallengeStatus(w http.ResponseWriter, r *http.Request) {

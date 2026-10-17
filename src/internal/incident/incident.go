@@ -13,6 +13,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -687,6 +688,22 @@ func (e *Engine) Resolve(name string, exec *executor.Executor, user string) (*Fa
 		e.clearActive()
 	}
 	return f, nil
+}
+
+// Detection returns a fault's detection check with its templates expanded,
+// the directory its script runs from, and the environment it reads (the
+// fault's target, domain and monitoring namespace): what Status runs.
+func (e *Engine) Detection(name string) (checks.Check, string, []string, error) {
+	f, err := e.Get(name)
+	if err != nil {
+		return checks.Check{}, "", nil, err
+	}
+	env := make([]string, 0, 5)
+	for k, v := range e.targetEnv(f) {
+		env = append(env, k+"="+v)
+	}
+	slices.Sort(env)
+	return e.resolveCheck(f.Detection), f.Dir, env, nil
 }
 
 // ResolveCheck returns check with its template variables expanded, as the

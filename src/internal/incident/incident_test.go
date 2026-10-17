@@ -502,3 +502,41 @@ func TestStatus_CancelledContextNeverResolves(t *testing.T) {
 		t.Error("a cancelled status check cleared the active incident")
 	}
 }
+
+// Detection is what a challenge grades with, so it must hand the check the
+// same target environment Status runs it with.
+func TestDetection(t *testing.T) {
+	e, root := testEngine(t, "demo")
+	e.DomainSuffix = "lab.test"
+	tests := []struct {
+		name    string
+		fault   string
+		wantErr bool
+	}{
+		{"a fault's check, its directory and its target", "demo", false},
+		{"an unknown fault", "ghost", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			k, dir, env, err := e.Detection(tt.fault)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("Detection() of an unknown fault returned no error")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if k.Name != "resolved-when-marker-gone" || dir != filepath.Join(root, "incidents", "demo") {
+				t.Errorf("check %q from %q, want resolved-when-marker-gone from the fault's directory", k.Name, dir)
+			}
+			joined := strings.Join(env, " ")
+			for _, want := range []string{"TARGET_NAMESPACE=go-api", "TARGET_WORKLOAD=go-api", "DOMAIN_SUFFIX=lab.test"} {
+				if !strings.Contains(joined, want) {
+					t.Errorf("env %q is missing %s", joined, want)
+				}
+			}
+		})
+	}
+}

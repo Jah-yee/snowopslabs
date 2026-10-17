@@ -40,16 +40,18 @@ func (c *Catalog) crossReference() {
 	for _, ch := range c.challenges {
 		key := sourceKey(KindChallenge, ch.Name)
 		file, node := c.sources[key], c.nodes[key]
-		switch ch.Setup.Type {
-		case "scenario":
-			if _, ok := c.scenarios[ch.Setup.Ref]; !ok {
-				c.refProblem(KindChallenge, ch.Name, file, node, ch.Setup.Ref,
-					fmt.Sprintf("setup references unknown scenario %q", ch.Setup.Ref))
-			}
-		case "incident":
-			if _, ok := c.incidents[ch.Setup.Ref]; !ok {
-				c.refProblem(KindChallenge, ch.Name, file, node, ch.Setup.Ref,
-					fmt.Sprintf("setup references unknown incident %q", ch.Setup.Ref))
+		for _, ref := range ch.Setup.All() {
+			switch ch.Setup.Type {
+			case "scenario":
+				if _, ok := c.scenarios[ref]; !ok {
+					c.refProblem(KindChallenge, ch.Name, file, node, ref,
+						fmt.Sprintf("setup references unknown scenario %q", ref))
+				}
+			case "incident":
+				if _, ok := c.incidents[ref]; !ok {
+					c.refProblem(KindChallenge, ch.Name, file, node, ref,
+						fmt.Sprintf("setup references unknown incident %q", ref))
+				}
 			}
 		}
 		if ch.Grading.UseDetectionCheck && ch.Setup.Type != "incident" {

@@ -43,6 +43,28 @@ detection:
 	"incidents/demo-fault/hints.md":           "## Hint 1\nlook at the pods\n",
 	"incidents/demo-fault/solution.md":        "# Solution\nroll it back\n",
 
+	// A fault aimed at a namespace of its own: its check needs the target the
+	// fault declares, as `incident status` passes it.
+	"incidents/batch-fault/fault.yaml": `name: batch-fault
+displayName: "Batch fault"
+description: "the batch tenant is broken"
+category: resources
+severity: low
+target:
+  namespace: batch
+  workload: report
+detection:
+  name: batch-marker-gone
+  type: script
+  script: checks/resolved.sh
+  timeoutSeconds: 5
+`,
+	"incidents/batch-fault/inject.sh":          script + "touch \"$PROJECT_ROOT/BATCH\"\n",
+	"incidents/batch-fault/resolve.sh":         script + "rm -f \"$PROJECT_ROOT/BATCH\"\necho resolved >>\"$PROJECT_ROOT/CLEANED\"\n",
+	"incidents/batch-fault/checks/resolved.sh": script + "[ \"${TARGET_NAMESPACE:-}/${TARGET_WORKLOAD:-}\" = batch/report ] && [ ! -f \"$PROJECT_ROOT/BATCH\" ]\n",
+	"incidents/batch-fault/hints.md":           "## Hint 1\nlook at the batch namespace\n## Hint 2\nthe report job\n",
+	"incidents/batch-fault/solution.md":        "# Solution\nstop it\n",
+
 	"scenarios/demo-scenario/scenario.yaml": `apiVersion: scenario.snowops.net/v2
 name: demo-scenario
 displayName: Demo scenario
@@ -89,6 +111,19 @@ setup: {type: scenario, ref: demo-scenario}
 grading:
   checks:
     - {name: fixed, type: script, script: checks/fixed.sh, timeoutSeconds: 5}
+`,
+	"challenges/batch/challenge.yaml": `name: batch
+displayName: "Graded by a fault with its own target"
+parTime: "10m"
+setup: {type: incident, ref: batch-fault}
+grading: {useDetectionCheck: true}
+`,
+	"challenges/shift/challenge.yaml": `name: shift
+displayName: "Two faults at once"
+parTime: "10m"
+silent: true
+setup: {type: incident, refs: [demo-fault, batch-fault]}
+grading: {useDetectionCheck: true}
 `,
 	"challenges/no-checks/challenge.yaml": `name: no-checks
 displayName: "A detection check on a scenario resolves to nothing"
@@ -370,19 +405,19 @@ func TestGrader_Checks(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			cs, dir, err := l.grader.Checks(c)
+			cs, err := l.grader.Checks(c)
 			if err != nil {
 				t.Fatalf("Checks() error = %v", err)
 			}
 			var names []string
 			for _, k := range cs {
-				names = append(names, k.Name)
+				names = append(names, k.Check.Name)
+				if k.Dir != tt.wantDir {
+					t.Errorf("%s runs from %q, want %q", k.Check.Name, k.Dir, tt.wantDir)
+				}
 			}
 			if strings.Join(names, ",") != strings.Join(tt.wantNames, ",") {
 				t.Errorf("checks = %v, want %v", names, tt.wantNames)
-			}
-			if dir != tt.wantDir {
-				t.Errorf("script dir = %q, want %q", dir, tt.wantDir)
 			}
 		})
 	}
@@ -400,11 +435,11 @@ func TestGrader_Checks_ExpandsTemplates(t *testing.T) {
 					Name: "reachable", Type: "http", URL: "http://demo.{{.DomainSuffix}}/health", ExpectStatus: 200,
 				}}},
 			}
-			cs, _, err := l.grader.Checks(c)
+			cs, err := l.grader.Checks(c)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got, want := cs[0].URL, "http://demo.lab.test/health"; got != want {
+			if got, want := cs[0].Check.URL, "http://demo.lab.test/health"; got != want {
 				t.Errorf("url = %q, want %q", got, want)
 			}
 		})
@@ -455,4 +490,145 @@ func TestGrader_SetupAndCleanup(t *testing.T) {
 			}
 		})
 	}
+}
+
+// A detection check reads the fault's target from TARGET_NAMESPACE and
+// TARGET_WORKLOAD. Graded without them it checks the default app, and a
+// genuine fix to a fault aimed anywhere else is never graded as one.
+func TestGrader_Submit_GivesTheDetectionCheckItsFaultsTarget(t *testing.T) {
+	l := newLab(t)
+	l.start(t, "batch")
+	if !l.exists("BATCH") {
+		t.Fatal("the setup did not break the lab")
+	}
+	if err := os.Remove(filepath.Join(l.root, "BATCH")); err != nil {
+		t.Fatal(err)
+	}
+	sub, err := l.grader.Submit(t.Context(), "olive")
+	if err != nil {
+		t.Fatalf("Submit() error = %v", err)
+	}
+	if !sub.Passed {
+		t.Errorf("a fixed lab did not pass: %+v", sub.Checks)
+	}
+}
+
+func TestGrader_SeveralFaults(t *testing.T) {
+	tests := []struct {
+		name     string
+		fix      []string // markers the learner removes before submitting
+		wantOK   int
+		wantPass bool
+	}{
+		{"nothing fixed", nil, 0, false},
+		{"one of two fixed: half the checks, and the run goes on", []string{"BROKEN"}, 1, false},
+		{"both fixed", []string{"BROKEN", "BATCH"}, 2, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := newLab(t)
+			l.start(t, "shift")
+			if !l.exists("BROKEN") || !l.exists("BATCH") {
+				t.Fatal("the setup did not inject both faults")
+			}
+			active, err := l.grader.Incidents.Active()
+			if err != nil || active == nil || !active.Silent {
+				t.Fatalf("active incident = %+v (err %v), want a silent one", active, err)
+			}
+			for _, m := range tt.fix {
+				if err := os.Remove(filepath.Join(l.root, m)); err != nil {
+					t.Fatal(err)
+				}
+			}
+			sub, err := l.grader.Submit(t.Context(), "olive")
+			if err != nil {
+				t.Fatalf("Submit() error = %v", err)
+			}
+			if sub.Record.ChecksPassed != tt.wantOK || sub.Record.ChecksTotal != 2 || sub.Passed != tt.wantPass {
+				t.Errorf("checks %d/%d passed=%v, want %d/2 passed=%v",
+					sub.Record.ChecksPassed, sub.Record.ChecksTotal, sub.Passed, tt.wantOK, tt.wantPass)
+			}
+			if tt.wantOK == 1 && sub.Record.Score != 50 {
+				t.Errorf("score = %d, want 50 for one fault of two inside par", sub.Record.Score)
+			}
+			if !tt.wantPass {
+				return
+			}
+			cleaned, _ := os.ReadFile(filepath.Join(l.root, "CLEANED"))
+			if n := strings.Count(string(cleaned), "resolved"); n != 2 {
+				t.Errorf("cleanup resolved %d faults, want both", n)
+			}
+		})
+	}
+}
+
+func TestGrader_SeveralFaults_CleanupAfterAFailedSecondInject(t *testing.T) {
+	l := newLab(t)
+	inject := filepath.Join(l.root, "incidents", "batch-fault", "inject.sh")
+	if err := os.WriteFile(inject, []byte(script+"exit 4\n"), 0o755); err != nil { //nolint:gosec // a test script must be executable
+		t.Fatal(err)
+	}
+	c, err := l.grader.Engine.Load("shift")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := l.grader.Setup(c); err == nil {
+		t.Fatal("Setup() passed although the second fault failed to inject")
+	}
+	if !l.exists("BROKEN") {
+		t.Fatal("the first fault was not injected; the test would prove nothing")
+	}
+	if err := l.grader.Cleanup(c); err != nil {
+		t.Fatalf("Cleanup() error = %v", err)
+	}
+	if l.exists("BROKEN") {
+		t.Error("Cleanup() left the first fault in")
+	}
+}
+
+func TestGrader_NextHint(t *testing.T) {
+	t.Run("several faults take turns, a rung of each", func(t *testing.T) {
+		l := newLab(t)
+		l.start(t, "shift")
+		want := []string{"look at the pods", "look at the batch namespace", "the report job"}
+		for i, text := range want {
+			h, err := l.grader.NextHint()
+			if err != nil {
+				t.Fatalf("hint %d: %v", i+1, err)
+			}
+			if h.Text != text || h.Index != i+1 || h.Total != 3 {
+				t.Errorf("hint %d = %+v, want %q as %d/3", i+1, h, text, i+1)
+			}
+		}
+		if _, err := l.grader.NextHint(); !errors.Is(err, incident.ErrNoMoreHints) {
+			t.Errorf("hint 4 error = %v, want ErrNoMoreHints", err)
+		}
+		if run, _ := l.grader.Engine.Active(); run == nil || run.HintsUsed != 3 {
+			t.Errorf("run = %+v, want 3 hints charged", run)
+		}
+	})
+	t.Run("one fault uses its own ladder", func(t *testing.T) {
+		l := newLab(t)
+		l.start(t, "by-detection")
+		h, err := l.grader.NextHint()
+		if err != nil || h.Text != "look at the pods" {
+			t.Fatalf("NextHint() = %+v, %v", h, err)
+		}
+		if run, _ := l.grader.Engine.Active(); run.HintsUsed != 1 {
+			t.Errorf("hints charged = %d, want 1", run.HintsUsed)
+		}
+	})
+	t.Run("a scenario challenge has none", func(t *testing.T) {
+		l := newLab(t)
+		l.start(t, "by-scenario")
+		if _, err := l.grader.NextHint(); err == nil || !strings.Contains(err.Error(), "not available") {
+			t.Errorf("NextHint() error = %v, want hints not available", err)
+		}
+	})
+	t.Run("no challenge running", func(t *testing.T) {
+		l := newLab(t)
+		if _, err := l.grader.NextHint(); !errors.Is(err, challenge.ErrNoActive) {
+			t.Errorf("NextHint() error = %v, want ErrNoActive", err)
+		}
+	})
 }

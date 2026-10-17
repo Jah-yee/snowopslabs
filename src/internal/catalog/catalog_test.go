@@ -299,3 +299,18 @@ func TestResolveRoots_ProjectDedup(t *testing.T) {
 		t.Errorf("roots = %v, want just the project root", got)
 	}
 }
+
+func TestLoad_ChallengeRefsAreEachChecked(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "incidents", "i1", "fault.yaml", validIncident)
+	refs := "name: ch1\ndisplayName: C\nsetup:\n  type: incident\n  refs: [i1, ghost]\ngrading:\n  useDetectionCheck: true\n"
+	write(t, root, "challenges", "ch1", "challenge.yaml", refs)
+
+	c, _ := Load(root)
+	findProblem(t, c.Problems(), "unknown incident \"ghost\"")
+	for _, p := range c.Problems() {
+		if strings.Contains(p.Message, `"i1"`) {
+			t.Errorf("the fault that exists was reported: %s", p.Message)
+		}
+	}
+}
