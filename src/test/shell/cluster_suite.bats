@@ -232,6 +232,7 @@ noisy-neighbor|-n labfault-batch set resources deploy/report-batch --requests=cp
 pending-unschedulable|-n go-api set resources deploy/go-api --requests=cpu=100m --limits=cpu=500m
 liveness-probe-kill|-n go-api patch deploy go-api --type=json
 missing-secret-key|-n go-api patch deploy go-api --type=strategic
+cpu-throttling|-n go-api set resources deploy/go-api --requests=cpu=50m --limits=cpu=200m
 TABLE
 }
 

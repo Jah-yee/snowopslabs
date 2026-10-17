@@ -67,7 +67,18 @@ case "$*" in
   *"get pods"*"containerStatuses[0].ready"*) [ -z "${SERVING-}" ] || printf '%s\n' "$SERVING" ;;
 
   # oom-kill
-  *"top pod"*) echo "cart-abc 5m ${WORKING_SET-20Mi}" ;;
+  *"top pod"*)
+    # TOP_SEQ: successive CPU readings, the last one repeating.
+    if [ -n "${TOP_SEQ-}" ]; then
+      echo x >>"$STUB_DIR/top.calls"
+      i="$(wc -l <"$STUB_DIR/top.calls" | tr -d ' ')"
+      cpu="$(printf '%s\n' $TOP_SEQ | sed -n "${i}p")"
+      [ -n "$cpu" ] || cpu="$(printf '%s\n' $TOP_SEQ | tail -1)"
+      echo "cart-abc $cpu 20Mi"
+    else
+      echo "cart-abc ${TOP_CPU-5m} ${WORKING_SET-20Mi}"
+    fi
+    ;;
   *"get deploy"*"resources.limits.memory}"*) printf '%s' "${MEM_LIMIT-}" ;;
   *"get deploy"*"resources.requests.memory}"*) printf '%s' "${MEM_REQUEST-}" ;;
 
@@ -133,6 +144,7 @@ noisy-neighbor|apply -f -
 pending-unschedulable|patch deploy cart --type=strategic
 liveness-probe-kill|patch deploy cart --type=json
 missing-secret-key|patch secret cart-secret --type=json
+cpu-throttling|set resources deploy/cart --limits=cpu=
 EOF
 }
 
@@ -887,4 +899,113 @@ record_rotation() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"No record of the rotated Secret key"* ]] || false
   refute_called kubectl "patch"
+}
+
+# ── cpu-throttling ────────────────────────────────────────────────────────────
+
+@test "cpu-throttling: inject sets the limit to a third of the measured demand and records it" {
+  TOP_CPU=45m inject cpu-throttling
+  [ "$status" -eq 0 ]
+  assert_called kubectl "set resources deploy/cart --limits=cpu=15m --requests=cpu=15m"
+  assert_called kubectl "--from-literal=original-request=50m --from-literal=original-limit=200m --from-literal=demand-millicores=45 --from-literal=fault-limit=15m"
+}
+
+@test "cpu-throttling: inject measures under the steady load it starts" {
+  TOP_CPU=45m inject cpu-throttling
+  measured="$(line_of "top pod -n shop -l app.kubernetes.io/name=cart")"
+  changed="$(line_of "set resources deploy/cart")"
+  traffic="$(line_of "delete job traffic-k6")"
+  [ -n "$traffic" ] && [ -n "$measured" ]
+  [ "$traffic" -lt "$measured" ]
+  [ "$measured" -lt "$changed" ]
+}
+
+@test "cpu-throttling: inject samples until the reading has changed three times under the load" {
+  TOP_SEQ="1m 1m 8m 8m 28m 28m 36m 36m 40m" inject cpu-throttling
+  [ "$status" -eq 0 ]
+  assert_call_count kubectl 7 "top pod"
+  assert_called kubectl "--from-literal=demand-millicores=36"
+  assert_called kubectl "--limits=cpu=12m"
+}
+
+@test "cpu-throttling: inject stops sampling after 25 tries when the reading never moves" {
+  TOP_CPU=30m inject cpu-throttling
+  assert_call_count kubectl 26 "top pod"
+}
+
+@test "cpu-throttling: inject keeps a request already below the new limit" {
+  TOP_CPU=60m CPU_REQUEST=5m inject cpu-throttling
+  assert_called kubectl "set resources deploy/cart --limits=cpu=20m --requests=cpu=5m"
+}
+
+@test "cpu-throttling: inject never sets a limit below what the kernel enforces" {
+  TOP_CPU=12m inject cpu-throttling
+  assert_called kubectl "--limits=cpu=10m"
+}
+
+@test "cpu-throttling: inject sizes for go-api at 60 rps when there are no metrics" {
+  TOP_CPU="" inject cpu-throttling
+  assert_called kubectl "--from-literal=demand-millicores=40"
+  assert_called kubectl "--limits=cpu=13m"
+}
+
+@test "cpu-throttling: a second inject changes nothing" {
+  RECORD_fault_limit=15m CPU_LIMIT=15m inject cpu-throttling
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already injected"* ]] || false
+  refute_called kubectl "set resources"
+  refute_called kubectl "delete job traffic-k6"
+}
+
+throttle_record() {
+  export RECORD_original_request=50m RECORD_original_limit=200m RECORD_demand_millicores=45 RECORD_fault_limit=15m
+}
+
+@test "cpu-throttling: resolve puts back the original CPU settings while the limit is too low" {
+  throttle_record
+  while read -r limit; do
+    reset_calls
+    CPU_LIMIT="$limit" resolve cpu-throttling
+    [ "$status" -eq 0 ] || { echo "limit=$limit: $output"; return 1; }
+    assert_called kubectl "set resources deploy/cart --limits=cpu=200m --requests=cpu=50m" || { echo "limit=$limit"; return 1; }
+  done <<'LIMITS'
+15m
+40m
+LIMITS
+}
+
+@test "cpu-throttling: resolve after a hand fix keeps the learner's limit" {
+  throttle_record
+  while read -r limit; do
+    reset_calls
+    CPU_LIMIT="$limit" resolve cpu-throttling
+    [[ "$output" == *"already fixed"* ]] || { echo "limit=$limit: $output"; return 1; }
+    refute_called kubectl "set resources" || { echo "limit=$limit"; return 1; }
+  done <<'LIMITS'
+100m
+1
+LIMITS
+  CPU_LIMIT="" resolve cpu-throttling
+  [[ "$output" == *"already fixed"* ]] || false
+}
+
+@test "cpu-throttling: resolve removes CPU settings the workload never had" {
+  throttle_record
+  RECORD_original_request=none RECORD_original_limit=none CPU_LIMIT=15m resolve cpu-throttling
+  [ "$status" -eq 0 ]
+  assert_called kubectl '"op":"remove","path":"/spec/template/spec/containers/0/resources/limits/cpu"'
+  assert_called kubectl '"op":"remove","path":"/spec/template/spec/containers/0/resources/requests/cpu"'
+  refute_called kubectl "set resources"
+}
+
+@test "cpu-throttling: resolve with no record changes nothing and says how to fix it" {
+  CPU_LIMIT=15m resolve cpu-throttling
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"No record of the original CPU settings"* ]] || false
+  refute_called kubectl "set resources"
+}
+
+@test "cpu-throttling: resolve stops the traffic inject started" {
+  resolve cpu-throttling
+  assert_called kubectl "delete job traffic-k6"
 }

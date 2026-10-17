@@ -50,6 +50,7 @@ func fileExists(p string) bool {
 
 var shippedFaults = []string{
 	"bad-deploy-rollout",
+	"cpu-throttling",
 	"crashloop-bad-config",
 	"liveness-probe-kill",
 	"missing-secret-key",

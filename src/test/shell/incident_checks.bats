@@ -599,3 +599,89 @@ STUB
   [ "$status" -ne 0 ]
   [[ "$output" == *"deployment shop/cart not found"* ]] || false
 }
+
+# ── cpu-throttling ────────────────────────────────────────────────────────────
+
+# LIMIT is the container's CPU limit; DEMAND and ORIGINAL come from the record.
+throttle_stub() {
+  stub_script kubectl <<'STUB'
+case "$*" in
+  *"get configmap labfault-cpu-throttling"*"demand-millicores}"*) printf '%s' "${DEMAND-40}" ;;
+  *"get configmap labfault-cpu-throttling"*"original-limit}"*) printf '%s' "${ORIGINAL-200m}" ;;
+  *"resources.limits.cpu}"*) printf '%s' "${LIMIT-200m}" ;;
+  *"rollout status"*) [ "${ROLLED_OUT:-yes}" = yes ] || exit 1 ;;
+  *"get deploy"*"jsonpath={.spec.replicas}"*)
+    [ "${DEPLOY_EXISTS:-yes}" = yes ] || exit 1
+    echo "${REPLICAS:-1}"
+    ;;
+  *"get deploy"*"jsonpath={.status.readyReplicas}"*) echo "${READY-${REPLICAS:-1}}" ;;
+  *"get pods"*) echo "cart-abc   false   <none>   0" ;;
+esac
+STUB
+}
+
+@test "cpu-throttling passes when the limit has headroom over the measured demand" {
+  throttle_stub
+  check cpu-throttling
+  [ "$status" -eq 0 ]
+  LIMIT=80m check cpu-throttling
+  [ "$status" -eq 0 ]
+}
+
+@test "cpu-throttling fails while the fault is in: the limit is a third of the demand" {
+  throttle_stub
+  LIMIT=13m check cpu-throttling
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"not sized for the load it serves"* ]] || false
+}
+
+@test "cpu-throttling fails a half fix: a limit below twice the demand" {
+  throttle_stub
+  LIMIT=79m check cpu-throttling
+  [ "$status" -ne 0 ]
+}
+
+@test "cpu-throttling fails the wrong fix: scaled out under the same low limit" {
+  throttle_stub
+  LIMIT=13m REPLICAS=4 check cpu-throttling
+  [ "$status" -ne 0 ]
+}
+
+@test "cpu-throttling passes with the limit removed" {
+  throttle_stub
+  LIMIT="" check cpu-throttling
+  [ "$status" -eq 0 ]
+}
+
+@test "cpu-throttling passes a rollback to an original limit below the usual headroom" {
+  throttle_stub
+  DEMAND=40 ORIGINAL=60m LIMIT=60m check cpu-throttling
+  [ "$status" -eq 0 ]
+}
+
+@test "cpu-throttling passes a healthy lab with no record" {
+  throttle_stub
+  DEMAND="" ORIGINAL="" LIMIT=13m check cpu-throttling
+  [ "$status" -eq 0 ]
+}
+
+@test "cpu-throttling fails while the rollout has not completed" {
+  throttle_stub
+  ROLLED_OUT=no READY=0 check cpu-throttling
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"rollout of shop/cart has not completed"* ]] || false
+}
+
+@test "cpu-throttling fails the wrong fix: scaled to zero" {
+  throttle_stub
+  REPLICAS=0 check cpu-throttling
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"scaled to 0 replicas"* ]] || false
+}
+
+@test "cpu-throttling fails when the workload is gone" {
+  throttle_stub
+  DEPLOY_EXISTS=no check cpu-throttling
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"deployment shop/cart not found"* ]] || false
+}

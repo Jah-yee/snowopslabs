@@ -69,6 +69,7 @@ func TestVerifiedContentSet(t *testing.T) {
 	// Every fault has been reviewed on a live cluster. A new fault is listed
 	// here until its review passes.
 	unverifiedIncidents := map[string]bool{
+		"cpu-throttling":        true,
 		"liveness-probe-kill":   true,
 		"missing-secret-key":    true,
 		"pending-unschedulable": true,

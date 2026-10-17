@@ -1,0 +1,49 @@
+name: cpu-throttling
+displayName: "CPU throttling: a limit set to save cost"
+description: "{{.WorkloadName}} has got slow since the cost review's resource changes went out, and the latency SLO is burning: p99 is in seconds while the median still looks fine. Nothing restarts, nothing is OOMKilled, every pod is Running and Ready, and the error rate is flat. The node it runs on is nearly idle, so this is not a crowded machine."
+category: resources
+severity: medium
+target:
+  namespace: "{{.WorkloadNamespace}}"
+  workload: "{{.WorkloadName}}"
+prerequisites:
+  apps:
+    - "{{.WorkloadName}}"
+detection:
+  name: cpu-limit-fits-demand
+  type: script
+  script: checks/resolved.sh
+  timeoutSeconds: 30
+expectAlert: LabFaultLatencySLO
+
+references:
+  - label: "Kubernetes - Assign CPU resources to containers and pods"
+    url: "https://kubernetes.io/docs/tasks/configure-pod-container/assign-cpu-resource/"
+    note: "What a CPU limit does: the container is not killed, it is held back."
+  - label: "Kubernetes - Resource management: how limits are applied"
+    url: "https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#how-pods-with-resource-limits-are-run"
+    note: "A CPU limit becomes a CFS quota per 100ms period; a container that uses it up waits for the next period."
+  - label: "Kubernetes - Resource metrics pipeline"
+    url: "https://kubernetes.io/docs/tasks/debug/debug-cluster/resource-metrics-pipeline/"
+    note: "Where kubectl top's numbers come from, and why a capped container reads exactly its limit."
+  - label: "Kubernetes - Node-pressure eviction"
+    url: "https://kubernetes.io/docs/concepts/scheduling-eviction/node-pressure-eviction/"
+    note: "Other causes of slow pods on a busy node: contention for the node's CPU, memory pressure."
+  - label: "Kubernetes - Horizontal Pod Autoscaling"
+    url: "https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/"
+    note: "Another common cause of latency under load: too few replicas for the traffic, which is a different fix."
+
+snippets:
+  - label: "Give {{.WorkloadName}} its CPU back (strategic-merge patch)"
+    description: "A limit well above what it uses under load. Measure first. Apply with: kubectl -n {{.WorkloadNamespace}} patch deployment {{.WorkloadName}} --patch-file <this>"
+    yaml: |
+      spec:
+        template:
+          spec:
+            containers:
+              - name: "{{.WorkloadName}}"
+                resources:
+                  requests:
+                    cpu: "50m"
+                  limits:
+                    cpu: "200m"
