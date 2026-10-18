@@ -13,7 +13,7 @@ setup() {
   WORK="$STUB_DIR/work"
   mkdir -p "$WORK/apps/go-api" "$WORK/runtimes"
   touch "$WORK/apps/go-api/app.env"
-  cp -R "$ROOT/runtimes/k3d" "$WORK/runtimes/"
+  cp -R "$ROOT/runtimes/k3d" "$ROOT/runtimes/_lib" "$WORK/runtimes/"
   export CLUSTER_NAME=lab
 }
 
@@ -31,6 +31,19 @@ teardown() {
   assert_called k3d "node create lab-agent-1 --cluster lab --role agent"
   assert_called k3d "image import go-api:v1.2.0 --cluster lab"
   assert_called kubectl "wait --for=condition=Ready node k3d-lab-agent-1-0"
+}
+
+@test "imports every build of each app, not only the one running" {
+  stub_when kubectl "get nodes" 0 "node/k3d-lab-agent-0"
+  stub_script docker <<'STUB'
+case "$*" in images*) printf 'go-api:latest\ngo-api:v1.2.0\ngo-api:<none>\n' ;; esac
+exit 0
+STUB
+  cd "$WORK"
+  run bash runtimes/k3d/add-agents.sh 2
+  [ "$status" -eq 0 ]
+  assert_called k3d "image import go-api:latest go-api:v1.2.0 --cluster lab"
+  refute_called k3d "<none>"
 }
 
 @test "skips a name an earlier add already used" {

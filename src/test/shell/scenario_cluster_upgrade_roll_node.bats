@@ -29,6 +29,8 @@ case "$*" in
   "inspect k3d-lab-serverlb") exit 0 ;;
   "cp k3d-lab-serverlb:/etc/confd/values.yaml "*) printf 'ports:\n  6443.tcp:\n  - k3d-lab-agent-0\n' >"$3" ;;
   "restart k3d-lab-serverlb") touch "$STATE/lb-restarted" ;;
+  # The lab's go-api builds: the tag running now, and the one data-writer uses.
+  "images --format {{.Repository}}:{{.Tag}} go-api") printf 'go-api:latest\ngo-api:v1.2.0\n' ;;
 esac
 exit 0
 STUB
@@ -38,6 +40,7 @@ case "$*" in
   "get node k3d-lab-agent-0 -o jsonpath={.status.nodeInfo.kubeletVersion}") echo "v1.33.6+k3s1" ;;
   "get node k3d-lab-agent-0 -o jsonpath={.spec.unschedulable}") echo true ;;
   "get node k3d-lab-agent-0") exit 0 ;;
+  *"get pods --all-namespaces"*"{.image}"*) printf 'go-api:v1.2.0\nquay.io/prometheus/node-exporter:v1.9.0\n' ;;
   *"metadata.uid=='uid-new'"*) echo k3d-lab-agent-0-0 ;;
   *"jsonpath={range .items[*]}{.metadata.uid}"*)
     printf 'uid-old\nuid-server\n'
@@ -65,6 +68,18 @@ teardown() { stub_teardown; }
   [[ "$output" == *"replaced by k3d-lab-agent-0-0"* ]] || false
   in_log=$(grep -n "restart k3d-lab-serverlb\|get --raw /readyz" "$STUB_LOG" | head -1)
   [[ "$in_log" == *"restart k3d-lab-serverlb"* ]] || false
+}
+
+# A later scenario may run a build no pod uses at roll time: backup-restore's
+# data-writer runs go-api:latest with imagePullPolicy Never, so without it the
+# replacement node can never start one.
+@test "it imports every build of the lab's apps onto the new node, not only those in use" {
+  run bash "$SCRIPT" k3d-lab-agent-0
+  [ "$status" -eq 0 ] || { echo "$output"; false; }
+  assert_called k3d "image import go-api:latest -c lab"
+  assert_called k3d "image import go-api:v1.2.0 -c lab"
+  [ "$(call_count k3d "image import go-api:v1.2.0")" -eq 1 ]
+  refute_called k3d "node-exporter"
 }
 
 @test "it fails, saying where to look, when the API server never comes back" {
