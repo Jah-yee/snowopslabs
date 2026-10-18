@@ -167,11 +167,18 @@ fi
 # A fresh node has an empty image store. Locally built lab images (every
 # app under apps/) were side-loaded into the cluster at deploy time and are in no
 # registry, so without re-importing them the app cannot start on the
-# replacement and lands in ImagePullBackOff.
+# replacement and lands in ImagePullBackOff. Every build is imported, not only
+# the ones running now: a later scenario may run another tag.
 echo "==> Re-importing locally built images onto the new node"
-LOCAL_IMAGES="$(kubectl get pods --all-namespaces \
-  -o jsonpath='{range .items[*]}{range .spec.containers[*]}{.image}{"\n"}{end}{end}' 2>/dev/null |
-  sort -u | grep -v '/' || true)"
+PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+# shellcheck source=runtimes/_lib/lab-images.sh
+. "$PROJECT_ROOT/runtimes/_lib/lab-images.sh"
+LOCAL_IMAGES="$({
+  kubectl get pods --all-namespaces \
+    -o jsonpath='{range .items[*]}{range .spec.containers[*]}{.image}{"\n"}{end}{end}' 2>/dev/null |
+    grep -v '/' || true
+  lab_images "$PROJECT_ROOT"
+} | sort -u)"
 MISSING=""
 for img in $LOCAL_IMAGES; do
   if docker image inspect "$img" >/dev/null 2>&1; then

@@ -13,17 +13,8 @@ agent_names() {
   kubectl get nodes -l '!node-role.kubernetes.io/control-plane' -o name 2>/dev/null | sed 's|^node/||'
 }
 
-# lab_images prints the locally built images of the lab's apps (apps/<name>/).
-# k3d imports images into the nodes that exist at build time, so a new node
-# needs them imported again before app pods can start on it.
-lab_images() {
-  local app_env app
-  for app_env in apps/*/app.env; do
-    [ -f "$app_env" ] || continue
-    app="$(basename "$(dirname "$app_env")")"
-    docker images --format '{{.Repository}}:{{.Tag}}' "$app" 2>/dev/null | grep -v ':<none>$' || true
-  done
-}
+# shellcheck source=runtimes/_lib/lab-images.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/_lib/lab-images.sh"
 
 current="$(agent_names | grep -c . || true)"
 if [ "$current" -ge "$TOTAL" ]; then
@@ -49,7 +40,7 @@ while [ "$current" -lt "$TOTAL" ]; do
   current=$((current + 1))
 done
 
-images="$(lab_images)"
+images="$(lab_images .)"
 if [ -n "$images" ]; then
   echo "Importing the lab's app images into the new node(s)..."
   # shellcheck disable=SC2086 # one image per word

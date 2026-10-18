@@ -178,10 +178,16 @@ docker restart <new-node>
 **The app lands in ImagePullBackOff on the new node.** Locally built lab images
 (`go-api`, `echo-server`) are side-loaded with `k3d image import` at deploy time
 (`src/engine/deploy.sh`) and exist in no registry. A fresh node has an empty
-image store, so re-import after it joins:
+image store, so re-import after it joins. Import every built tag, not only the
+one running: scenarios use others (backup-restore-drill's `data-writer` runs
+`go-api:latest` with `imagePullPolicy: Never`, env-promotion runs `v1.1.0`), and
+a pod that lands on the new node with its tag missing waits in
+`ErrImageNeverPull` for good. `runtimes/k3d/add-agents.sh` and
+cluster-upgrade-drill's `roll-node.sh` both import the whole set
+(`runtimes/_lib/lab-images.sh`); by hand:
 
 ```sh
-k3d image import go-api:v1.2.0 -c snowops
+k3d image import $(docker images --format '{{.Repository}}:{{.Tag}}' go-api | grep -v '<none>') -c snowops
 ```
 
 **Deleting a node destroys the local-path volumes pinned to it.** local-path PVs

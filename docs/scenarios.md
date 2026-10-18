@@ -637,7 +637,9 @@ the drain for you - draining is the transferable skill.
 **Prerequisites:**
 - Platform: ingress, monitoring/metrics
 - Apps: the bound workload
-- A multi-node cluster (k3d defaults to 2 agents; `AGENTS=2 labctl runtime up`)
+- Two agent nodes. The default lab has one; on k3d, `scenario up` adds the
+  second for the run and `scenario down` removes it. kind cannot add nodes to a
+  running cluster: set `AGENTS=2` in `.env` and `labctl reset` first.
 
 **Checks (8):** workload ≥2 ready (guard) · PDB present · exactly one PDB selects
 the workload · PDB tracks ≥2 healthy pods · traffic is flowing · a node that held
@@ -678,7 +680,9 @@ no node left cordoned.
 **Prerequisites:**
 - Platform: ingress, monitoring/metrics
 - Apps: go-api
-- Runtime: k3d (multi-node)
+- Runtime: k3d only, with two agent nodes. On the default lab (one agent),
+  `scenario up` adds the second for the run; the drill replaces an agent as it
+  upgrades, so the lab ends with one agent under a new name.
 
 **Checks (8):** PDB present, PDB protects >=2 healthy, workload >=2 ready, all nodes
 Ready and uncordoned (script), no node left behind on the old version (script),
