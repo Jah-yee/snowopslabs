@@ -69,6 +69,14 @@ That second one matters: a script that traps `SIGTERM` must still die after the
 grace period. A tool that can be made unkillable by a badly-written script is
 not one you can trust with a cluster.
 
+A run also ends when its script does, even if a child it started still holds
+the output pipe: `Run` waits 2 seconds for those pipes after the script exits,
+then returns (`TestExecRun_ReturnsWhenTheScriptExitsDespiteAChildHoldingItsOutput`).
+On a cancel, whatever ignored `SIGTERM` and outlived the script is killed with
+the rest of its process group (`TestExecCancellation_KillsWhatTheScriptLeavesBehind`).
+Without them, a straggler would keep a cancelled run open past the CLI's 10-second
+shutdown wait, and the run would stay recorded as `running`.
+
 ```bash
 $ go test -race ./internal/run/ ./internal/store/
 ```

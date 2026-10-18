@@ -15,6 +15,11 @@ import (
 	"time"
 )
 
+// waitDelay bounds how long Run waits, once the process itself has exited, for
+// children it left behind to close its output. A run ends when its script
+// does; a straggler holding the pipe must not keep it open.
+const waitDelay = 2 * time.Second
+
 // DefaultGracePeriod is how long a cancelled process has to exit after
 // SIGTERM before it gets SIGKILL. Helm uses this time to release its lock.
 const DefaultGracePeriod = 15 * time.Second
@@ -78,6 +83,7 @@ func (e *Exec) Run(ctx context.Context, cmd Command) (Result, error) {
 	// Setpgid puts the child in a new process group whose ID is its PID, so
 	// signalling -PID reaches every descendant.
 	c.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	c.WaitDelay = waitDelay
 
 	if err := c.Start(); err != nil {
 		return Result{}, fmt.Errorf("starting %s: %w", cmd.String(), err)
@@ -118,10 +124,20 @@ func (e *Exec) Run(ctx context.Context, cmd Command) (Result, error) {
 
 	waitErr := <-waitDone
 	close(stopKiller)
+	// The process exited; only its leftovers' pipes were cut short.
+	if errors.Is(waitErr, exec.ErrWaitDelay) {
+		waitErr = nil
+	}
 
 	mu.Lock()
 	wasSignalled := signalled
 	mu.Unlock()
+	// A cancelled run leaves nothing behind: kill what ignored SIGTERM and
+	// outlived the process that started it. The group only: the leader's own
+	// PID may already belong to another process.
+	if wasSignalled {
+		_ = syscall.Kill(-pgid, syscall.SIGKILL)
+	}
 
 	res := Result{Signalled: wasSignalled}
 

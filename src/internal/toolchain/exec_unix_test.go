@@ -458,3 +458,82 @@ func TestExecGracePeriodDefault(t *testing.T) {
 		})
 	}
 }
+
+// pidAlive reports whether a process with this PID still exists.
+func pidAlive(pid int) bool { return syscall.Kill(pid, 0) == nil }
+
+func readPID(t *testing.T, path string) int {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		if b, err := os.ReadFile(path); err == nil {
+			var pid int
+			if _, err := fmt.Sscan(string(b), &pid); err == nil && pid > 0 {
+				return pid
+			}
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatalf("no PID in %s", path)
+	return 0
+}
+
+// A run ends when its script does. A child the script left behind still
+// holds the output pipe, and Wait would otherwise block until that child
+// exits, so a finished script would never be recorded as finished.
+func TestExecRun_ReturnsWhenTheScriptExitsDespiteAChildHoldingItsOutput(t *testing.T) {
+	pidFile := filepath.Join(t.TempDir(), "child.pid")
+	script := writeScript(t, fmt.Sprintf("sleep 30 &\necho $! >%q\nexit 0\n", pidFile))
+	var out bytes.Buffer
+	start := time.Now()
+	_, err := NewExec().Run(context.Background(), Command{Path: script, Stdout: &out})
+	t.Cleanup(func() { _ = syscall.Kill(readPID(t, pidFile), syscall.SIGKILL) })
+	if err != nil {
+		t.Errorf("Run() error = %v, want nil for a script that exited 0", err)
+	}
+	if took := time.Since(start); took > 5*time.Second {
+		t.Errorf("Run took %v; it waited for the child instead of the script", took)
+	}
+}
+
+// On cancel, a child that ignores SIGTERM keeps the pipe open after its
+// parent has exited. Run returns once the parent is gone and kills the rest
+// of the group, rather than waiting out the grace period.
+func TestExecCancellation_KillsWhatTheScriptLeavesBehind(t *testing.T) {
+	pidFile := filepath.Join(t.TempDir(), "child.pid")
+	script := writeScript(t, fmt.Sprintf(
+		"trap 'exit 143' TERM\n(trap '' TERM; exec sleep 30) &\necho $! >%q\nwait\n", pidFile))
+	e := NewExec()
+	e.GracePeriod = 20 * time.Second
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	var out bytes.Buffer
+	go func() {
+		_, err := e.Run(ctx, Command{Path: script, Stdout: &out})
+		done <- err
+	}()
+	child := readPID(t, pidFile)
+	start := time.Now()
+	cancel()
+
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Errorf("error = %v, want context.Canceled", err)
+		}
+		if took := time.Since(start); took > 8*time.Second {
+			t.Errorf("Run took %v after cancel; it waited out the grace period", took)
+		}
+	case <-time.After(15 * time.Second):
+		t.Fatal("Run did not return after cancellation")
+	}
+	deadline := time.Now().Add(3 * time.Second)
+	for pidAlive(child) && time.Now().Before(deadline) {
+		time.Sleep(20 * time.Millisecond)
+	}
+	if pidAlive(child) {
+		_ = syscall.Kill(child, syscall.SIGKILL)
+		t.Error("the child that ignored SIGTERM is still running after Run returned")
+	}
+}
