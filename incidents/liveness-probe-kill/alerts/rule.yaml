@@ -1,0 +1,23 @@
+# Applied by inject.sh into the monitoring namespace; the `release:
+# prometheus` label is required by kube-prometheus-stack's rule selector,
+# and the `labfault` alert label routes it to the pager.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: labfault-liveness-probe-kill
+  labels:
+    release: prometheus
+    labfault: "true"
+spec:
+  groups:
+    - name: labfault-liveness-probe-kill
+      rules:
+        - alert: LabFaultPodRestarting
+          expr: max(increase(kube_pod_container_status_restarts_total{namespace="${TARGET_NAMESPACE}"}[5m])) > 2
+          for: 1m
+          labels:
+            labfault: "true"
+            severity: warning
+          annotations:
+            summary: "${TARGET_WORKLOAD} containers keep restarting"
+            description: "Containers in namespace ${TARGET_NAMESPACE} restarted more than twice in 5 minutes. Find out what stops them: their last state, exit code and the pod's events."

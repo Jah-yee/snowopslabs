@@ -1,0 +1,26 @@
+# Applied by inject.sh into the monitoring namespace; the `release:
+# prometheus` label is required by kube-prometheus-stack's rule selector,
+# and the `labfault` alert label routes it to the pager.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: labfault-cpu-throttling
+  labels:
+    release: prometheus
+    labfault: "true"
+spec:
+  groups:
+    - name: labfault-cpu-throttling
+      rules:
+        - alert: LabFaultLatencySLO
+          expr: |
+            histogram_quantile(0.99,
+              sum by (le) (rate(http_server_request_duration_seconds_bucket{kubernetes_namespace="${TARGET_NAMESPACE}"}[2m]))
+            ) > 0.5
+          for: 1m
+          labels:
+            labfault: "true"
+            severity: warning
+          annotations:
+            summary: "${TARGET_WORKLOAD} p99 latency is above 500ms"
+            description: "The slowest 1% of requests to ${TARGET_NAMESPACE}/${TARGET_WORKLOAD} take more than half a second, burning the latency SLO. Errors and restarts are not the signal here: find what the app is waiting for."

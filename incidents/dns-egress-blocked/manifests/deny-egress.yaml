@@ -1,0 +1,20 @@
+# A default-deny egress baseline that lets the workload reach its upstream on
+# its port, and nothing else. It allows no DNS, so the upstream's name never
+# resolves. Named as such policies are in real clusters, with no lab label.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-egress
+  namespace: ${TARGET_NAMESPACE}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ${UPSTREAM_NAMESPACE}
+      ports:
+        - protocol: TCP
+          port: ${UPSTREAM_PORT}

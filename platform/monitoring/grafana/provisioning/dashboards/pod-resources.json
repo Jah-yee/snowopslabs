@@ -476,6 +476,172 @@
       "title": "Containers not running, by reason",
       "type": "timeseries",
       "description": "Containers stuck waiting to run, with the reason Kubernetes gives: CrashLoopBackOff, ImagePullBackOff, CreateContainerConfigError and so on."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 40,
+            "gradientMode": "none",
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 25
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (namespace, pod) (kube_pod_status_unschedulable) > 0",
+          "format": "time_series",
+          "hide": false,
+          "legendFormat": "{{ namespace }} / {{ pod }}",
+          "refId": "A"
+        }
+      ],
+      "title": "Pods waiting for a node",
+      "type": "timeseries",
+      "description": "Pods the scheduler could not place on any node yet. They have no container, so they never appear under restarts or waiting reasons; kubectl describe pod names the reason in its FailedScheduling event."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percentunit",
+          "max": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 25
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (namespace, pod) (rate(container_cpu_cfs_throttled_periods_total{container!=\"\"}[2m])) / sum by (namespace, pod) (rate(container_cpu_cfs_periods_total{container!=\"\"}[2m])) > 0.05",
+          "format": "time_series",
+          "hide": false,
+          "legendFormat": "{{ namespace }} / {{ pod }}",
+          "refId": "A"
+        }
+      ],
+      "title": "CPU throttled (share of periods)",
+      "type": "timeseries",
+      "description": "The share of 100ms CFS periods in which a container used up its CPU limit and had to wait. Only containers throttled in more than 5% of periods are drawn. A busy pod at its limit is held back here without restarting or erroring."
     }
   ],
   "refresh": "30s",

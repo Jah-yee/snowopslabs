@@ -33,6 +33,8 @@ if [ -n "${FAIL_ON:-}" ]; then
   case "$*" in *"$FAIL_ON"*) echo "error: stubbed failure" >&2; exit 1 ;; esac
 fi
 healthy_selector='{"app.kubernetes.io/name":"cart","tier":"web"}'
+healthy_probe='{"httpGet":{"path":"/health","port":"http"}}'
+healthy_refs="$(printf 'PORT||\nAPI_TOKEN|cart-secret|api-token')"
 case "$*" in
   *"apply -n monitoring -f -"*) cat >>"$STUB_DIR/applied-monitoring.yaml" ;;
   *"apply"*"-f -"*) cat >>"$STUB_DIR/applied.yaml" ;;
@@ -65,7 +67,18 @@ case "$*" in
   *"get pods"*"containerStatuses[0].ready"*) [ -z "${SERVING-}" ] || printf '%s\n' "$SERVING" ;;
 
   # oom-kill
-  *"top pod"*) echo "cart-abc 5m ${WORKING_SET-20Mi}" ;;
+  *"top pod"*)
+    # TOP_SEQ: successive CPU readings, the last one repeating.
+    if [ -n "${TOP_SEQ-}" ]; then
+      echo x >>"$STUB_DIR/top.calls"
+      i="$(wc -l <"$STUB_DIR/top.calls" | tr -d ' ')"
+      cpu="$(printf '%s\n' $TOP_SEQ | sed -n "${i}p")"
+      [ -n "$cpu" ] || cpu="$(printf '%s\n' $TOP_SEQ | tail -1)"
+      echo "cart-abc $cpu 20Mi"
+    else
+      echo "cart-abc ${TOP_CPU-5m} ${WORKING_SET-20Mi}"
+    fi
+    ;;
   *"get deploy"*"resources.limits.memory}"*) printf '%s' "${MEM_LIMIT-}" ;;
   *"get deploy"*"resources.requests.memory}"*) printf '%s' "${MEM_REQUEST-}" ;;
 
@@ -75,6 +88,42 @@ case "$*" in
     printf '%s' "$BLACKHOLE_POLICY"
     ;;
   *"get networkpolicy default-deny-ingress"*) [ -n "${BLACKHOLE_POLICY-}" ] || exit 1 ;;
+
+  # pending-unschedulable
+  *"get deploy"*"resources.requests.cpu}"*) printf '%s' "${CPU_REQUEST-50m}" ;;
+  *"get deploy"*"resources.limits.cpu}"*) printf '%s' "${CPU_LIMIT-200m}" ;;
+  *"get deploy"*"jsonpath={.spec.replicas}"*) printf '%s' "${REPLICAS-1}" ;;
+  *"get deploy"*"go-template"*) printf 'app.kubernetes.io/name=cart,' ;;
+  *"get hpa"*) [ -z "${HPA_TARGET-}" ] || printf '%s\n' "$HPA_TARGET" ;;
+  *"get nodes"*"allocatable.cpu"*) printf '%s' "${NODE_ALLOCATABLE-4 3800m }" ;;
+  *"get pods"*"spec.nodeName="*) [ -z "${UNSCHEDULED_PODS-}" ] || printf '%s\n' "$UNSCHEDULED_PODS" ;;
+
+  # liveness-probe-kill
+  *"get deploy"*"livenessProbe.httpGet.path}"*) printf '%s' "${LIVENESS_PATH-/health}" ;;
+  *"get deploy"*"livenessProbe.httpGet.port}"*) printf 'http' ;;
+  *"get deploy"*"livenessProbe.httpGet.scheme}"*) printf 'HTTP' ;;
+  *"get deploy"*"livenessProbe}"*) printf '%s' "${LIVENESS_PROBE-$healthy_probe}" ;;
+  *"get deploy"*'ports[?(@.name=="http")].containerPort}'*) printf '8080' ;;
+  *"get pods"*"status.phase=Running"*) printf 'cart-abc' ;;
+  *"get --raw"*"/proxy/ready"*)
+    [ "${POD_GET:-ok}" = ok ] || exit 1
+    printf '%s' "${READY_BODY-{\"status\":\"ready\",\"upstream\":\"ok\"\}}"
+    ;;
+  *"get --raw"*) [ "${POD_GET:-ok}" = ok ] || exit 1 ;;
+  *"get svc cart"*"ports[0].port}"*) printf '8080' ;;
+
+  # missing-secret-key: ENV_REFS is "<env>|<secret>|<key>" per variable
+  *"get deploy"*"secretKeyRef.key}"*) printf '%s\n' "${ENV_REFS-$healthy_refs}" ;;
+  *"get secret"*"go-template"*) printf '%s\n' "${SECRET_KEYS-api-token}" ;;
+  *"get secret"*"jsonpath={.data."*) printf 'dG9rZW4=' ;;
+
+  # dns-egress-blocked: EGRESS_POLICY is the policy's egress rules, if any
+  *"get networkpolicy default-deny-egress -o jsonpath"*)
+    [ -n "${EGRESS_POLICY-}" ] || exit 1
+    printf '%s' "$EGRESS_POLICY"
+    ;;
+  *"get networkpolicy default-deny-egress"*) [ -n "${EGRESS_POLICY-}" ] || exit 1 ;;
+  *"get deploy"*'env[?(@.name=="UPSTREAM_URL")].value}'*) printf '%s' "${UPSTREAM_NOW-}" ;;
 
   # noisy-neighbor
   *"get pods"*"custom-columns=NAME"*) [ -z "${VICTIM_PODS-set}" ] || echo "${VICTIM_PODS-cart-abc node-1 Running}" ;;
@@ -104,6 +153,11 @@ bad-deploy-rollout|set image deploy/cart
 oom-kill|set resources deploy/cart
 network-blackhole|rollout restart deploy/cart
 noisy-neighbor|apply -f -
+pending-unschedulable|patch deploy cart --type=strategic
+liveness-probe-kill|patch deploy cart --type=json
+missing-secret-key|patch secret cart-secret --type=json
+cpu-throttling|set resources deploy/cart --limits=cpu=
+dns-egress-blocked|apply -n shop -f -
 EOF
 }
 
@@ -572,4 +626,475 @@ neighbor() {
   resolve noisy-neighbor
   [ "$status" -eq 0 ]
   assert_called kubectl "delete namespace labfault-batch --ignore-not-found --wait=false"
+}
+
+# ── pending-unschedulable ─────────────────────────────────────────────────────
+
+@test "pending-unschedulable: inject asks for a core more than the largest node and records the originals" {
+  inject pending-unschedulable
+  [ "$status" -eq 0 ]
+  assert_called kubectl '"replicas":4,"template":'
+  assert_called kubectl '"name":"app","resources":{"requests":{"cpu":"5"},"limits":{"cpu":"5"}}}'
+  assert_called kubectl "--from-literal=original-replicas=1 --from-literal=original-request=50m --from-literal=original-limit=200m --from-literal=fault-request=5 --from-literal=launch-replicas=4"
+}
+
+@test "pending-unschedulable: inject scales and resizes in one change" {
+  REPLICAS=3 inject pending-unschedulable
+  [ "$status" -eq 0 ]
+  refute_called kubectl "scale deploy"
+  refute_called kubectl "set resources"
+  assert_call_count kubectl 1 "patch"
+}
+
+@test "pending-unschedulable: inject adds two replicas to a workload already at the launch size" {
+  REPLICAS=4 inject pending-unschedulable
+  [ "$status" -eq 0 ]
+  assert_called kubectl '"replicas":6,'
+}
+
+@test "pending-unschedulable: inject sets no limit on a workload that had none" {
+  CPU_LIMIT="" inject pending-unschedulable
+  assert_called kubectl '"resources":{"requests":{"cpu":"5"}}}'
+  assert_called kubectl "--from-literal=original-limit=none"
+}
+
+@test "pending-unschedulable: inject sizes the request from the largest node" {
+  NODE_ALLOCATABLE="2 16 7500m " inject pending-unschedulable
+  assert_called kubectl '"requests":{"cpu":"17"}'
+}
+
+@test "pending-unschedulable: inject refuses a workload an autoscaler scales" {
+  HPA_TARGET=cart inject pending-unschedulable
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"HorizontalPodAutoscaler manages shop/cart"* ]] || false
+  refute_called kubectl "patch"
+  refute_called kubectl "create configmap"
+}
+
+@test "pending-unschedulable: inject fails with a reason when the nodes cannot be read" {
+  NODE_ALLOCATABLE="" inject pending-unschedulable
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"cannot read the nodes' allocatable CPU"* ]] || false
+  refute_called kubectl "patch"
+}
+
+@test "pending-unschedulable: inject refuses when the cluster answers but the workload is missing" {
+  REPLICAS="" inject pending-unschedulable
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"deployment shop/cart not found"* ]] || false
+  refute_called kubectl "patch"
+}
+
+@test "pending-unschedulable: inject refuses a workload that already asks for more CPU than any node has" {
+  CPU_REQUEST=4500m inject pending-unschedulable
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"already requests 4500m CPU"* ]] || false
+  refute_called kubectl "patch"
+  refute_called kubectl "create configmap"
+}
+
+@test "pending-unschedulable: a second inject changes nothing" {
+  RECORD_fault_request=5 CPU_REQUEST=5 inject pending-unschedulable
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already injected"* ]] || false
+  refute_called kubectl "patch"
+  refute_called kubectl "create configmap"
+}
+
+@test "pending-unschedulable: resolve puts back the request, limit and replica count" {
+  RECORD_original_replicas=1 RECORD_original_request=50m RECORD_original_limit=200m \
+    RECORD_fault_request=5 RECORD_launch_replicas=4 CPU_REQUEST=5 CPU_LIMIT=5 REPLICAS=4 \
+    resolve pending-unschedulable
+  [ "$status" -eq 0 ]
+  assert_called kubectl "set resources deploy/cart --requests=cpu=50m --limits=cpu=200m"
+  assert_called kubectl "scale deploy/cart --replicas=1"
+}
+
+@test "pending-unschedulable: resolve removes CPU settings the workload never had" {
+  RECORD_original_replicas=1 RECORD_original_request=none RECORD_original_limit=none \
+    RECORD_fault_request=5 RECORD_launch_replicas=4 CPU_REQUEST=5 CPU_LIMIT="" REPLICAS=4 \
+    resolve pending-unschedulable
+  [ "$status" -eq 0 ]
+  assert_called kubectl '"op":"remove","path":"/spec/template/spec/containers/0/resources/requests/cpu"'
+  refute_called kubectl "set resources"
+}
+
+@test "pending-unschedulable: resolve after a hand fix keeps the learner's request and scale" {
+  RECORD_original_replicas=1 RECORD_original_request=50m RECORD_original_limit=200m \
+    RECORD_fault_request=5 RECORD_launch_replicas=4 CPU_REQUEST=100m CPU_LIMIT=500m REPLICAS=4 \
+    resolve pending-unschedulable
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already fixed"* ]] || false
+  refute_called kubectl "set resources"
+  refute_called kubectl "scale deploy"
+  assert_called kubectl "delete configmap labfault-pending-unschedulable"
+}
+
+@test "pending-unschedulable: resolve after a half fix puts back only the limit the fault raised" {
+  RECORD_original_replicas=1 RECORD_original_request=50m RECORD_original_limit=200m \
+    RECORD_fault_request=5 RECORD_launch_replicas=4 CPU_REQUEST=100m CPU_LIMIT=5 REPLICAS=4 \
+    resolve pending-unschedulable
+  [ "$status" -eq 0 ]
+  assert_called kubectl "set resources deploy/cart --limits=cpu=200m"
+  refute_called kubectl "--requests"
+  refute_called kubectl "scale deploy"
+}
+
+@test "pending-unschedulable: resolve after a half fix that still does not schedule puts back the originals" {
+  RECORD_original_replicas=1 RECORD_original_request=50m RECORD_original_limit=200m \
+    RECORD_fault_request=5 RECORD_launch_replicas=4 CPU_REQUEST=4500m CPU_LIMIT=5 REPLICAS=4 \
+    UNSCHEDULED_PODS=pod/cart-new-1 resolve pending-unschedulable
+  [ "$status" -eq 0 ]
+  assert_called kubectl "set resources deploy/cart --requests=cpu=50m --limits=cpu=200m"
+  assert_called kubectl "scale deploy/cart --replicas=1"
+}
+
+@test "pending-unschedulable: resolve with no record changes nothing and says how to fix it" {
+  CPU_REQUEST=5 resolve pending-unschedulable
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"set resources deploy/cart --requests=cpu=<value>"* ]] || false
+  refute_called kubectl "set resources"
+  refute_called kubectl "scale deploy"
+}
+
+# ── liveness-probe-kill ───────────────────────────────────────────────────────
+
+@test "liveness-probe-kill: inject renames the probe path and records the original probe" {
+  inject liveness-probe-kill
+  [ "$status" -eq 0 ]
+  assert_called kubectl '"path":"/spec/template/spec/containers/0/livenessProbe/httpGet/path","value":"/healthz"'
+  assert_called kubectl "--from-literal=original-path=/health"
+  assert_called kubectl '--from-literal=original-probe={"httpGet":{"path":"/health","port":"http"}}'
+}
+
+@test "liveness-probe-kill: inject starts traffic at the workload's Service" {
+  inject liveness-probe-kill
+  assert_called kubectl "delete job traffic-k6"
+  grep -q 'http://cart.shop.svc.cluster.local:8080/' "$STUB_DIR/applied.yaml"
+}
+
+@test "liveness-probe-kill: inject refuses a workload with no HTTP liveness probe" {
+  LIVENESS_PATH="" inject liveness-probe-kill
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"has no HTTP liveness probe"* ]] || false
+  refute_called kubectl "patch"
+  refute_called kubectl "create configmap"
+}
+
+@test "liveness-probe-kill: a second inject changes nothing" {
+  LIVENESS_PATH=/healthz inject liveness-probe-kill
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already injected"* ]] || false
+  refute_called kubectl "patch"
+  refute_called kubectl "create configmap"
+}
+
+@test "liveness-probe-kill: resolve puts back the recorded path while the probe fails" {
+  RECORD_original_path=/health LIVENESS_PATH=/healthz POD_GET=fail resolve liveness-probe-kill
+  [ "$status" -eq 0 ]
+  assert_called kubectl '"op":"replace","path":"/spec/template/spec/containers/0/livenessProbe/httpGet/path","value":"/health"'
+}
+
+@test "liveness-probe-kill: resolve after a half fix to a path that still fails puts back the original" {
+  RECORD_original_path=/health LIVENESS_PATH=/healthy POD_GET=fail resolve liveness-probe-kill
+  [ "$status" -eq 0 ]
+  assert_called kubectl '"value":"/health"'
+}
+
+@test "liveness-probe-kill: resolve leaves a path the learner chose that the app answers" {
+  RECORD_original_path=/health LIVENESS_PATH=/ready resolve liveness-probe-kill
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already fixed"* ]] || false
+  refute_called kubectl "patch"
+  assert_called kubectl "delete configmap labfault-liveness-probe-kill"
+}
+
+@test "liveness-probe-kill: resolve puts back a probe the learner deleted" {
+  RECORD_original_path=/health RECORD_original_probe='{"httpGet":{"path":"/health","port":"http"}}' \
+    LIVENESS_PROBE="" LIVENESS_PATH="" resolve liveness-probe-kill
+  [ "$status" -eq 0 ]
+  assert_called kubectl '"op":"add","path":"/spec/template/spec/containers/0/livenessProbe","value":{"httpGet":{"path":"/health","port":"http"}}'
+}
+
+@test "liveness-probe-kill: resolve with no record changes nothing and says how to fix it" {
+  LIVENESS_PATH=/healthz POD_GET=fail resolve liveness-probe-kill
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"No record of the original probe path"* ]] || false
+  refute_called kubectl "patch"
+}
+
+@test "liveness-probe-kill: resolve stops the traffic inject started" {
+  resolve liveness-probe-kill
+  assert_called kubectl "delete job traffic-k6"
+}
+
+# ── missing-secret-key ────────────────────────────────────────────────────────
+
+@test "missing-secret-key: inject renames the key the workload reads and replaces its pods" {
+  inject missing-secret-key
+  [ "$status" -eq 0 ]
+  assert_called kubectl '-n shop patch secret cart-secret --type=json -p'
+  assert_called kubectl '{"op":"add","path":"/data/API_TOKEN","value":"dG9rZW4="},{"op":"remove","path":"/data/api-token"}'
+  assert_called kubectl "--from-literal=env=API_TOKEN --from-literal=secret=cart-secret --from-literal=original-key=api-token --from-literal=new-key=API_TOKEN"
+  patched="$(line_of "patch secret cart-secret")"
+  deleted="$(line_of "delete pod -l app.kubernetes.io/name=cart --wait=false")"
+  [ -n "$deleted" ]
+  [ "$patched" -lt "$deleted" ]
+}
+
+@test "missing-secret-key: inject gives an already variable-style key a new name" {
+  ENV_REFS="TOKEN|cart-secret|TOKEN" SECRET_KEYS=TOKEN inject missing-secret-key
+  assert_called kubectl '"path":"/data/TOKEN_V2"'
+}
+
+@test "missing-secret-key: inject refuses a workload that reads no Secret key" {
+  ENV_REFS="PORT||" inject missing-secret-key
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"reads no environment variable from a Secret key"* ]] || false
+  refute_called kubectl "patch"
+  refute_called kubectl "delete pod"
+}
+
+@test "missing-secret-key: a second inject changes nothing" {
+  RECORD_new_key=API_TOKEN SECRET_KEYS=API_TOKEN inject missing-secret-key
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already injected"* ]] || false
+  refute_called kubectl "patch"
+  refute_called kubectl "delete pod"
+}
+
+record_rotation() {
+  export RECORD_env=API_TOKEN RECORD_secret=cart-secret RECORD_original_key=api-token RECORD_new_key=API_TOKEN
+}
+
+@test "missing-secret-key: resolve renames the key back and restores the reference" {
+  record_rotation
+  SECRET_KEYS=API_TOKEN resolve missing-secret-key
+  [ "$status" -eq 0 ]
+  assert_called kubectl '{"op":"add","path":"/data/api-token","value":"dG9rZW4="},{"op":"remove","path":"/data/API_TOKEN"}'
+  assert_called kubectl '"secretKeyRef":{"name":"cart-secret","key":"api-token","optional":null}'
+}
+
+@test "missing-secret-key: resolve after the reference was pointed at the new key leaves both alone" {
+  record_rotation
+  ENV_REFS="API_TOKEN|cart-secret|API_TOKEN" SECRET_KEYS=API_TOKEN resolve missing-secret-key
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already fixed"* ]] || false
+  refute_called kubectl "patch"
+  assert_called kubectl "delete configmap labfault-missing-secret-key"
+}
+
+@test "missing-secret-key: resolve after the key was put back leaves the Secret alone" {
+  record_rotation
+  SECRET_KEYS="$(printf 'api-token\nAPI_TOKEN')" resolve missing-secret-key
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already fixed"* ]] || false
+  refute_called kubectl "patch"
+}
+
+@test "missing-secret-key: resolve puts back a variable the learner removed" {
+  record_rotation
+  ENV_REFS="PORT||" SECRET_KEYS=API_TOKEN resolve missing-secret-key
+  [ "$status" -eq 0 ]
+  assert_called kubectl '"env":[{"name":"API_TOKEN","value":null,"valueFrom":{"secretKeyRef":{"name":"cart-secret","key":"api-token"'
+}
+
+@test "missing-secret-key: resolve with no key to restore from says to re-apply the chart" {
+  record_rotation
+  SECRET_KEYS=other resolve missing-secret-key
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"labctl app deploy cart"* ]] || false
+  refute_called kubectl "patch secret"
+}
+
+@test "missing-secret-key: resolve with no record changes nothing and says how to look" {
+  SECRET_KEYS=API_TOKEN resolve missing-secret-key
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"No record of the rotated Secret key"* ]] || false
+  refute_called kubectl "patch"
+}
+
+# ── cpu-throttling ────────────────────────────────────────────────────────────
+
+@test "cpu-throttling: inject sets the limit to a third of the measured demand and records it" {
+  TOP_CPU=45m inject cpu-throttling
+  [ "$status" -eq 0 ]
+  assert_called kubectl "set resources deploy/cart --limits=cpu=15m --requests=cpu=15m"
+  assert_called kubectl "--from-literal=original-request=50m --from-literal=original-limit=200m --from-literal=demand-millicores=45 --from-literal=fault-limit=15m"
+}
+
+@test "cpu-throttling: inject measures under the steady load it starts" {
+  TOP_CPU=45m inject cpu-throttling
+  measured="$(line_of "top pod -n shop -l app.kubernetes.io/name=cart")"
+  changed="$(line_of "set resources deploy/cart")"
+  traffic="$(line_of "delete job traffic-k6")"
+  [ -n "$traffic" ] && [ -n "$measured" ]
+  [ "$traffic" -lt "$measured" ]
+  [ "$measured" -lt "$changed" ]
+}
+
+@test "cpu-throttling: inject samples until the reading has changed three times under the load" {
+  TOP_SEQ="1m 1m 8m 8m 28m 28m 36m 36m 40m" inject cpu-throttling
+  [ "$status" -eq 0 ]
+  assert_call_count kubectl 7 "top pod"
+  assert_called kubectl "--from-literal=demand-millicores=36"
+  assert_called kubectl "--limits=cpu=12m"
+}
+
+@test "cpu-throttling: inject stops sampling after 25 tries when the reading never moves" {
+  TOP_CPU=30m inject cpu-throttling
+  assert_call_count kubectl 26 "top pod"
+}
+
+@test "cpu-throttling: inject keeps a request already below the new limit" {
+  TOP_CPU=60m CPU_REQUEST=5m inject cpu-throttling
+  assert_called kubectl "set resources deploy/cart --limits=cpu=20m --requests=cpu=5m"
+}
+
+@test "cpu-throttling: inject never sets a limit below what the kernel enforces" {
+  TOP_CPU=12m inject cpu-throttling
+  assert_called kubectl "--limits=cpu=10m"
+}
+
+@test "cpu-throttling: inject sizes for go-api at 60 rps when there are no metrics" {
+  TOP_CPU="" inject cpu-throttling
+  assert_called kubectl "--from-literal=demand-millicores=40"
+  assert_called kubectl "--limits=cpu=13m"
+}
+
+@test "cpu-throttling: a second inject changes nothing" {
+  RECORD_fault_limit=15m CPU_LIMIT=15m inject cpu-throttling
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already injected"* ]] || false
+  refute_called kubectl "set resources"
+  refute_called kubectl "delete job traffic-k6"
+}
+
+throttle_record() {
+  export RECORD_original_request=50m RECORD_original_limit=200m RECORD_demand_millicores=45 RECORD_fault_limit=15m
+}
+
+@test "cpu-throttling: resolve puts back the original CPU settings while the limit is too low" {
+  throttle_record
+  while read -r limit; do
+    reset_calls
+    CPU_LIMIT="$limit" resolve cpu-throttling
+    [ "$status" -eq 0 ] || { echo "limit=$limit: $output"; return 1; }
+    assert_called kubectl "set resources deploy/cart --limits=cpu=200m --requests=cpu=50m" || { echo "limit=$limit"; return 1; }
+  done <<'LIMITS'
+15m
+40m
+LIMITS
+}
+
+@test "cpu-throttling: resolve after a hand fix keeps the learner's limit" {
+  throttle_record
+  while read -r limit; do
+    reset_calls
+    CPU_LIMIT="$limit" resolve cpu-throttling
+    [[ "$output" == *"already fixed"* ]] || { echo "limit=$limit: $output"; return 1; }
+    refute_called kubectl "set resources" || { echo "limit=$limit"; return 1; }
+  done <<'LIMITS'
+100m
+1
+LIMITS
+  CPU_LIMIT="" resolve cpu-throttling
+  [[ "$output" == *"already fixed"* ]] || false
+}
+
+@test "cpu-throttling: resolve removes CPU settings the workload never had" {
+  throttle_record
+  RECORD_original_request=none RECORD_original_limit=none CPU_LIMIT=15m resolve cpu-throttling
+  [ "$status" -eq 0 ]
+  assert_called kubectl '"op":"remove","path":"/spec/template/spec/containers/0/resources/limits/cpu"'
+  assert_called kubectl '"op":"remove","path":"/spec/template/spec/containers/0/resources/requests/cpu"'
+  refute_called kubectl "set resources"
+}
+
+@test "cpu-throttling: resolve with no record changes nothing and says how to fix it" {
+  CPU_LIMIT=15m resolve cpu-throttling
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"No record of the original CPU settings"* ]] || false
+  refute_called kubectl "set resources"
+}
+
+@test "cpu-throttling: resolve stops the traffic inject started" {
+  resolve cpu-throttling
+  assert_called kubectl "delete job traffic-k6"
+}
+
+# ── dns-egress-blocked ────────────────────────────────────────────────────────
+
+no_dns='[{"ports":[{"port":8080,"protocol":"TCP"}],"to":[{"namespaceSelector":{}}]}]'
+with_dns='[{"ports":[{"port":8080,"protocol":"TCP"}]},{"ports":[{"port":53,"protocol":"UDP"}]}]'
+upstream=http://echo-server.echo-server.svc.cluster.local:8080/
+
+@test "dns-egress-blocked: inject denies egress but the upstream's port, and points the app at it" {
+  inject dns-egress-blocked
+  [ "$status" -eq 0 ]
+  grep -q 'name: default-deny-egress' "$STUB_DIR/applied.yaml"
+  grep -q 'namespace: shop' "$STUB_DIR/applied.yaml"
+  grep -q 'kubernetes.io/metadata.name: echo-server' "$STUB_DIR/applied.yaml"
+  grep -q 'port: 8080' "$STUB_DIR/applied.yaml"
+  ! grep -q -e 'port: 53' -e 'labels:' -e 'UPSTREAM_' -e 'TARGET_' "$STUB_DIR/applied.yaml"
+  assert_called kubectl "set env deploy/cart UPSTREAM_URL=$upstream"
+  assert_called kubectl "--from-literal=policy=default-deny-egress --from-literal=original-upstream=none --from-literal=upstream=$upstream"
+}
+
+@test "dns-egress-blocked: inject keeps an upstream the app already calls and turns its pods over" {
+  UPSTREAM_NOW=http://payments.shop.svc:9000/ inject dns-egress-blocked
+  [ "$status" -eq 0 ]
+  refute_called kubectl "set env"
+  assert_called kubectl "-n shop rollout restart deploy/cart"
+  assert_called kubectl "--from-literal=original-upstream=http://payments.shop.svc:9000/ --from-literal=upstream=http://payments.shop.svc:9000/"
+}
+
+@test "dns-egress-blocked: inject undoes itself when the app does not report an upstream" {
+  RECORD_policy=default-deny-egress RECORD_original_upstream=none READY_BODY='{"status":"ready"}' inject dns-egress-blocked
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"does not call an upstream"* ]] || false
+  [[ "$output" == *"labctl app build cart && labctl app deploy cart"* ]] || false
+  assert_called kubectl "delete networkpolicy default-deny-egress -n shop --ignore-not-found"
+  assert_called kubectl "delete configmap labfault-dns-egress-blocked"
+}
+
+@test "dns-egress-blocked: a second inject changes nothing" {
+  EGRESS_POLICY="$no_dns" inject dns-egress-blocked
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already injected"* ]] || false
+  refute_called kubectl "apply -n shop"
+  refute_called kubectl "set env"
+}
+
+@test "dns-egress-blocked: inject refuses to overwrite a working policy of that name it did not create" {
+  EGRESS_POLICY="$with_dns" inject dns-egress-blocked
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"already exists in shop"* ]] || false
+  refute_called kubectl "apply -n shop"
+}
+
+@test "dns-egress-blocked: resolve removes the recorded policy and the upstream it set" {
+  RECORD_policy=default-deny-egress RECORD_original_upstream=none resolve dns-egress-blocked
+  [ "$status" -eq 0 ]
+  assert_called kubectl "delete networkpolicy default-deny-egress -n shop --ignore-not-found"
+  assert_called kubectl "delete networkpolicy allow-dns -n shop --ignore-not-found"
+  assert_called kubectl "-n shop set env deploy/cart UPSTREAM_URL-"
+}
+
+@test "dns-egress-blocked: resolve puts back the upstream the app had" {
+  RECORD_policy=default-deny-egress RECORD_original_upstream=http://payments.shop.svc:9000/ resolve dns-egress-blocked
+  assert_called kubectl "-n shop set env deploy/cart UPSTREAM_URL=http://payments.shop.svc:9000/"
+}
+
+@test "dns-egress-blocked: resolve leaves a policy of that name it has no record of creating" {
+  EGRESS_POLICY="$no_dns" resolve dns-egress-blocked
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"leaving it in place"* ]] || false
+  refute_called kubectl "delete networkpolicy"
+  refute_called kubectl "set env"
+}
+
+@test "dns-egress-blocked: resolve stops the traffic inject started" {
+  resolve dns-egress-blocked
+  assert_called kubectl "delete job traffic-k6"
 }

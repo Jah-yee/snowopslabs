@@ -68,7 +68,13 @@ func TestVerifiedContentSet(t *testing.T) {
 
 	// Every fault has been reviewed on a live cluster. A new fault is listed
 	// here until its review passes.
-	unverifiedIncidents := map[string]bool{}
+	unverifiedIncidents := map[string]bool{
+		"cpu-throttling":        true,
+		"dns-egress-blocked":    true,
+		"liveness-probe-kill":   true,
+		"missing-secret-key":    true,
+		"pending-unschedulable": true,
+	}
 	verifiedIncidents := 0
 	for _, f := range c.Incidents() {
 		if f.Verified {

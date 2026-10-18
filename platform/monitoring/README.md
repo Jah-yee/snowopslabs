@@ -22,7 +22,7 @@ monitoring/
         │   └── prometheus.yaml      # Prometheus datasource config
         └── dashboards/
             ├── cluster-metrics.json # Placeholder: K8s cluster metrics
-            ├── pod-resources.json   # Placeholder: Pod CPU/memory usage
+            ├── pod-resources.json   # Pod CPU/memory, CPU throttling, restarts, waiting reasons, pods waiting for a node
             └── app-requests.json    # Placeholder: HTTP request metrics
 ```
 

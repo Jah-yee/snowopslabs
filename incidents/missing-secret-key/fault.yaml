@@ -1,0 +1,50 @@
+name: missing-secret-key
+displayName: "Missing Secret key: pods that never start"
+description: "{{.WorkloadName}} is completely down and every request fails. Two routine jobs ran overnight: the credential rotation, and a node rotation that replaced every pod. No new pod has started since: they are all stuck before their container runs, so there are no logs and no restarts. Nothing was deployed, and unlike a crash loop the app never gets far enough to fail."
+category: config
+severity: high
+target:
+  namespace: "{{.WorkloadNamespace}}"
+  workload: "{{.WorkloadName}}"
+prerequisites:
+  apps:
+    - "{{.WorkloadName}}"
+detection:
+  name: secret-references-resolve
+  type: script
+  script: checks/resolved.sh
+  timeoutSeconds: 30
+expectAlert: LabFaultNoReplicasAvailable
+
+references:
+  - label: "Kubernetes - Distribute credentials securely using Secrets"
+    url: "https://kubernetes.io/docs/tasks/inject-data-application/distribute-credentials-secure/"
+    note: "How a container reads one key of a Secret through env.valueFrom.secretKeyRef."
+  - label: "Kubernetes - Secrets: using Secrets as environment variables"
+    url: "https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-environment-variables"
+    note: "A reference to a missing key stops the container from starting unless it is marked optional."
+  - label: "Kubernetes - Debug pods"
+    url: "https://kubernetes.io/docs/tasks/debug/debug-application/debug-pods/"
+    note: "A pod stuck in a Waiting state: describe it and read the reason and the events."
+  - label: "Kubernetes - Configure a pod to use a ConfigMap"
+    url: "https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/"
+    note: "The same failure from a ConfigMap key: CreateContainerConfigError, couldn't find key in ConfigMap."
+  - label: "Kubernetes - Images: image pull errors"
+    url: "https://kubernetes.io/docs/concepts/containers/images/#imagepullbackoff"
+    note: "The other common reason a pod never starts a container: ErrImagePull and ImagePullBackOff."
+
+snippets:
+  - label: "Point the reference at the key the Secret has now (strategic-merge patch)"
+    description: "One of two real fixes; the other is putting the key back in the Secret. Apply with: kubectl -n {{.WorkloadNamespace}} patch deployment {{.WorkloadName}} --patch-file <this>"
+    yaml: |
+      spec:
+        template:
+          spec:
+            containers:
+              - name: "{{.WorkloadName}}"
+                env:
+                  - name: API_TOKEN
+                    valueFrom:
+                      secretKeyRef:
+                        name: "{{.WorkloadName}}-secret"
+                        key: API_TOKEN

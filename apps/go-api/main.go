@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -35,6 +37,9 @@ var (
 
 var releaseNote = "New release"
 
+// writeTimeout is how long the server lets a handler take to answer.
+const writeTimeout = 10 * time.Second
+
 var (
 	port            = getEnv("PORT", "8080")
 	shutdownTimeout = getDurationEnv("SHUTDOWN_TIMEOUT", 30*time.Second)
@@ -43,6 +48,27 @@ var (
 	// traces - otherwise the three signals cannot be correlated in Grafana.
 	serviceName  = getEnv("OTEL_SERVICE_NAME", getEnv("SERVICE_NAME", "go-api"))
 	otelEndpoint = getEnv("OTEL_EXPORTER_OTLP_ENDPOINT", "")
+
+	// Behaviour switches for faults and scenarios, all off by default.
+	// UPSTREAM_URL is a dependency "/" and "/ready" call on every request.
+	upstreamURL = getEnv("UPSTREAM_URL", "")
+	// STARTUP_DELAY_SECONDS holds the listener back, as a slow start would.
+	startupDelay = time.Duration(getIntEnv("STARTUP_DELAY_SECONDS", 0)) * time.Second
+	// CPU_WORK_MS is the CPU work "/" does per request, in milliseconds of an
+	// unthrottled core.
+	cpuWorkMS = getIntEnv("CPU_WORK_MS", 0)
+
+	upstreamClient = &http.Client{}
+	// upstreamTimeout bounds the call "/" makes. It stays under the server's
+	// write timeout, so the client gets the app's 502 and its error rather
+	// than a cut connection.
+	upstreamTimeout = 8 * time.Second
+	// readyUpstreamTimeout bounds the call "/ready" makes, under any probe's
+	// timeoutSeconds, so a hanging dependency cannot fail the readiness probe.
+	readyUpstreamTimeout = time.Second
+	// workPerMS is how many work rounds take one millisecond on this machine.
+	workPerMS atomic.Int64
+	workSink  atomic.Uint64
 
 	simulateFailure atomic.Bool
 	logger          *slog.Logger
@@ -111,6 +137,12 @@ func main() {
 		}
 	}
 	tracer = otel.Tracer(serviceName)
+	if otelEndpoint != "" {
+		upstreamClient.Transport = otelhttp.NewTransport(http.DefaultTransport)
+	}
+	if cpuWorkMS > 0 {
+		calibrateWork()
+	}
 
 	// Routes
 	mux := http.NewServeMux()
@@ -144,15 +176,21 @@ func main() {
 		Addr:         ":" + port,
 		Handler:      handler,
 		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		WriteTimeout: writeTimeout,
 		IdleTimeout:  60 * time.Second,
 	}
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
+	if !waitBeforeServing(startupDelay, sigChan) {
+		logger.Info("received signal while starting, exiting")
+		return
+	}
+
 	go func() {
-		logger.Info("server starting", "port", port, "service", serviceName, "simulateFailure", simulateFailure.Load())
+		logger.Info("server starting", "port", port, "service", serviceName, "simulateFailure", simulateFailure.Load(),
+			"upstream", upstreamURL, "cpuWorkMs", cpuWorkMS)
 		if otelEndpoint != "" {
 			logger.Info("tracing enabled", "endpoint", otelEndpoint)
 		}
@@ -213,10 +251,11 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	_, span := tracer.Start(r.Context(), "build-service-index")
+	ctx, span := tracer.Start(r.Context(), "build-service-index")
 	defer span.End()
 
-	respondJSON(w, http.StatusOK, map[string]interface{}{
+	doWork(cpuWorkMS)
+	body := map[string]interface{}{
 		"service":         serviceName,
 		"version":         version,
 		"releaseNote":     releaseNote,
@@ -229,7 +268,17 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 			"/version         - Build version info",
 			"/metrics         - Prometheus metrics",
 		},
-	})
+	}
+	if upstreamURL != "" {
+		code, err := callUpstream(ctx, upstreamTimeout)
+		if err != nil {
+			logger.Warn("upstream call failed", "upstream", upstreamURL, "error", err)
+			respondJSON(w, http.StatusBadGateway, map[string]string{"error": "upstream: " + err.Error()})
+			return
+		}
+		body["upstreamStatus"] = code
+	}
+	respondJSON(w, http.StatusOK, body)
 }
 
 // statusRecorder captures the response status so the access log can report it.
@@ -314,7 +363,17 @@ func handleReady(w http.ResponseWriter, r *http.Request) {
 
 	span.SetAttributes(attribute.Bool("ready", true))
 	logger.Debug("readiness check passed", "remote", r.RemoteAddr)
-	respondJSON(w, http.StatusOK, map[string]string{"status": "ready"})
+	body := map[string]string{"status": "ready"}
+	// The upstream's state is reported, not gated on: failing readiness on a
+	// dependency would take every replica out of the Service at once.
+	if upstreamURL != "" {
+		body["upstream"] = "ok"
+		if _, err := callUpstream(r.Context(), readyUpstreamTimeout); err != nil {
+			logger.Warn("upstream check failed", "upstream", upstreamURL, "error", err)
+			body["upstream"] = err.Error()
+		}
+	}
+	respondJSON(w, http.StatusOK, body)
 }
 
 func handleToggleFailure(w http.ResponseWriter, r *http.Request) {
@@ -379,6 +438,82 @@ func getDurationEnv(key string, defaultVal time.Duration) time.Duration {
 	if value, ok := os.LookupEnv(key); ok {
 		if duration, err := time.ParseDuration(value); err == nil {
 			return duration
+		}
+	}
+	return defaultVal
+}
+
+// callUpstream GETs UPSTREAM_URL within timeout and returns its status code.
+// An answer of 500 or above is an error, as is a call that does not complete.
+func callUpstream(ctx context.Context, timeout time.Duration) (int, error) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, upstreamURL, nil)
+	if err != nil {
+		return 0, fmt.Errorf("build request to %s: %w", upstreamURL, err)
+	}
+	resp, err := upstreamClient.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+	_, _ = io.Copy(io.Discard, resp.Body)
+	if resp.StatusCode >= http.StatusInternalServerError {
+		return resp.StatusCode, fmt.Errorf("%s answered %d", upstreamURL, resp.StatusCode)
+	}
+	return resp.StatusCode, nil
+}
+
+// waitBeforeServing sleeps for d before the listener opens. It returns false
+// when a signal arrives first, so a pod stopped mid-start exits at once.
+func waitBeforeServing(d time.Duration, sig <-chan os.Signal) bool {
+	if d <= 0 {
+		return true
+	}
+	logger.Info("warming up before listening", "seconds", d.Seconds())
+	select {
+	case <-time.After(d):
+		return true
+	case <-sig:
+		return false
+	}
+}
+
+// calibrateWork measures how many work rounds fill a millisecond here, so
+// CPU_WORK_MS is a fixed amount of CPU work: a throttled pod takes longer to
+// do it, which is what a CPU limit does to real request handling.
+func calibrateWork() {
+	const sample = 20 * time.Millisecond
+	rounds := int64(0)
+	start := time.Now()
+	for time.Since(start) < sample {
+		workRound()
+		rounds++
+	}
+	workPerMS.Store(max(1, rounds/sample.Milliseconds()))
+}
+
+// doWork does ms milliseconds of calibrated CPU work.
+func doWork(ms int) {
+	for i := int64(0); i < int64(ms)*workPerMS.Load(); i++ {
+		workRound()
+	}
+}
+
+// workRound is a fixed slice of integer arithmetic. Its result is stored so
+// the compiler cannot drop the loop.
+func workRound() {
+	x := workSink.Load() | 1
+	for range 1000 {
+		x = x*6364136223846793005 + 1442695040888963407
+	}
+	workSink.Store(x)
+}
+
+func getIntEnv(key string, defaultVal int) int {
+	if value, ok := os.LookupEnv(key); ok {
+		if n, err := strconv.Atoi(value); err == nil && n >= 0 {
+			return n
 		}
 	}
 	return defaultVal

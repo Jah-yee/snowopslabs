@@ -1,0 +1,25 @@
+# Applied by inject.sh into the monitoring namespace; the `release:
+# prometheus` label is required by kube-prometheus-stack's rule selector,
+# and the `labfault` alert label routes it to the pager.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: labfault-dns-egress-blocked
+  labels:
+    release: prometheus
+    labfault: "true"
+spec:
+  groups:
+    - name: labfault-dns-egress-blocked
+      rules:
+        - alert: LabFaultErrorRate
+          expr: |
+            sum(rate(http_server_request_duration_seconds_count{kubernetes_namespace="${TARGET_NAMESPACE}", http_response_status_code=~"5.."}[2m]))
+              / sum(rate(http_server_request_duration_seconds_count{kubernetes_namespace="${TARGET_NAMESPACE}"}[2m])) > 0.2
+          for: 1m
+          labels:
+            labfault: "true"
+            severity: critical
+          annotations:
+            summary: "${TARGET_WORKLOAD} is answering more than 20% of requests with 5xx"
+            description: "More than a fifth of the requests ${TARGET_NAMESPACE}/${TARGET_WORKLOAD} served in the last 2 minutes failed with a 5xx. The app answers: read what it says."

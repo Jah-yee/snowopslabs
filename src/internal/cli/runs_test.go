@@ -336,3 +336,34 @@ func TestRunsCancel_UnknownID(t *testing.T) {
 		t.Errorf("stderr = %q, want it to say %q", r.stderr, want)
 	}
 }
+
+// racingRun is a run that writes its output and finishes between the
+// follower's read of the logs and its next look at the run's status.
+type racingRun struct{ looks int }
+
+func (r *racingRun) GetRun(_ context.Context, id string) (store.Run, error) {
+	r.looks++
+	if r.looks < 2 {
+		return store.Run{ID: id, Kind: "incident.inject", Status: store.StatusRunning}, nil
+	}
+	return store.Run{ID: id, Kind: "incident.inject", Status: store.StatusSucceeded}, nil
+}
+
+func (r *racingRun) ReadLogs(_ context.Context, _ string, after int64, _ int) ([]store.LogLine, error) {
+	if r.looks < 2 || after >= 1 {
+		return nil, nil
+	}
+	return []store.LogLine{{Seq: 1, Text: "breaking echo-server..."}}, nil
+}
+
+// A run can write everything and finish after the follower's last read but
+// before it sees the run has ended. The lines must still be printed.
+func TestStreamRunLogs_ReadsAgainAfterTheRunEnds(t *testing.T) {
+	var out bytes.Buffer
+	if err := streamRunLogs(context.Background(), &out, &racingRun{}, "r", true); err != nil {
+		t.Fatalf("streamRunLogs: %v", err)
+	}
+	if !strings.Contains(out.String(), "breaking echo-server...") || !strings.Contains(out.String(), "Succeeded") {
+		t.Errorf("a run that finished between two reads lost its output:\n%s", out.String())
+	}
+}

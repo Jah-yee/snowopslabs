@@ -75,6 +75,19 @@ failed request rate) and its cause from kube-state-metrics: *Pod Resources*
 charts container restarts and containers waiting by reason
 (`kube_pod_container_status_waiting_reason`).
 
+**A pod that never got a node has no container to chart.** An unschedulable
+pod has no container status, so it is missing from both of those panels.
+*Pod Resources* → *Pods waiting for a node* reads
+`kube_pod_status_unschedulable` instead.
+
+**A throttled container reads exactly its limit.** `kubectl top` and the CPU
+panels show what the container was allowed, not what it wanted, so a pod held
+back by its CPU limit looks busy and steady rather than starved. Throttling
+comes from cAdvisor: *Pod Resources* → *CPU throttled* divides
+`container_cpu_cfs_throttled_periods_total` by `container_cpu_cfs_periods_total`.
+`kubectl top` also lags a new load by up to two metrics-server scrapes, so read
+it for a minute before sizing anything from it.
+
 **A rate that stops leaves a gap, not a zero.** When a counter stops being
 scraped, `rate()` returns nothing, and Grafana draws a gap that reads as missing
 data. The server-side panels add

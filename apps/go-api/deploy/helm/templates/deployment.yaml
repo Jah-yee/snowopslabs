@@ -73,6 +73,27 @@ spec:
         - name: {{ $key }}
           value: "{{ $value }}"
         {{- end }}
+        {{- with .Values.upstreamURL }}
+        - name: UPSTREAM_URL
+          value: {{ . | quote }}
+        {{- end }}
+        {{- with .Values.startupDelaySeconds }}
+        - name: STARTUP_DELAY_SECONDS
+          value: {{ . | quote }}
+        {{- end }}
+        {{- with .Values.cpuWorkMs }}
+        - name: CPU_WORK_MS
+          value: {{ . | quote }}
+        {{- end }}
+        {{- if .Values.secrets.enabled }}
+        {{- range $name, $key := .Values.secrets.env }}
+        - name: {{ $name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "go-api.fullname" $ }}-secret
+              key: {{ $key | quote }}
+        {{- end }}
+        {{- end }}
         {{- if .Values.tracing.enabled }}
         # The app exports OTLP to a collector, never straight to a trace backend.
         - name: OTEL_EXPORTER_OTLP_ENDPOINT
