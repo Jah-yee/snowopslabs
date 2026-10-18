@@ -105,6 +105,10 @@ case "$*" in
   *"get deploy"*"livenessProbe}"*) printf '%s' "${LIVENESS_PROBE-$healthy_probe}" ;;
   *"get deploy"*'ports[?(@.name=="http")].containerPort}'*) printf '8080' ;;
   *"get pods"*"status.phase=Running"*) printf 'cart-abc' ;;
+  *"get --raw"*"/proxy/ready"*)
+    [ "${POD_GET:-ok}" = ok ] || exit 1
+    printf '%s' "${READY_BODY-{\"status\":\"ready\",\"upstream\":\"ok\"\}}"
+    ;;
   *"get --raw"*) [ "${POD_GET:-ok}" = ok ] || exit 1 ;;
   *"get svc cart"*"ports[0].port}"*) printf '8080' ;;
 
@@ -1043,6 +1047,15 @@ upstream=http://echo-server.echo-server.svc.cluster.local:8080/
   refute_called kubectl "set env"
   assert_called kubectl "-n shop rollout restart deploy/cart"
   assert_called kubectl "--from-literal=original-upstream=http://payments.shop.svc:9000/ --from-literal=upstream=http://payments.shop.svc:9000/"
+}
+
+@test "dns-egress-blocked: inject undoes itself when the app does not report an upstream" {
+  RECORD_policy=default-deny-egress RECORD_original_upstream=none READY_BODY='{"status":"ready"}' inject dns-egress-blocked
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"does not call an upstream"* ]] || false
+  [[ "$output" == *"labctl app build cart && labctl app deploy cart"* ]] || false
+  assert_called kubectl "delete networkpolicy default-deny-egress -n shop --ignore-not-found"
+  assert_called kubectl "delete configmap labfault-dns-egress-blocked"
 }
 
 @test "dns-egress-blocked: a second inject changes nothing" {

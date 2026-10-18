@@ -38,11 +38,23 @@ if [ -z "$POD" ]; then
   echo "FAIL: no pod of $NS/$DEPLOY is running to try a request on." >&2
   exit 1
 fi
-if ! pod_get_ok "$NS" "$POD" "${PORT:-8080}" "/"; then
+if ! BODY="$(pod_get "$NS" "$POD" "${PORT:-8080}" "/")"; then
   echo "FAIL: a request to $NS/$DEPLOY that calls its upstream still fails on $POD." >&2
   echo "  Stuck? 'labctl incident hint' walks you in." >&2
   exit 1
 fi
+# A 200 counts only if the call to the upstream happened: an image older than
+# UPSTREAM_URL ignores it and answers without calling anything.
+case "$BODY" in
+  *'"upstreamStatus"'*) ;;
+  *)
+    if [ -n "$WANT" ]; then
+      echo "FAIL: $NS/$DEPLOY answers without calling its upstream, so the fault is not in effect at all." >&2
+      echo "  Its image predates UPSTREAM_URL. Rebuild it: labctl app build $DEPLOY && labctl app deploy $DEPLOY" >&2
+      exit 1
+    fi
+    ;;
+esac
 
 # "<name>|<policyTypes>|<egress rules>" for each policy in the namespace.
 if ! POLICIES="$(kubectl -n "$NS" get networkpolicy \

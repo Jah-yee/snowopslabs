@@ -68,6 +68,24 @@ else
 fi
 kubectl -n "$NS" rollout status "deploy/$DEPLOY" --timeout=120s >/dev/null 2>&1 || true
 
+# An image older than UPSTREAM_URL ignores it: nothing would call the upstream
+# and the fault would never take effect. Its /ready reports an upstream field.
+SELECTOR="$(workload_selector "$NS" "$DEPLOY")"
+POD_PORT="$(kubectl -n "$NS" get deploy "$DEPLOY" -o 'jsonpath={.spec.template.spec.containers[0].ports[0].containerPort}' 2>/dev/null || true)"
+POD="$(running_pod "$NS" "$SELECTOR")"
+if [ -n "$POD" ]; then
+  case "$(pod_get "$NS" "$POD" "${POD_PORT:-8080}" /ready || true)" in
+    *'"upstream"'*) ;;
+    *)
+      echo "ERROR: $NS/$DEPLOY does not call an upstream: its image predates UPSTREAM_URL." >&2
+      echo "  Rebuild it, then inject again: labctl app build $DEPLOY && labctl app deploy $DEPLOY" >&2
+      echo "Undoing the change..." >&2
+      bash "$SCRIPT_DIR/resolve.sh" >/dev/null 2>&1 || true
+      exit 1
+      ;;
+  esac
+fi
+
 # Requests make the failures visible on the dashboards and fire the page.
 SVC_PORT="$(kubectl -n "$NS" get svc "$DEPLOY" -o 'jsonpath={.spec.ports[0].port}' 2>/dev/null || true)"
 TRAFFIC_PROFILE=steady \
@@ -80,8 +98,6 @@ TRAFFIC_PROFILE=steady \
 # Return once a request to the app fails, so the first status check sees it.
 # FAULT_WAIT_SECONDS=0 skips the wait.
 WAIT_SECONDS="${FAULT_WAIT_SECONDS:-60}"
-SELECTOR="$(workload_selector "$NS" "$DEPLOY")"
-POD_PORT="$(kubectl -n "$NS" get deploy "$DEPLOY" -o 'jsonpath={.spec.template.spec.containers[0].ports[0].containerPort}' 2>/dev/null || true)"
 waited=0
 while [ "$waited" -lt "$WAIT_SECONDS" ]; do
   POD="$(running_pod "$NS" "$SELECTOR")"

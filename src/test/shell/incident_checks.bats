@@ -704,7 +704,10 @@ case "$*" in
   *"go-template"*) printf 'app.kubernetes.io/name=cart,' ;;
   *"get pods"*"status.phase=Running"*) printf '%s' "${RUNNING-cart-abc}" ;;
   *"containers[0].ports[0].containerPort}"*) printf '8080' ;;
-  *"get --raw /api/v1/namespaces/shop/pods/cart-abc:8080/proxy/"*) [ "${GET:-ok}" = ok ] || exit 1 ;;
+  *"get --raw /api/v1/namespaces/shop/pods/cart-abc:8080/proxy/"*)
+    [ "${GET:-ok}" = ok ] || exit 1
+    printf '%s' "${BODY-{\"service\":\"cart\",\"upstreamStatus\":200\}}"
+    ;;
   *"rollout status"*) [ "${ROLLED_OUT:-yes}" = yes ] || exit 1 ;;
   *"get deploy"*"jsonpath={.spec.replicas}"*)
     [ "${DEPLOY_EXISTS:-yes}" = yes ] || exit 1
@@ -714,6 +717,16 @@ case "$*" in
   *"get pods"*) echo "cart-abc   true   <none>   0" ;;
 esac
 STUB
+}
+
+# An image older than UPSTREAM_URL ignores it and answers 200 without calling
+# anything, which is a lab where the fault never happened, not a fix.
+@test "dns-egress-blocked fails an app that answers without calling its upstream" {
+  egress_stub
+  BODY='{"service":"cart"}' check dns-egress-blocked
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"answers without calling its upstream"* ]] || false
+  [[ "$output" == *"labctl app build cart"* ]] || false
 }
 
 @test "dns-egress-blocked passes when the app reaches its upstream by name behind an egress baseline" {

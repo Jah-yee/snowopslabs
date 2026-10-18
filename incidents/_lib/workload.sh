@@ -41,11 +41,17 @@ running_pod() {
     -o 'jsonpath={.items[0].metadata.name}' 2>/dev/null || true
 }
 
-# pod_get_ok <namespace> <pod> <port> <path> [scheme] - succeed when the pod
-# answers an HTTP GET on <path> with a 2xx, asked through the API server the
-# way the kubelet asks it directly: from inside the cluster, on the pod's IP.
-pod_get_ok() {
+# pod_get <namespace> <pod> <port> <path> [scheme] - print the body of an HTTP
+# GET on <path>, and fail unless the pod answers 2xx. It is asked through the
+# API server the way the kubelet asks it directly: on the pod's own IP.
+pod_get() {
   target="$2:$3"
   [ "${5:-HTTP}" != HTTPS ] || target="https:$target"
-  kubectl get --raw "/api/v1/namespaces/$1/pods/$target/proxy$4" >/dev/null 2>&1
+  kubectl get --raw "/api/v1/namespaces/$1/pods/$target/proxy$4" 2>/dev/null
+}
+
+# pod_get_ok <namespace> <pod> <port> <path> [scheme] - succeed when the pod
+# answers an HTTP GET on <path> with a 2xx.
+pod_get_ok() {
+  pod_get "$@" >/dev/null
 }
