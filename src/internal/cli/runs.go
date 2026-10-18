@@ -129,11 +129,17 @@ func runsLogsCmd() *cobra.Command {
 	return cmd
 }
 
+// runLogSource is the part of the store a transcript is read from.
+type runLogSource interface {
+	GetRun(ctx context.Context, id string) (store.Run, error)
+	ReadLogs(ctx context.Context, runID string, after int64, limit int) ([]store.LogLine, error)
+}
+
 // streamRunLogs prints a run's transcript, optionally following it.
 //
 // Following polls the store from a cursor, so no line is skipped or printed
 // twice.
-func streamRunLogs(ctx context.Context, out io.Writer, st *store.Store, runID string, follow bool) error {
+func streamRunLogs(ctx context.Context, out io.Writer, st runLogSource, runID string, follow bool) error {
 	rec, err := st.GetRun(ctx, runID)
 	if err != nil {
 		return err
@@ -146,6 +152,7 @@ func streamRunLogs(ctx context.Context, out io.Writer, st *store.Store, runID st
 	fmt.Fprintf(out, " (%s)\n\n", rec.Status)
 
 	cursor := int64(0)
+	ended := false
 	for {
 		lines, err := st.ReadLogs(ctx, runID, cursor, 500)
 		if err != nil {
@@ -166,17 +173,18 @@ func streamRunLogs(ctx context.Context, out io.Writer, st *store.Store, runID st
 		if !follow {
 			break
 		}
+		// Stop only on an empty read made after the run was seen to end: a
+		// run can write its last lines between a read and the status check.
+		if ended && len(lines) == 0 {
+			break
+		}
 
 		rec, err = st.GetRun(ctx, runID)
 		if err != nil {
 			return err
 		}
-		// Read once more after the run ends, to catch lines written since the
-		// last poll.
-		if rec.Status.Terminal() && len(lines) == 0 {
-			break
-		}
-		if len(lines) == 0 {
+		ended = rec.Status.Terminal()
+		if !ended && len(lines) == 0 {
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
