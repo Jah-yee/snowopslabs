@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -105,7 +106,7 @@ func challengeInfoCmd() *cobra.Command {
 			fmt.Fprintf(out, "Category:    %s\n", c.Category)
 			fmt.Fprintf(out, "Par time:    %s\n", c.ParTime)
 			fmt.Fprintf(out, "Hint cost:   %d%% per hint\n", hintPenaltyValue(c))
-			fmt.Fprintf(out, "Setup:       %s %s\n", c.Setup.Type, c.Setup.Ref)
+			fmt.Fprintf(out, "Setup:       %s\n", setupSummary(c))
 			fmt.Fprintf(out, "\n%s\n", c.Description)
 			return nil
 		},
@@ -174,33 +175,58 @@ func challengeStartCmd() *cobra.Command {
 // challengePlatformPrereqs is the platform the challenge's setup scenario or
 // fault needs.
 func challengePlatformPrereqs(c *challenge.Challenge) []string {
-	switch c.Setup.Type {
-	case "scenario":
-		if s, err := scenes.Get(c.Setup.Ref); err == nil {
-			return s.Prerequisites.Platform
-		}
-	case "incident":
-		if f, err := incEng.Get(c.Setup.Ref); err == nil {
-			return f.Prerequisites.Platform
-		}
-	}
-	return nil
-}
-
-func challengeRequiredApps(c *challenge.Challenge) []string {
-	switch c.Setup.Type {
-	case "scenario":
-		if s, err := scenes.Get(c.Setup.Ref); err == nil {
-			return scenes.ResolvedPrereqApps(s)
-		}
-	case "incident":
-		if f, err := incEng.Get(c.Setup.Ref); err == nil {
-			if ns := incEng.ResolvedTarget(f).Namespace; appExists(ns) {
-				return []string{ns}
+	var out []string
+	for _, ref := range c.Setup.All() {
+		switch c.Setup.Type {
+		case "scenario":
+			if s, err := scenes.Get(ref); err == nil {
+				out = append(out, s.Prerequisites.Platform...)
+			}
+		case "incident":
+			if f, err := incEng.Get(ref); err == nil {
+				out = append(out, f.Prerequisites.Platform...)
 			}
 		}
 	}
-	return nil
+	slices.Sort(out)
+	return slices.Compact(out)
+}
+
+func challengeRequiredApps(c *challenge.Challenge) []string {
+	var out []string
+	for _, ref := range c.Setup.All() {
+		switch c.Setup.Type {
+		case "scenario":
+			if s, err := scenes.Get(ref); err == nil {
+				out = append(out, scenes.ResolvedPrereqApps(s)...)
+			}
+		case "incident":
+			if f, err := incEng.Get(ref); err == nil {
+				if ns := incEng.ResolvedTarget(f).Namespace; appExists(ns) {
+					out = append(out, ns)
+				}
+			}
+		}
+	}
+	slices.Sort(out)
+	return slices.Compact(out)
+}
+
+// setupSummary says what a challenge sets up. A silent challenge gives only
+// the count: naming its faults would hand over the answer.
+func setupSummary(c *challenge.Challenge) string {
+	refs := c.Setup.All()
+	if c.Silent {
+		return fmt.Sprintf("%d %s, not named: finding them is the exercise", len(refs), plural(len(refs), c.Setup.Type))
+	}
+	return c.Setup.Type + " " + strings.Join(refs, ", ")
+}
+
+func plural(n int, word string) string {
+	if n == 1 {
+		return word
+	}
+	return word + "s"
 }
 
 func challengeStatusCmd() *cobra.Command {
@@ -256,22 +282,14 @@ func challengeHintCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			penalty := hintPenaltyValue(c)
-
-			// An incident challenge uses the incident's own hints.
-			if c.Setup.Type == "incident" {
-				hint, err := incEng.NextHint()
-				if err != nil {
-					return err
-				}
-				if err := eng.RecordHint(); err != nil {
-					return err
-				}
-				fmt.Fprintf(cmd.OutOrStdout(), "[Hint %d/%d - -%d%% score penalty]\n\n%s\n",
-					hint.Index, hint.Total, penalty, hint.Text)
-				return nil
+			// An incident challenge uses its faults' own hints.
+			hint, err := challengeGrader().NextHint()
+			if err != nil {
+				return err
 			}
-			return fmt.Errorf("hints not available for %s-type challenges", c.Setup.Type)
+			fmt.Fprintf(cmd.OutOrStdout(), "[Hint %d/%d - -%d%% score penalty]\n\n%s\n",
+				hint.Index, hint.Total, hintPenaltyValue(c), hint.Text)
+			return nil
 		},
 	}
 }

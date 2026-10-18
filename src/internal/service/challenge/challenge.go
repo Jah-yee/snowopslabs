@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/sagar2395/snowopslabs/internal/challenge"
 	"github.com/sagar2395/snowopslabs/internal/config"
@@ -61,7 +62,7 @@ func (g *Grader) Submit(ctx context.Context, user string) (*Submission, error) {
 	if err != nil {
 		return nil, err
 	}
-	gradingChecks, scriptDir, err := g.Checks(c)
+	gradingChecks, err := g.Checks(c)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +70,12 @@ func (g *Grader) Submit(ctx context.Context, user string) (*Submission, error) {
 		return nil, fmt.Errorf("challenge %s: %w", c.Name, ErrNoChecks)
 	}
 
-	results := labcheck.NewRunner(g.Config, g.workload(c), scriptDir).RunAll(ctx, gradingChecks)
+	results := make([]checks.Result, 0, len(gradingChecks))
+	for _, gc := range gradingChecks {
+		runner := labcheck.NewRunner(g.Config, g.workload(c), gc.Dir)
+		runner.Env = append(runner.Env, gc.Env...)
+		results = append(results, runner.Run(ctx, gc.Check))
+	}
 	passed := 0
 	for _, r := range results {
 		if r.Pass {
@@ -79,6 +85,9 @@ func (g *Grader) Submit(ctx context.Context, user string) (*Submission, error) {
 	sub := &Submission{Challenge: c, Checks: results}
 
 	if passed < len(results) {
+		if c.Silent {
+			sub.Checks = withheld(results)
+		}
 		sub.Record, err = g.Engine.Attempt(passed, len(results))
 		return sub, err
 	}
@@ -92,20 +101,34 @@ func (g *Grader) Submit(ctx context.Context, user string) (*Submission, error) {
 	return sub, nil
 }
 
-// Checks returns the checks a challenge is graded with and the directory
-// their scripts are relative to: the fault's directory for a detection check,
-// otherwise the project root.
-func (g *Grader) Checks(c *challenge.Challenge) ([]checks.Check, string, error) {
+// GradeCheck is one check a challenge is graded with, and where it runs.
+type GradeCheck struct {
+	Check checks.Check
+	// Dir is the directory a script check runs from: the fault's directory
+	// for a detection check, otherwise the project root.
+	Dir string
+	// Env is what the check reads beyond the lab's own settings: a detection
+	// check gets its fault's target, as `incident status` gives it.
+	Env []string
+}
+
+// Checks returns the checks a challenge is graded with: every fault's
+// detection check when it grades by those, otherwise its own checks.
+func (g *Grader) Checks(c *challenge.Challenge) ([]GradeCheck, error) {
 	if c.Grading.UseDetectionCheck && c.Setup.Type == "incident" {
-		f, err := g.Incidents.Get(c.Setup.Ref)
-		if err != nil {
-			return nil, "", fmt.Errorf("loading detection check for %s: %w", c.Setup.Ref, err)
+		var out []GradeCheck
+		for _, ref := range c.Setup.All() {
+			k, dir, env, err := g.Incidents.Detection(ref)
+			if err != nil {
+				return nil, fmt.Errorf("loading detection check for %s: %w", ref, err)
+			}
+			out = append(out, GradeCheck{Check: k, Dir: dir, Env: env})
 		}
-		return []checks.Check{g.Incidents.ResolveCheck(f.Detection)}, f.Dir, nil
+		return out, nil
 	}
-	cs := make([]checks.Check, 0, len(c.Grading.Checks))
+	cs := make([]GradeCheck, 0, len(c.Grading.Checks))
 	for _, gc := range c.Grading.Checks {
-		cs = append(cs, g.resolveCheck(c, checks.Check{
+		k := g.resolveCheck(c, checks.Check{
 			Name:           gc.Name,
 			Type:           gc.Type,
 			URL:            gc.URL,
@@ -115,9 +138,10 @@ func (g *Grader) Checks(c *challenge.Challenge) ([]checks.Check, string, error) 
 			Operator:       gc.Operator,
 			Value:          gc.Value,
 			TimeoutSeconds: gc.TimeoutSeconds,
-		}))
+		})
+		cs = append(cs, GradeCheck{Check: k, Dir: g.Config.ProjectRoot})
 	}
-	return cs, g.Config.ProjectRoot, nil
+	return cs, nil
 }
 
 // resolveCheck expands template variables with the engine that runs the
@@ -137,13 +161,18 @@ func (g *Grader) workload(c *challenge.Challenge) workload.Workload {
 	return g.Incidents.Workload
 }
 
-// Setup prepares the lab for a challenge: it injects the fault or activates
-// the scenario the challenge names.
+// Setup prepares the lab for a challenge: it injects the faults, in order, or
+// activates the scenario the challenge names. The incident engine records one
+// fault as active, so each fault after the first is injected over it.
 func (g *Grader) Setup(c *challenge.Challenge) error {
 	switch c.Setup.Type {
 	case "incident":
-		_, err := g.Incidents.Inject(c.Setup.Ref, g.Exec, false, false)
-		return err
+		for i, ref := range c.Setup.All() {
+			if _, err := g.Incidents.Inject(ref, g.Exec, i > 0, c.Silent); err != nil {
+				return err
+			}
+		}
+		return nil
 	case "scenario":
 		return g.Scenarios.Up(c.Setup.Ref, g.Exec, false)
 	default:
@@ -151,15 +180,98 @@ func (g *Grader) Setup(c *challenge.Challenge) error {
 	}
 }
 
-// Cleanup undoes Setup.
+// Cleanup undoes Setup, resolving every fault by name, last injected first.
+// A fault that never got injected resolves as a no-op.
 func (g *Grader) Cleanup(c *challenge.Challenge) error {
 	switch c.Setup.Type {
 	case "incident":
-		_, err := g.Incidents.Resolve(c.Setup.Ref, g.Exec, "")
-		return err
+		var errs []error
+		for _, ref := range slices.Backward(c.Setup.All()) {
+			if _, err := g.Incidents.Resolve(ref, g.Exec, ""); err != nil {
+				errs = append(errs, err)
+			}
+		}
+		return errors.Join(errs...)
 	case "scenario":
 		return g.Scenarios.Down(c.Setup.Ref, g.Exec)
 	default:
 		return fmt.Errorf("unknown setup type %q", c.Setup.Type)
 	}
+}
+
+// NextHint reveals the next hint of the active incident challenge and charges
+// it to the run. One fault uses its own hint ladder; several take turns, a
+// rung of each in setup order, so no fault is spoiled before the others are
+// started on.
+func (g *Grader) NextHint() (*incident.Hint, error) {
+	active, err := g.Engine.Active()
+	if err != nil {
+		return nil, err
+	}
+	if active == nil {
+		return nil, challenge.ErrNoActive
+	}
+	c, err := g.Engine.Load(active.ChallengeName)
+	if err != nil {
+		return nil, err
+	}
+	if c.Setup.Type != "incident" {
+		return nil, fmt.Errorf("hints not available for %s-type challenges", c.Setup.Type)
+	}
+	refs := c.Setup.All()
+	var hint *incident.Hint
+	if len(refs) == 1 {
+		hint, err = g.Incidents.NextHint()
+	} else {
+		hint, err = g.turnHint(refs, active.HintsUsed)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return hint, g.Engine.RecordHint()
+}
+
+// turnHint returns hint number used+1 of the faults' ladders taken in turn,
+// skipping a fault whose ladder has run out.
+func (g *Grader) turnHint(refs []string, used int) (*incident.Hint, error) {
+	ladders := make([][]string, len(refs))
+	total := 0
+	for i, ref := range refs {
+		f, err := g.Incidents.Get(ref)
+		if err != nil {
+			return nil, err
+		}
+		if ladders[i], err = incident.ParseHints(f.Dir); err != nil {
+			return nil, fmt.Errorf("hints for %s: %w", ref, err)
+		}
+		total += len(ladders[i])
+	}
+	if used >= total {
+		return nil, fmt.Errorf("%w (%d/%d revealed)", incident.ErrNoMoreHints, used, total)
+	}
+	n := 0
+	for rung := 0; ; rung++ {
+		for _, ladder := range ladders {
+			if rung >= len(ladder) {
+				continue
+			}
+			if n == used {
+				return &incident.Hint{Index: used + 1, Total: total, Text: g.Incidents.ResolveTemplate(ladder[rung])}, nil
+			}
+			n++
+		}
+	}
+}
+
+// withheld is a silent challenge's results with what names its faults taken
+// out: each check is "fault N of M", passing or not.
+func withheld(results []checks.Result) []checks.Result {
+	out := make([]checks.Result, len(results))
+	for i, r := range results {
+		out[i] = checks.Result{Name: fmt.Sprintf("fault %d of %d", i+1, len(results)), Type: r.Type, Pass: r.Pass}
+		if !r.Pass {
+			out[i].Error = "not fixed yet"
+		}
+	}
+	return out
 }

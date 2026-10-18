@@ -286,3 +286,46 @@ func TestBindToChallenge(t *testing.T) {
 		})
 	}
 }
+
+// A silent challenge's faults are the exercise: info gives their count, never
+// their names. A challenge that is not silent still shows its setup.
+func TestHandleChallengeInfo_SilentHidesTheFaults(t *testing.T) {
+	s := newChallengeServer(t)
+	dir := filepath.Join(s.cfg.ProjectRoot, "challenges", "shift")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	shift := "name: shift\ndisplayName: Shift\nsilent: true\nsetup:\n  type: incident\n  refs: [oom-kill, network-blackhole]\ngrading:\n  useDetectionCheck: true\n"
+	if err := os.WriteFile(filepath.Join(dir, "challenge.yaml"), []byte(shift), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name    string
+		want    []string
+		mustNot []string
+	}{
+		{"shift", []string{`"silent":true`, `"count":2`, `"type":"incident"`}, []string{"oom-kill", "network-blackhole"}},
+		{"test-challenge", []string{`"silent":false`, `"ref":"bad-deploy-rollout"`}, nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := setVars(httptest.NewRequest(http.MethodGet, "/api/v2/challenges/"+tt.name, nil), map[string]string{"name": tt.name})
+			w := httptest.NewRecorder()
+			s.handleChallengeInfo(w, req)
+			body := w.Body.String()
+			if w.Code != http.StatusOK {
+				t.Fatalf("status %d: %s", w.Code, body)
+			}
+			for _, want := range tt.want {
+				if !strings.Contains(body, want) {
+					t.Errorf("body %s is missing %s", body, want)
+				}
+			}
+			for _, leak := range tt.mustNot {
+				if strings.Contains(body, leak) {
+					t.Errorf("body %s names %s", body, leak)
+				}
+			}
+		})
+	}
+}
