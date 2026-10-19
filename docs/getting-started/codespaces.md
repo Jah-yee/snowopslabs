@@ -26,6 +26,11 @@ SnowOps Labs with nothing installed on your own computer.
    `labctl init` in the creation log. The first run takes about five to ten
    minutes and ends with the lab's URLs.
 
+A codespace created on `main` (for example from the repository's **Code**
+button) is development content with no labctl release, so the setup builds
+`labctl` from that clone with `make cli-install` instead of running
+`./install.sh`. That adds a few minutes to the first run.
+
 When it finishes, open a terminal (**Terminal → New Terminal**) and run a
 scenario, as in the [README](../../README.md#your-first-lab):
 
@@ -97,7 +102,7 @@ git merge origin/stable
 
 | You see | Do this |
 |---|---|
-| The creation log ends with an error from `install.sh` about development content | The codespace is on `main`. Delete it and use the button above, which opens `stable`. |
+| `labctl: command not found` after the creation log has finished | Setup failed before installing labctl. Open the creation log (**Codespaces: View Creation Log** in the command palette), fix what it names, then run `sh .devcontainer/setup.sh`. |
 | `the Docker daemon is not running` | Docker was still starting when setup ran. Run `labctl init` again. |
 | A dashboard link to `*.snowops.localhost` does not open | Expected in a codespace. Forward the service with `kubectl port-forward`, as above. |
 | `labctl` is not found in a terminal opened before setup finished | Open a new terminal. |
