@@ -4,8 +4,13 @@
   "name": "SnowOps Labs",
   "image": "mcr.microsoft.com/devcontainers/base:3.0.9-ubuntu24.04",
   // Docker runs inside the codespace, so the lab's k3d cluster lives there too.
+  // Go and Node build labctl from source when the codespace is on main.
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:4.1.3": {}
+    "ghcr.io/devcontainers/features/docker-in-docker:4.1.3": {},
+    "ghcr.io/devcontainers/features/go:1.4.0": {},
+    "ghcr.io/devcontainers/features/node:2.1.1": {
+      "version": "22"
+    }
   },
   // A 4-core codespace has 16 GB: the platform, one scenario and the heavier
   // scenarios (Kafka, mesh, GitOps) all fit, and init finishes faster.
@@ -14,13 +19,13 @@
     "memory": "8gb",
     "storage": "32gb"
   },
-  // install.sh puts labctl in ~/.local/bin and init puts kubectl, helm and k3d there.
+  // setup.sh puts labctl in ~/.local/bin and init puts kubectl, helm and k3d there.
+  // GOTOOLCHAIN=auto fetches the Go toolchain src/go.mod pins.
   "remoteEnv": {
-    "PATH": "/home/vscode/.local/bin:${containerEnv:PATH}"
+    "PATH": "/home/vscode/.local/bin:${containerEnv:PATH}",
+    "GOTOOLCHAIN": "auto"
   },
-  // Give the Docker daemon the feature starts up to two minutes, then install
-  // labctl and build the lab; init names the problem if Docker is still down.
-  "postCreateCommand": "timeout 120 sh -c 'until docker info >/dev/null 2>&1; do sleep 2; done'; ./install.sh && labctl init",
+  "postCreateCommand": "sh .devcontainer/setup.sh",
   "portsAttributes": {
     "3939": {
       "label": "labctl dashboard",

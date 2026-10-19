@@ -53,7 +53,7 @@ integration, line endings, and idle cluster recovery) see the
 
 ## GitHub Codespaces
 
-A codespace on the wrong branch, Docker still starting during setup, and
+A setup that failed before installing labctl, Docker still starting during setup, and
 `*.localhost` links that do not open in your browser are covered in
 [Running the lab in GitHub Codespaces](getting-started/codespaces.md#when-something-goes-wrong).
 
