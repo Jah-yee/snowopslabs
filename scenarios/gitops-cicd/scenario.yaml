@@ -1,6 +1,6 @@
 apiVersion: scenario.snowops.net/v2
 name: gitops-cicd
-verified: true
+verified: false
 displayName: "GitOps & CI/CD (ArgoCD)"
 description: "Run a real GitOps loop against a Git repository you can actually push to. The lab serves its own repo in-cluster; ArgoCD reconciles it. You clone it, change the declared image and replica count, push, and watch the cluster follow, then prove the three things that make GitOps different from kubectl: self-heal reverts a change you make by hand, prune deletes a resource you remove from Git, and a release that syncs perfectly can still be broken - the lab ships one that is, and you repair it in Git."
 category: delivery
