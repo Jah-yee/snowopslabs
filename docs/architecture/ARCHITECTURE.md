@@ -107,8 +107,8 @@ a 100-entry in-memory map, and dropped log lines for slow clients.
 
 That v1 executor still ships. The CLI's `lab`, `platform`, `scenario` and
 `incident` commands use the run engine. The web UI's mutating `/api/v2` actions,
-and the CLI's challenge setup, still start `internal/executor` jobs directly. Until [B16](../backlog.md#b16--web-ui-actions-bypass-the-run-engine)
-lands, the guarantees below hold only for work submitted as a `run.Spec`.
+and the CLI's challenge setup, still start `internal/executor` jobs directly. Until the
+[move onto the run engine](https://github.com/sagar2395/snowopslabs/issues/121) lands, the guarantees below hold only for work submitted as a `run.Spec`.
 
 ### 3.1 Lifecycle
 

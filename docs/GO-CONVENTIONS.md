@@ -25,13 +25,13 @@ that version allows. The linter flags the older forms.
 Ask where the rule lives before you add code. If a CLI command and an HTTP
 handler would both need it, it belongs in a service.
 
-Some older paths still skip these layers. Their backlog items describe how to
+Some older paths still skip these layers. Their GitHub issues describe how to
 retire them, and new code should not copy them:
 
 - The web UI's mutating actions use `internal/executor` instead of the run
-  engine: [B16](backlog.md#b16--web-ui-actions-bypass-the-run-engine).
+  engine: [open issue](https://github.com/sagar2395/snowopslabs/issues/121).
 - `internal/cli` keeps its wiring in package-level variables:
-  [B18](backlog.md#b18--internalcli-runs-on-package-level-state).
+  [open issue](https://github.com/sagar2395/snowopslabs/issues/122).
 
 ## 2. Context
 
@@ -133,7 +133,7 @@ gets its own copies.
   what it prints without a terminal. `runDoctor` is the pattern to follow.
 - Don't add new package-level `var fooCmd = &cobra.Command{…}` values or flag
   variables. Older commands still use them
-  ([B18](backlog.md#b18--internalcli-runs-on-package-level-state)).
+  ([open issue](https://github.com/sagar2395/snowopslabs/issues/122)).
 - A command is tested through the CLI harness: a step in its group's journey,
   so its output is in a golden transcript, and a row in the group's failure
   table for each way it fails ([TESTING](TESTING.md#go-unit-and-contract-tests)).
