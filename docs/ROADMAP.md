@@ -7,7 +7,8 @@ A high-level view of where SnowOps Labs is and where it's going. It's an early
 release: the core loop works, and the rest is built in the open. Priorities
 shift with feedback, so if something here matters to you,
 [open an issue](https://github.com/sagar2395/snowopslabs/issues) or 👍 an
-existing one. Smaller known problems are tracked in [`backlog.md`](backlog.md).
+existing one. Smaller known problems are tracked as
+[GitHub issues](https://github.com/sagar2395/snowopslabs/issues).
 
 ## Works today
 
@@ -35,7 +36,8 @@ existing one. Smaller known problems are tracked in [`backlog.md`](backlog.md).
 
 - **More content.** New faults and scenarios drawn from real failures.
 - **A smoother first run.** Fewer surprises on small machines and fresh
-  installs; see the open items in [`backlog.md`](backlog.md).
+  installs; see the
+  [open bugs](https://github.com/sagar2395/snowopslabs/issues?q=is%3Aissue+is%3Aopen+label%3Abug).
 - **Web UI on the run engine.** UI actions go through the same durable,
   cancellable runs as the CLI.
 - **Team mode packaging.** An easier way to run the shared server for a game

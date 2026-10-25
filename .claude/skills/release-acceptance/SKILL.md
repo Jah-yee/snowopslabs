@@ -72,7 +72,8 @@ before moving on, and confirm with `labctl status`.
 - A regression, or a new feature that does not work: fix it on the branch with
   its test and docs (CLAUDE.md rules apply), then re-run the failing step with
   `--only` and the change-walk check.
-- Anything out of scope: a `docs/backlog.md` entry with the reproduction.
+- Anything out of scope: a GitHub issue with the reproduction (`gh issue create`,
+  labelled by area).
 - Never weaken a check to make it pass.
 
 ## 6. Report
@@ -84,7 +85,7 @@ Append to `report.md`:
 | Change (commit) | Check | Result |
 
 ## Findings
-1. <severity> - <symptom>, <evidence>, <fixed in commit | backlog id>
+1. <severity> - <symptom>, <evidence>, <fixed in commit | issue number>
 
 ## Verdict
 GO / NO-GO - <one sentence>
